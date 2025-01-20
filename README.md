@@ -60,10 +60,10 @@ We welcome contributions from the community! To contribute:
 5. Open a pull request.
 
 ## License
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [Apache 2.0 License](LICENSE).
 
 ## Connect with Us 🌍
-- Website: [Flamingo.cx](https://flamingo.cx)
+- Website: [flamingo.cx](https://flamingo.cx)
 - LinkedIn: [Michael Assraf](https://linkedin.com/in/michaelassraf)
 
 Let’s bring the open-source community closer with Major League GitHub! 🌟
