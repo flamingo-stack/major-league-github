@@ -8,7 +8,8 @@ on:
 env:
   REGISTRY: registry.digitalocean.com
   IMAGE_NAME: major-league-github
-  APP_URL: https://major-league-github.${{ secrets.DOMAIN_SUFFIX }}
+  URL_PREFIX: ${{ secrets.URL_PREFIX }}
+  APP_URL: https://${{ secrets.URL_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}
 
 jobs:
   build-and-deploy:
@@ -29,6 +30,25 @@ jobs:
 
       - name: Log in to DO Container Registry 🔑
         run: doctl registry login --expiry-seconds 600
+
+      - name: Create or update Kubernetes cluster 🌟 🦩
+        run: |
+          echo "🦩 Checking if cluster exists..."
+          if ! doctl kubernetes cluster get ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }} &>/dev/null; then
+            echo "🦩 Creating new Kubernetes cluster..."
+            doctl kubernetes cluster create ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }} \
+              --region sfo3 \
+              --size s-2vcpu-4gb \
+              --count 2 \
+              --version latest \
+              --auto-upgrade true \
+              --maintenance-window "saturday=21:00" \
+              --tag major-league-github \
+              --wait
+            echo "✨ Cluster created successfully!"
+          else
+            echo "✅ Cluster already exists!"
+          fi
 
       - name: Build and push backend image 🏗️ 🦩
         env:
@@ -117,13 +137,13 @@ jobs:
         run: |
           echo "🦩 Cleaning up old DNS records..."
           # Delete A record for the main domain
-          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *major-league-github" | awk '{print $1}')
+          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.URL_PREFIX }}" | awk '{print $1}')
           if [ ! -z "$RECORD_ID" ]; then
             doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force
           fi
 
           # Delete CNAME record for www subdomain
-          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.major-league-github" | awk '{print $1}')
+          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.URL_PREFIX }}" | awk '{print $1}')
           if [ ! -z "$RECORD_ID" ]; then
             doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force
           fi
@@ -139,15 +159,15 @@ jobs:
           echo "🦩 Creating A record..."
           doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
             --record-type A \
-            --record-name "major-league-github" \
+            --record-name "${{ env.URL_PREFIX }}" \
             --record-data "${LB_IP}"
 
           # Create CNAME record for www subdomain
           echo "🦩 Creating CNAME record..."
           doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
             --record-type CNAME \
-            --record-name "www.major-league-github" \
-            --record-data "major-league-github.${{ secrets.DOMAIN_SUFFIX }}."
+            --record-name "www.${{ env.URL_PREFIX }}" \
+            --record-data "${{ env.URL_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}."
 
       - name: Update deployment file 📝 🦩
         run: |
@@ -176,13 +196,13 @@ jobs:
           apiVersion: cert-manager.io/v1
           kind: Certificate
           metadata:
-            name: major-league-github-tls
+            name: ${{ env.URL_PREFIX }}-tls
             namespace: default
           spec:
-            secretName: major-league-github-tls
+            secretName: ${{ env.URL_PREFIX }}-tls
             dnsNames:
-            - major-league-github.${{ secrets.DOMAIN_SUFFIX }}
-            - www.major-league-github.${{ secrets.DOMAIN_SUFFIX }}
+            - ${{ env.URL_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}
+            - www.${{ env.URL_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}
             issuerRef:
               name: letsencrypt-prod
               kind: ClusterIssuer
@@ -205,11 +225,11 @@ jobs:
           spec:
             tls:
             - hosts:
-              - major-league-github.${DOMAIN_SUFFIX}
-              - www.major-league-github.${DOMAIN_SUFFIX}
-              secretName: major-league-github-tls
+              - ${{ env.URL_PREFIX }}.${DOMAIN_SUFFIX}
+              - www.${{ env.URL_PREFIX }}.${DOMAIN_SUFFIX}
+              secretName: ${{ env.URL_PREFIX }}-tls
             rules:
-            - host: major-league-github.${DOMAIN_SUFFIX}
+            - host: ${{ env.URL_PREFIX }}.${DOMAIN_SUFFIX}
               http:
                 paths:
                 - path: /
@@ -219,7 +239,7 @@ jobs:
                       name: frontend-service
                       port:
                         number: 80
-            - host: www.major-league-github.${DOMAIN_SUFFIX}
+            - host: www.${{ env.URL_PREFIX }}.${DOMAIN_SUFFIX}
               http:
                 paths:
                 - path: /
