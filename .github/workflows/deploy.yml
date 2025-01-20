@@ -39,12 +39,9 @@ jobs:
             doctl kubernetes cluster create ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }} \
               --region sfo3 \
               --size s-2vcpu-4gb \
-              --count 2 \
-              --version latest \
-              --auto-upgrade true \
-              --maintenance-window "saturday=21:00" \
-              --tag major-league-github \
-              --wait
+              --node-count 2 \
+              --surge-upgrade true \
+              --ha=false
             echo "✨ Cluster created successfully!"
           else
             echo "✅ Cluster already exists!"
