@@ -54,9 +54,26 @@ jobs:
         run: |
           echo "🦩 Building backend image..."
           docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:latest ./backend
+          
           echo "🦩 Pushing backend image..."
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:${VERSION}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:latest
+          max_retries=3
+          retry_count=0
+          
+          while [ $retry_count -lt $max_retries ]; do
+            if docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:${VERSION} && \
+               docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:latest; then
+              echo "✅ Successfully pushed backend images"
+              break
+            else
+              retry_count=$((retry_count+1))
+              if [ $retry_count -eq $max_retries ]; then
+                echo "❌ Failed to push backend images after $max_retries attempts"
+                exit 1
+              fi
+              echo "🔄 Retry attempt $retry_count of $max_retries"
+              sleep 5
+            fi
+          done
 
       - name: Build and push frontend image 🎨 🦩
         env:
@@ -64,9 +81,26 @@ jobs:
         run: |
           echo "🦩 Building frontend image..."
           docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:latest ./frontend
+          
           echo "🦩 Pushing frontend image..."
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:${VERSION}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:latest
+          max_retries=3
+          retry_count=0
+          
+          while [ $retry_count -lt $max_retries ]; do
+            if docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:${VERSION} && \
+               docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:latest; then
+              echo "✅ Successfully pushed frontend images"
+              break
+            else
+              retry_count=$((retry_count+1))
+              if [ $retry_count -eq $max_retries ]; then
+                echo "❌ Failed to push frontend images after $max_retries attempts"
+                exit 1
+              fi
+              echo "🔄 Retry attempt $retry_count of $max_retries"
+              sleep 5
+            fi
+          done
 
       - name: Save DigitalOcean kubeconfig 💾
         run: |
