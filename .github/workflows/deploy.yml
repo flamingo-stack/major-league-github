@@ -58,32 +58,32 @@ jobs:
             echo "✨ Registry created successfully!"
           fi
           
-          echo "🦩 Configuring Docker credentials..."
-          # Use the known registry endpoint from environment variables
-          echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login ${{ env.REGISTRY }} \
-            --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
-            --password-stdin
-          
           echo "🦩 Configuring registry..."
           doctl registry repository list-v2 || doctl registry repository create-v2 ${{ env.IMAGE_NAME }}
-
-      - name: Configure Kubernetes registry access 🔑
-        run: |
-          echo "🦩 Creating registry secret in Kubernetes..."
-          kubectl create secret docker-registry digitalocean-registry \
-            --docker-server=${{ env.REGISTRY }} \
-            --docker-username=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
-            --docker-password=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
-            --docker-email=${{ secrets.LETSENCRYPT_EMAIL }} \
-            -o yaml --dry-run=client | kubectl apply -f -
-          
-          echo "🦩 Patching default service account..."
-          kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "digitalocean-registry"}]}'
 
       - name: Log in to DO Container Registry 🔑
         run: |
           echo "🦩 Logging into DigitalOcean Container Registry..."
           doctl registry login --expiry-seconds 1200
+          
+          # Also configure Docker with registry credentials
+          echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login registry.digitalocean.com \
+            --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --password-stdin
+
+      - name: Configure Kubernetes registry access 🔑
+        run: |
+          echo "🦩 Creating registry secret in Kubernetes..."
+          kubectl create secret docker-registry digitalocean-registry \
+            --docker-server=registry.digitalocean.com \
+            --docker-username=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --docker-password=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --docker-email=${{ secrets.LETSENCRYPT_EMAIL }} \
+            --namespace=default \
+            -o yaml --dry-run=client | kubectl apply -f -
+          
+          echo "🦩 Patching default service account..."
+          kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "digitalocean-registry"}]}'
 
       - name: Build and push backend image 🏗️ 🦩
         env:
