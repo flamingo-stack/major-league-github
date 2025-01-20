@@ -15,3 +15,24 @@ buildNumber.properties
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+*.DS_Store
+
+# VSCode
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# VSCode
+**/.vscode
+**/.vscode/**
+
+# Frontend build output
+backend/src/main/resources/static/*
+!backend/src/main/resources/static/.gitkeep
+
+.env
+.env.local
+.env.*.local
+backend/.env.template

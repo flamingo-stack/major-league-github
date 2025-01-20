@@ -1,0 +1,273 @@
+name: Build and Deploy 🚀 🦩
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.digitalocean.com
+  IMAGE_NAME: major-league-github
+  APP_URL: https://major-league-github.${{ secrets.DOMAIN_SUFFIX }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-22.04
+    permissions:
+      deployments: write
+
+    steps:
+      - name: Checkout code 📦
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Install doctl 🛠️
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DO Container Registry 🔑
+        run: doctl registry login --expiry-seconds 600
+
+      - name: Build and push backend image 🏗️ 🦩
+        env:
+          VERSION: v1.0.${{ github.run_number }}
+        run: |
+          echo "🦩 Building backend image..."
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:latest ./backend
+          echo "🦩 Pushing backend image..."
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:${VERSION}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:latest
+
+      - name: Build and push frontend image 🎨 🦩
+        env:
+          VERSION: v1.0.${{ github.run_number }}
+        run: |
+          echo "🦩 Building frontend image..."
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:latest ./frontend
+          echo "🦩 Pushing frontend image..."
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:${VERSION}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:latest
+
+      - name: Save DigitalOcean kubeconfig 💾
+        run: |
+          doctl kubernetes cluster kubeconfig save ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }}
+
+      - name: Install Helm ⚓
+        run: |
+          echo "🦩 Installing Helm..."
+          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+      - name: Install NGINX Ingress Controller 🌐 🦩
+        run: |
+          echo "🦩 Setting up NGINX Ingress..."
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo update
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+            --namespace ingress-nginx --create-namespace \
+            --set controller.publishService.enabled=true
+
+      - name: Install cert-manager 🔒 🦩
+        run: |
+          echo "🦩 Setting up cert-manager..."
+          helm repo add jetstack https://charts.jetstack.io
+          helm repo update
+          helm upgrade --install cert-manager jetstack/cert-manager \
+            --namespace cert-manager --create-namespace \
+            --set installCRDs=true
+
+      - name: Wait for cert-manager to be ready ⏳
+        run: |
+          echo "🦩 Waiting for cert-manager..."
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s
+
+      - name: Create ClusterIssuer 🔑 🦩
+        run: |
+          echo "🦩 Creating Let's Encrypt ClusterIssuer..."
+          cat <<EOF | kubectl apply -f -
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: letsencrypt-prod
+          spec:
+            acme:
+              server: https://acme-v02.api.letsencrypt.org/directory
+              email: ${LETSENCRYPT_EMAIL}
+              privateKeySecretRef:
+                name: letsencrypt-prod
+              solvers:
+              - http01:
+                  ingress:
+                    class: nginx
+          EOF
+        env:
+          LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
+
+      - name: Wait for NGINX Ingress Controller ⌛ 🦩
+        run: |
+          echo "🦩 Waiting for NGINX Ingress Controller LoadBalancer IP..."
+          while [ -z "$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)" ]; do
+            sleep 10
+            echo "🦩 Still waiting..."
+          done
+          echo "🎉 LoadBalancer IP is ready!"
+
+      - name: Delete existing DNS records 🗑️ 🦩
+        run: |
+          echo "🦩 Cleaning up old DNS records..."
+          # Delete A record for the main domain
+          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *major-league-github" | awk '{print $1}')
+          if [ ! -z "$RECORD_ID" ]; then
+            doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force
+          fi
+
+          # Delete CNAME record for www subdomain
+          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.major-league-github" | awk '{print $1}')
+          if [ ! -z "$RECORD_ID" ]; then
+            doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force
+          fi
+
+      - name: Create DNS Records 🌍 🦩
+        run: |
+          echo "🦩 Setting up DNS records..."
+          # Get LoadBalancer IP and store it in a variable
+          LB_IP=$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "🎯 LoadBalancer IP is: ${LB_IP}"
+
+          # Create A record for the main domain
+          echo "🦩 Creating A record..."
+          doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
+            --record-type A \
+            --record-name "major-league-github" \
+            --record-data "${LB_IP}"
+
+          # Create CNAME record for www subdomain
+          echo "🦩 Creating CNAME record..."
+          doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
+            --record-type CNAME \
+            --record-name "www.major-league-github" \
+            --record-data "major-league-github.${{ secrets.DOMAIN_SUFFIX }}."
+
+      - name: Update deployment file 📝 🦩
+        run: |
+          echo "🦩 Updating deployment configurations..."
+          TAG=${{ github.sha }}
+          sed -i 's|image: .*major-league-github-backend:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:'${TAG}'|' kubernetes/backend-deployment.yaml
+          sed -i 's|image: .*major-league-github-frontend:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:'${TAG}'|' kubernetes/frontend-deployment.yaml
+
+      - name: Create GitHub Tokens Secret 🔐 🦩
+        run: |
+          echo "🦩 Creating GitHub tokens secret..."
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: github-tokens
+          type: Opaque
+          stringData:
+            github.tokens: ${{ secrets.GH_API_TOKENS }}
+          EOF
+
+      - name: Create TLS Certificate 🔒 🦩
+        run: |
+          echo "🦩 Setting up TLS certificate..."
+          cat <<EOF | kubectl apply -f -
+          apiVersion: cert-manager.io/v1
+          kind: Certificate
+          metadata:
+            name: major-league-github-tls
+            namespace: default
+          spec:
+            secretName: major-league-github-tls
+            dnsNames:
+            - major-league-github.${{ secrets.DOMAIN_SUFFIX }}
+            - www.major-league-github.${{ secrets.DOMAIN_SUFFIX }}
+            issuerRef:
+              name: letsencrypt-prod
+              kind: ClusterIssuer
+          EOF
+
+      - name: Deploy to DigitalOcean Kubernetes 🚀 🦩
+        run: |
+          echo "🦩 Deploying to Kubernetes..."
+          
+          # Create Ingress configuration with proper domain substitution
+          cat <<EOF | kubectl apply -f -
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: frontend-ingress
+            annotations:
+              kubernetes.io/ingress.class: nginx
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+          spec:
+            tls:
+            - hosts:
+              - major-league-github.${DOMAIN_SUFFIX}
+              - www.major-league-github.${DOMAIN_SUFFIX}
+              secretName: major-league-github-tls
+            rules:
+            - host: major-league-github.${DOMAIN_SUFFIX}
+              http:
+                paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: frontend-service
+                      port:
+                        number: 80
+            - host: www.major-league-github.${DOMAIN_SUFFIX}
+              http:
+                paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: frontend-service
+                      port:
+                        number: 80
+          EOF
+          
+          # Apply other Kubernetes configurations
+          kubectl apply -f kubernetes/
+          kubectl rollout restart deployment/backend-deployment
+          kubectl rollout restart deployment/frontend-deployment
+        env:
+          DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
+
+      - name: Create Deployment 📦 🦩
+        id: deployment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            console.log("🦩 Creating deployment...");
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              auto_merge: false,
+              required_contexts: []
+            });
+            return deployment.data.id;
+
+      - name: Update Deployment Status ✨ 🦩
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            console.log("🦩 Updating deployment status...");
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.result }},
+              state: 'success',
+              environment_url: process.env.APP_URL,
+              description: 'Deployment successful! :rocket:',
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            }); 

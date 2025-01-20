@@ -1,0 +1,75 @@
+id,name,display_name,latitude,longitude,state_codes
+south-florida,south-florida,South Florida,26.1224,-80.1373,FL
+central-florida,central-florida,Central Florida,28.5383,-81.3792,FL
+north-florida,north-florida,North Florida,30.3322,-81.6557,FL
+tampa-bay,tampa-bay,Tampa Bay,27.9506,-82.4572,FL
+southern-california,southern-california,Southern California,34.0522,-118.2437,CA
+northern-california,northern-california,Northern California,37.7749,-122.4194,CA
+central-california,central-california,Central California,36.7378,-119.7871,CA
+bay-area,bay-area,Bay Area,37.7749,-122.4194,CA
+inland-empire,inland-empire,Inland Empire,34.0633,-117.6509,CA
+central-coast,central-coast,Central Coast,34.4208,-119.6982,CA
+northern-illinois,northern-illinois,Northern Illinois,41.8781,-87.6298,IL
+central-illinois,central-illinois,Central Illinois,39.7817,-89.6501,IL
+southern-illinois,southern-illinois,Southern Illinois,37.7273,-89.2169,IL
+north-texas,north-texas,North Texas,32.7767,-96.7970,TX
+central-texas,central-texas,Central Texas,30.2672,-97.7431,TX
+south-texas,south-texas,South Texas,29.4241,-98.4936,TX
+east-texas,east-texas,East Texas,32.3513,-95.3011,TX
+west-texas,west-texas,West Texas,31.7619,-106.4850,TX
+nyc-metro,nyc-metro,NYC Metro,40.7128,-74.0060,NY
+upstate-ny,upstate-ny,Upstate New York,42.6526,-73.7562,NY
+western-ny,western-ny,Western New York,42.8864,-78.8784,NY
+long-island,long-island,Long Island,40.7062,-73.6187,NY
+hudson-valley,hudson-valley,Hudson Valley,41.0340,-73.7629,NY
+greater-miami,greater-miami,Greater Miami,25.7617,-80.1918,FL
+greater-orlando,greater-orlando,Greater Orlando,28.5383,-81.3792,FL
+greater-los-angeles,greater-los-angeles,Greater Los Angeles,34.0522,-118.2437,CA
+greater-san-diego,greater-san-diego,Greater San Diego,32.7157,-117.1611,CA
+greater-chicago,greater-chicago,Greater Chicago,41.8781,-87.6298,IL
+greater-boston,greater-boston,Greater Boston,42.3601,-71.0589,MA
+greater-dc,greater-dc,Greater DC,38.9072,-77.0369,DC|VA|MD
+greater-atlanta,greater-atlanta,Greater Atlanta,33.7490,-84.3880,GA
+twin-cities,twin-cities,Twin Cities,44.9778,-93.2650,MN
+greater-seattle,greater-seattle,Greater Seattle,47.6062,-122.3321,WA
+greater-portland,greater-portland,Greater Portland,45.5155,-122.6789,OR
+greater-denver,greater-denver,Greater Denver,39.7392,-104.9903,CO
+greater-phoenix,greater-phoenix,Greater Phoenix,33.4484,-112.0740,AZ
+greater-charlotte,greater-charlotte,Greater Charlotte,35.2271,-80.8431,NC
+greater-nashville,greater-nashville,Greater Nashville,36.1627,-86.7816,TN
+greater-detroit,greater-detroit,Greater Detroit,42.3314,-83.0458,MI
+greater-cleveland,greater-cleveland,Greater Cleveland,41.4993,-81.6944,OH
+greater-cincinnati,greater-cincinnati,Greater Cincinnati,39.1031,-84.5120,OH
+greater-salt-lake,greater-salt-lake,Greater Salt Lake,40.7608,-111.8910,UT
+greater-las-vegas,greater-las-vegas,Greater Las Vegas,36.1699,-115.1398,NV
+greater-pittsburgh,greater-pittsburgh,Greater Pittsburgh,40.4406,-79.9959,PA
+greater-kansas-city,greater-kansas-city,Greater Kansas City,39.0997,-94.5786,MO
+greater-st-louis,greater-st-louis,Greater St. Louis,38.6270,-90.1994,MO
+greater-new-orleans,greater-new-orleans,Greater New Orleans,29.9511,-90.0715,LA
+greater-indianapolis,greater-indianapolis,Greater Indianapolis,39.7684,-86.1581,IN
+greater-columbus,greater-columbus,Greater Columbus,39.9612,-82.9988,OH
+greater-milwaukee,greater-milwaukee,Greater Milwaukee,43.0389,-87.9065,WI
+greater-philadelphia,greater-philadelphia,Greater Philadelphia,39.9526,-75.1652,PA
+greater-baltimore,greater-baltimore,Greater Baltimore,39.2904,-76.6122,MD
+houston-metro,houston-metro,Houston Metro,29.7604,-95.3698,TX
+greater-dallas,greater-dallas,Greater Dallas,32.7767,-96.7970,TX
+greater-austin,greater-austin,Greater Austin,30.2672,-97.7431,TX
+greater-san-antonio,greater-san-antonio,Greater San Antonio,29.4241,-98.4936,TX
+hawaii,hawaii,Hawaii,21.3069,-157.8583,HI
+alaska,alaska,Alaska,61.2181,-149.9003,AK
+alabama,alabama,Alabama,33.5186,-86.8104,AL
+arkansas,arkansas,Arkansas,34.7465,-92.2896,AR
+delaware,delaware,Delaware,39.7391,-75.5398,DE
+idaho,idaho,Idaho,43.6150,-116.2023,ID
+iowa,iowa,Iowa,41.5868,-93.6250,IA
+maine,maine,Maine,43.6591,-70.2568,ME
+mississippi,mississippi,Mississippi,32.2988,-90.1848,MS
+montana,montana,Montana,46.5891,-112.0391,MT
+nebraska,nebraska,Nebraska,41.2565,-95.9345,NE
+new-mexico,new-mexico,New Mexico,35.0844,-106.6504,NM
+north-dakota,north-dakota,North Dakota,46.8772,-96.7898,ND
+oklahoma,oklahoma,Oklahoma,35.4676,-97.5164,OK
+south-dakota,south-dakota,South Dakota,43.5460,-96.7313,SD
+vermont,vermont,Vermont,44.4759,-73.2121,VT
+west-virginia,west-virginia,West Virginia,38.3498,-81.6326,WV
+wyoming,wyoming,Wyoming,41.1400,-104.8202,WY 
