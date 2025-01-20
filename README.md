@@ -43,7 +43,7 @@ npm install
 ### Usage
 1. Set up your GitHub API token in a `.env` file:
 ```env
-GITHUB_TOKEN=your_token_here
+GITHUB_TOKENS=token_1, token_2
 ```
 2. Run the development server:
 ```bash
