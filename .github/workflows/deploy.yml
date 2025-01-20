@@ -58,10 +58,9 @@ jobs:
             echo "✨ Registry created successfully!"
           fi
           
-          REGISTRY_SERVER=$(doctl registry get --format Registry --no-header)
-          echo "🦩 Configuring Docker credentials for ${REGISTRY_SERVER}..."
-          
-          echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login $REGISTRY_SERVER \
+          echo "🦩 Configuring Docker credentials..."
+          # Use the known registry endpoint from environment variables
+          echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login ${{ env.REGISTRY }} \
             --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
             --password-stdin
           
