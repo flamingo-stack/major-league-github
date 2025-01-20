@@ -39,9 +39,10 @@ jobs:
             doctl kubernetes cluster create ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }} \
               --region sfo3 \
               --size s-2vcpu-4gb \
-              --node-count 2 \
-              --surge-upgrade true \
-              --ha=false
+              --count 2 \
+              --surge-upgrade=true \
+              --ha=false \
+              --wait
             echo "✨ Cluster created successfully!"
           else
             echo "✅ Cluster already exists!"
