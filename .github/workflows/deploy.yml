@@ -35,20 +35,34 @@ jobs:
             echo "🦩 Creating new container registry..."
             doctl registry create --subscription-tier basic
             echo "✨ Registry created successfully!"
-          else
-            echo "✅ Registry already exists!"
           fi
+          
+          echo "🦩 Creating registry namespace..."
+          if ! doctl registry kubernetes-manifest | kubectl apply -f -; then
+            echo "🔄 Retrying with registry login first..."
+            doctl registry login
+            doctl registry kubernetes-manifest | kubectl apply -f -
+          fi
+          
+          echo "🦩 Configuring registry..."
+          doctl registry repository list-v2 || doctl registry repository create-v2 ${{ env.IMAGE_NAME }}
 
       - name: Log in to DO Container Registry 🔑
         run: |
           echo "🦩 Logging into DigitalOcean Container Registry..."
+          # Login with doctl
           doctl registry login --expiry-seconds 1200
           
-          # Verify login status
-          echo "✅ Verifying registry access..."
-          docker login ${{ env.REGISTRY }} \
+          # Get registry endpoint
+          REGISTRY_SERVER=$(doctl registry get --format Registry --no-header)
+          
+          # Login with docker using access token
+          echo "🦩 Configuring Docker authentication..."
+          echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login $REGISTRY_SERVER \
             --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
-            --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+            --password-stdin
+          
+          echo "✅ Registry login complete"
 
       - name: Create or update Kubernetes cluster 🌟 🦩
         run: |
