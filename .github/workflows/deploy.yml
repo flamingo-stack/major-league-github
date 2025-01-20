@@ -28,18 +28,23 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
+      - name: Create and configure registry 🏗️ 🦩
+        run: |
+          echo "🦩 Checking if registry exists..."
+          if ! doctl registry get; then
+            echo "🦩 Creating new container registry..."
+            doctl registry create --subscription-tier basic
+            echo "✨ Registry created successfully!"
+          else
+            echo "✅ Registry already exists!"
+          fi
+
       - name: Log in to DO Container Registry 🔑
         run: |
           echo "🦩 Logging into DigitalOcean Container Registry..."
           doctl registry login --expiry-seconds 1200
           
           # Verify login status
-          if ! docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:latest 2>/dev/null; then
-            echo "🔄 Retrying registry login..."
-            doctl registry login --expiry-seconds 1200
-          fi
-          
-          # Double check we can access the registry
           echo "✅ Verifying registry access..."
           docker login ${{ env.REGISTRY }} \
             --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
