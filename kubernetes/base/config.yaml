@@ -4,7 +4,7 @@ metadata:
   name: app-config
 data:
   ENVIRONMENT: ${ENVIRONMENT:-production}
-  DOMAIN_NAME: ${DOMAIN_NAME:-major-league-github.flamingo.cx}
+  DOMAIN_NAME: ${DOMAIN_NAME:-major-league-github}
   BACKEND_URL: ${BACKEND_URL:-http://backend-service:8450}
 ---
 apiVersion: v1
