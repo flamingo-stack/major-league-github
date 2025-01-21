@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: registry.digitalocean.com
-  PROJECT_NAME: major-league-github
+  PROJECT_NAME: Major League Github
   REGISTRY_NAME: major-league-github
   VERSION: v1.0.${{ github.run_number }}
   DOMAIN_NAME: major-league-github
@@ -392,21 +392,69 @@ jobs:
           helm repo add jetstack https://charts.jetstack.io
           helm repo update
           
+          # Function to retry commands
+          retry_command() {
+            local -r cmd="${1}"
+            local -r description="${2}"
+            local -r max_attempts=3
+            local -r sleep_time=30
+            
+            for ((i = 1; i <= max_attempts; i++)); do
+              echo "🦩 Attempt $i/$max_attempts: $description"
+              if eval "$cmd"; then
+                echo "✅ $description successful"
+                return 0
+              else
+                echo "⚠️ Attempt $i failed"
+                if [ $i -lt $max_attempts ]; then
+                  echo "🦩 Waiting ${sleep_time}s before retrying..."
+                  sleep $sleep_time
+                  
+                  echo "🦩 Verifying Kubernetes connection..."
+                  kubectl cluster-info
+                  
+                  echo "🦩 Refreshing Kubernetes credentials..."
+                  doctl kubernetes cluster kubeconfig save "$CLUSTER_NAME" --expiry-seconds 3600
+                fi
+              fi
+            done
+            
+            echo "❌ Error: $description failed after $max_attempts attempts"
+            return 1
+          }
+          
           echo "🦩 Installing NGINX Ingress Controller..."
-          if ! helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+          NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx --create-namespace \
             --set controller.publishService.enabled=true \
-            --wait --timeout 5m; then
+            --wait --timeout 5m"
+          
+          if ! retry_command "$NGINX_CMD" "Install NGINX Ingress Controller"; then
             echo "❌ Error: Failed to install NGINX Ingress"
+            kubectl get pods -n ingress-nginx
+            kubectl describe pods -n ingress-nginx
             exit 1
           fi
           
           echo "🦩 Installing cert-manager..."
-          if ! helm upgrade --install cert-manager jetstack/cert-manager \
+          # Delete any failed cert-manager installation if exists
+          kubectl delete --ignore-not-found=true -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.crds.yaml
+          
+          CERT_MANAGER_CMD="helm upgrade --install cert-manager jetstack/cert-manager \
             --namespace cert-manager --create-namespace \
             --set installCRDs=true \
-            --wait --timeout 5m; then
+            --wait --timeout 5m \
+            --set global.leaderElection.namespace=cert-manager"
+          
+          if ! retry_command "$CERT_MANAGER_CMD" "Install cert-manager"; then
             echo "❌ Error: Failed to install cert-manager"
+            echo "🦩 Checking cert-manager namespace status..."
+            kubectl get pods -n cert-manager
+            kubectl describe pods -n cert-manager
+            echo "🦩 Checking cert-manager CRDs..."
+            kubectl get crds | grep cert-manager
+            echo "🦩 Checking cert-manager logs..."
+            kubectl logs -n cert-manager -l app=cert-manager --tail=100
             exit 1
           fi
           
