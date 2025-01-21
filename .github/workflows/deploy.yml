@@ -387,7 +387,7 @@ jobs:
             --wait; then
             echo "❌ Error: Failed to create certificate"
             exit 1
-          fi
+          fi 
           
           echo "🦩 Installing NGINX Ingress Controller..."
           NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
