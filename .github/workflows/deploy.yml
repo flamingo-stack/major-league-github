@@ -34,11 +34,11 @@ jobs:
 
       - name: Configure Docker 🔑
         run: |
+          echo "🦩 Creating registry..."
+          doctl registry create major-league-github --subscription-tier basic --access-token ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} || true
+            
           echo "🦩 Setting up Docker config..."
           doctl registry login --expiry-seconds 1800
-          
-          echo "🦩 Creating registry..."
-          doctl registry create major-league-github --subscription-tier basic || true
           
           echo "🦩 Configuring Docker credentials..."
           doctl registry docker-config > ~/.docker/config.json
