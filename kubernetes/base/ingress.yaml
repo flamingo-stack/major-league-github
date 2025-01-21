@@ -15,10 +15,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - ${DOMAIN_NAME}
+        - "${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
       secretName: app-tls
   rules:
-    - host: ${DOMAIN_NAME}
+    - host: "${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
       http:
         paths:
           - path: /api

@@ -392,25 +392,40 @@ jobs:
           for REPO in $REPOS; do
             echo "🦩 Processing repository: $REPO"
             
-            # Get all tags except 'latest' and the current version
-            echo "🦩 Getting tags for $REPO..."
-            ALL_TAGS=$(doctl registry repository list-tags $REPO --format Tag --no-header)
+            # Get all manifests and their associated tags
+            echo "🦩 Getting manifests for $REPO..."
+            MANIFESTS=$(doctl registry repository list-manifests $REPO --format Digest,Tags,CompressedSize --no-header)
             
-            # Filter out 'latest' and current version
-            OLD_TAGS=$(echo "$ALL_TAGS" | grep -v "^latest$" | grep -v "^${VERSION}$" || true)
+            echo "🦩 Found manifests:"
+            echo "$MANIFESTS"
             
-            if [ ! -z "$OLD_TAGS" ]; then
-              echo "🦩 Found old tags to delete:"
-              echo "$OLD_TAGS"
+            # Process each manifest
+            while IFS=$'\t' read -r DIGEST TAGS SIZE; do
+              # Skip if manifest has the latest tag or current version
+              if [[ "$TAGS" == *"latest"* ]] || [[ "$TAGS" == *"$VERSION"* ]]; then
+                echo "🦩 Keeping manifest $DIGEST (has latest or current version)"
+                continue
+              fi
               
-              for TAG in $OLD_TAGS; do
+              echo "🦩 Deleting manifest: $DIGEST (Size: $SIZE)"
+              
+              # First delete all tags associated with this manifest
+              for TAG in $(echo $TAGS | tr ',' '\n'); do
                 echo "🦩 Deleting tag: $REPO:$TAG"
                 if ! doctl registry repository delete-tag $REPO $TAG --force; then
-                  echo "⚠️ Warning: Failed to delete tag $REPO:$TAG"
+                  echo "⚠️ Warning: Failed to delete tag $TAG"
                 fi
               done
-            else
-              echo "🦩 No old tags to clean up for $REPO"
+              
+              # Then delete the manifest itself
+              if ! doctl registry repository delete-manifest $REPO $DIGEST --force; then
+                echo "⚠️ Warning: Failed to delete manifest $DIGEST"
+              fi
+            done <<< "$MANIFESTS"
+            
+            echo "🦩 Running garbage collection for $REPO..."
+            if ! doctl registry garbage-collection start --force; then
+              echo "⚠️ Warning: Failed to start garbage collection"
             fi
           done
           
@@ -589,6 +604,7 @@ jobs:
         env:
           REGISTRY_URL: ${REGISTRY}/${REGISTRY_NAME}
           LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
+          DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
         run: |
           echo "🦩 Processing and applying Kubernetes configurations..."
           
