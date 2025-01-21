@@ -198,15 +198,15 @@ public class GithubService {
             try {
                 response = executeGraphQLQuery(query, language.getName(), pageCount, city);
             } catch (GithubTimeoutException th) {
-                log.warn("Timeout occurred, will reduce the return size", th);
+                log.warn("Timeout occurred, will reduce the return size");
                 numberOfUsers = Math.max(1, numberOfUsers / 3);
                 continue;
             } catch (GithubRateLimitException th) {
-                log.warn("Rate limit exceeded, switching to next token", th);
+                log.warn("Rate limit exceeded, switching to next token");
                 // it will try another token anyway as defined in @githubTokenRateManager
                 continue;
             } catch (GithubTooFastException th) {
-                log.warn("Token might be invalid or expired, or too fast", th);
+                log.warn("Token might be invalid or expired, or too fast");
                 if (maxRetries == 0) {
                     log.warn("Max retries reached, stopping loop");
                     break;

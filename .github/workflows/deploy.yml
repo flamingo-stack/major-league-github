@@ -21,8 +21,8 @@ env:
   CLUSTER_VERSION: latest
   
   # Replica counts
-  BACKEND_REPLICAS: 2
-  FRONTEND_REPLICAS: 2
+  BACKEND_REPLICAS: 1
+  FRONTEND_REPLICAS: 1
   
   # Backend resources
   BACKEND_REQUEST_MEMORY: 512Mi
@@ -384,53 +384,6 @@ jobs:
           
           echo "✅ Frontend image build and push completed"
 
-      - name: Cleanup Old Images 🧹 🦩
-        run: |
-          echo "🦩 Getting repository list..."
-          REPOS=$(doctl registry repository list-v2 --format Name --no-header)
-          
-          for REPO in $REPOS; do
-            echo "🦩 Processing repository: $REPO"
-            
-            # Get all manifests and their associated tags
-            echo "🦩 Getting manifests for $REPO..."
-            MANIFESTS=$(doctl registry repository list-manifests $REPO --format Digest,Tags,CompressedSize --no-header)
-            
-            echo "🦩 Found manifests:"
-            echo "$MANIFESTS"
-            
-            # Process each manifest
-            while IFS=$'\t' read -r DIGEST TAGS SIZE; do
-              # Skip if manifest has the latest tag or current version
-              if [[ "$TAGS" == *"latest"* ]] || [[ "$TAGS" == *"$VERSION"* ]]; then
-                echo "🦩 Keeping manifest $DIGEST (has latest or current version)"
-                continue
-              fi
-              
-              echo "🦩 Deleting manifest: $DIGEST (Size: $SIZE)"
-              
-              # First delete all tags associated with this manifest
-              for TAG in $(echo $TAGS | tr ',' '\n'); do
-                echo "🦩 Deleting tag: $REPO:$TAG"
-                if ! doctl registry repository delete-tag $REPO $TAG --force; then
-                  echo "⚠️ Warning: Failed to delete tag $TAG"
-                fi
-              done
-              
-              # Then delete the manifest itself
-              if ! doctl registry repository delete-manifest $REPO $DIGEST --force; then
-                echo "⚠️ Warning: Failed to delete manifest $DIGEST"
-              fi
-            done <<< "$MANIFESTS"
-            
-            echo "🦩 Running garbage collection for $REPO..."
-            if ! doctl registry garbage-collection start --force; then
-              echo "⚠️ Warning: Failed to start garbage collection"
-            fi
-          done
-          
-          echo "✅ Image cleanup completed"
-
       - name: Setup Kubernetes Dependencies 🎯 🦩
         run: |
           echo "🦩 Installing Helm..."
@@ -752,6 +705,76 @@ jobs:
           
           echo "✅ Deployment verification completed"
 
+      - name: Cleanup Old Images 🧹 🦩
+        run: |
+          echo "🦩 Getting repository list..."
+          REPOS="backend frontend"
+          
+          for REPO in $REPOS; do
+            echo "🦩 Processing repository: $REPO"
+            
+            # Get all manifests and their associated tags
+            echo "🦩 Getting manifests for $REPO..."
+            MANIFESTS=$(doctl registry repository list-manifests $REPO --format Digest,Tags,CompressedSize --no-header)
+            
+            echo "🦩 Found manifests:"
+            echo "$MANIFESTS"
+            
+            # Process each manifest
+            while IFS=$'\t' read -r DIGEST TAGS SIZE; do
+              # Skip if manifest has the latest tag or current version
+              if [[ "$TAGS" == *"latest"* ]] || [[ "$TAGS" == *"$VERSION"* ]]; then
+                echo "🦩 Keeping manifest $DIGEST (has latest or current version: $VERSION)"
+                continue
+              fi
+              
+              echo "🦩 Processing manifest: $DIGEST (Size: $SIZE)"
+              
+              # First delete all tags associated with this manifest
+              if [ ! -z "$TAGS" ] && [ "$TAGS" != "[]" ]; then
+                # Convert comma-separated list to array
+                IFS=',' read -ra TAG_ARRAY <<< "$TAGS"
+                for TAG in "${TAG_ARRAY[@]}"; do
+                  # Clean up the tag (remove brackets and spaces)
+                  TAG=$(echo "$TAG" | tr -d '[][:space:]')
+                  if [ ! -z "$TAG" ] && [ "$TAG" != "latest" ] && [ "$TAG" != "$VERSION" ]; then
+                    echo "🦩 Deleting tag: $REPO:$TAG"
+                    if ! doctl registry repository delete-tag $REPO $TAG --force; then
+                      echo "⚠️ Warning: Failed to delete tag $TAG"
+                    fi
+                  else
+                    echo "🦩 Skipping protected tag: $TAG"
+                  fi
+                done
+              fi
+              
+              # Check if all tags were deleted before deleting the manifest
+              REMAINING_TAGS=$(doctl registry repository list-tags $REPO --format Tag --no-header | grep "^$DIGEST" || true)
+              if [ -z "$REMAINING_TAGS" ]; then
+                echo "🦩 Deleting manifest: $DIGEST"
+                if ! doctl registry repository delete-manifest $REPO "$DIGEST" --force; then
+                  echo "⚠️ Warning: Failed to delete manifest $DIGEST"
+                fi
+              else
+                echo "🦩 Skipping manifest deletion as it still has tags: $REMAINING_TAGS"
+              fi
+            done <<< "$MANIFESTS"
+          done
+          
+          echo "🦩 Checking for active garbage collection..."
+          GC_STATUS=$(doctl registry garbage-collection get-active --format Status --no-header || echo "none")
+          
+          if [ "$GC_STATUS" == "none" ]; then
+            echo "🦩 Starting garbage collection..."
+            if ! doctl registry garbage-collection start --force; then
+              echo "⚠️ Warning: Failed to start garbage collection"
+            fi
+          else
+            echo "⚠️ Garbage collection already running, skipping..."
+          fi
+          
+          echo "✅ Image cleanup completed"
+
       - name: Create GitHub Deployment 📦 🦩
         uses: chrnorm/deployment-action@v2
         with:
@@ -777,3 +800,5 @@ jobs:
           echo "FRONTEND_LIMIT_CPU=200m" >> $GITHUB_ENV
           echo "JAVA_MAX_HEAP=768m" >> $GITHUB_ENV
           echo "JAVA_MIN_HEAP=512m" >> $GITHUB_ENV
+
+
