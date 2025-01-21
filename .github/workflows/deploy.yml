@@ -119,10 +119,11 @@ jobs:
           echo "🦩 Creating DigitalOcean Project..."
           PROJECT_ID=""
           
-          # Try to get existing project
-          if PROJECT_INFO=$(doctl projects get ${PROJECT_NAME} --format ID --no-header 2>/dev/null); then
+          # First try to list all projects and find ours (case insensitive)
+          echo "🦩 Checking for existing project..."
+          if PROJECT_INFO=$(doctl projects list --format "ID,Name" --no-header | grep -i "${PROJECT_NAME}" | awk '{print $1}'); then
             PROJECT_ID=$PROJECT_INFO
-            echo "✅ Project ${PROJECT_NAME} already exists with ID: ${PROJECT_ID}"
+            echo "✅ Found existing project with ID: ${PROJECT_ID}"
           else
             echo "🦩 Creating new project: ${PROJECT_NAME}..."
             if PROJECT_INFO=$(doctl projects create \
@@ -134,9 +135,20 @@ jobs:
               PROJECT_ID=$PROJECT_INFO
               echo "✅ Project created successfully with ID: ${PROJECT_ID}"
             else
-              echo "❌ Error: Failed to create project"
-              exit 1
+              # If creation failed, try one more time to find it (in case of race condition)
+              if PROJECT_INFO=$(doctl projects list --format "ID,Name" --no-header | grep -i "${PROJECT_NAME}" | awk '{print $1}'); then
+                PROJECT_ID=$PROJECT_INFO
+                echo "✅ Found existing project with ID: ${PROJECT_ID}"
+              else
+                echo "❌ Error: Failed to create or find project"
+                exit 1
+              fi
             fi
+          fi
+          
+          if [ -z "$PROJECT_ID" ]; then
+            echo "❌ Error: Could not determine project ID"
+            exit 1
           fi
           
           echo "🦩 Checking DigitalOcean Registry..."
