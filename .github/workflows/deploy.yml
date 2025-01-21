@@ -38,7 +38,8 @@ jobs:
           doctl registry login --expiry-seconds 1800
           
           echo "🦩 Creating registry..."
-          doctl registry create ${{ env.REGISTRY_NAME }} --subscription-tier basic || true
+          doctl registry create ${{ env.REGISTRY_NAME }} --subscription-tier basic
+          doctl registry create ${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend --subscription-tier basic
           
           echo "🦩 Creating repositories..."
           doctl registry repository create-v2 ${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend || true
