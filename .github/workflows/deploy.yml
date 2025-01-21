@@ -149,10 +149,6 @@ jobs:
               --region "${CLUSTER_REGION}" \
               --size "${CLUSTER_SIZE}" \
               --count "${CLUSTER_NODE_COUNT}" \
-              --version "${CLUSTER_VERSION}" \
-              --auto-upgrade true \
-              --maintenance-window "saturday=21:00" \
-              --ha=true \
               --tag "major-league-github" \
               --wait; then
               echo "❌ Error: Failed to create cluster ${CLUSTER_NAME}"
