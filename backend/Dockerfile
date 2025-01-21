@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jdk-alpine as build
+FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /workspace/app
 
 COPY mvnw .
@@ -11,6 +11,6 @@ RUN ./mvnw install -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 VOLUME /tmp
-COPY --from=build /workspace/app/target/*.jar app.jar
+COPY --from=builder /workspace/app/target/*.jar app.jar
 EXPOSE 8450
 ENTRYPOINT ["java","-jar","/app.jar"] 
