@@ -556,14 +556,14 @@ jobs:
         run: |
           echo "🦩 Getting LoadBalancer information..."
           
-          # Function to get LoadBalancer address
+          # Function to get LoadBalancer IP from DigitalOcean
           get_lb_address() {
-            # Get the EXTERNAL-IP directly from kubectl get service output
-            local EXTERNAL_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller --no-headers | awk '{print $3}')
+            # Get the load balancer ID by name
+            local LB_NAME="${{ env.DOMAIN_NAME }}-lb"
+            local LB_IP=$(doctl compute load-balancer list --format IP,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
             
-            # Check if we got a valid IP (not pending or none)
-            if [[ "$EXTERNAL_IP" != "<pending>" && "$EXTERNAL_IP" != "<none>" && ! -z "$EXTERNAL_IP" ]]; then
-              echo "$EXTERNAL_IP"
+            if [ ! -z "$LB_IP" ]; then
+              echo "$LB_IP"
               return 0
             fi
             
@@ -571,23 +571,23 @@ jobs:
           }
           
           # Debug information
-          echo "🦩 Current service status:"
-          kubectl -n ingress-nginx get service ingress-nginx-controller
+          echo "🦩 Current load balancers:"
+          doctl compute load-balancer list
           
-          # Try to get LoadBalancer address with timeout
+          # Try to get LoadBalancer IP with timeout
           for i in {1..30}; do
-            echo "🦩 Attempt $i/30 to get LoadBalancer address..."
+            echo "🦩 Attempt $i/30 to get LoadBalancer IP..."
             
             LB_IP=$(get_lb_address)
             if [ ! -z "$LB_IP" ]; then
-              echo "✅ Got LoadBalancer address: ${LB_IP}"
+              echo "✅ Got LoadBalancer IP: ${LB_IP}"
               break
             fi
             
             if [ $i -eq 30 ]; then
-              echo "❌ Error: Timed out waiting for LoadBalancer address"
+              echo "❌ Error: Timed out waiting for LoadBalancer IP"
               echo "🦩 Debug information:"
-              kubectl -n ingress-nginx get service
+              doctl compute load-balancer list
               exit 1
             fi
             
