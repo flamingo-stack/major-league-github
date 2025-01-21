@@ -42,6 +42,22 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
+      - name: Create or get Kubernetes cluster 🎯 🦩
+        run: |
+          echo "🦩 Checking if cluster exists..."
+          if ! doctl kubernetes cluster get ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }} &>/dev/null; then
+            echo "🦩 Cluster not found, creating new cluster..."
+            doctl kubernetes cluster create ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }} \
+              --region sfo3 \
+              --size s-2vcpu-4gb \
+              --count 2 \
+              --version latest \
+              --wait
+            echo "🦩 Cluster created successfully!"
+          else
+            echo "🦩 Cluster already exists!"
+          fi
+
       - name: Save DigitalOcean kubeconfig 💾
         run: |
           doctl kubernetes cluster kubeconfig save ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }}
