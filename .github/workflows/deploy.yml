@@ -85,13 +85,12 @@ jobs:
       - name: Configure Kubernetes registry access 🔑
         run: |
           echo "🦩 Creating registry secret in Kubernetes..."
+          kubectl delete secret github-registry --ignore-not-found
           kubectl create secret docker-registry github-registry \
-            --docker-server=ghcr.io \
+            --docker-server=${{ env.REGISTRY }} \
             --docker-username=${{ github.actor }} \
             --docker-password=${{ secrets.GITHUB_TOKEN }} \
-            --docker-email=${{ secrets.LETSENCRYPT_EMAIL }} \
-            --namespace=default \
-            -o yaml --dry-run=client | kubectl apply -f - --validate=false
+            --docker-email=${{ secrets.LETSENCRYPT_EMAIL }}
           
           echo "🦩 Patching default service account..."
           kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "github-registry"}]}'
@@ -223,9 +222,79 @@ jobs:
       - name: Update deployment file 📝 🦩
         run: |
           echo "🦩 Updating deployment configurations..."
-          TAG=${{ github.sha }}
-          sed -i 's|image: .*backend:.*|image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:'${TAG}'|' kubernetes/backend-deployment.yaml
-          sed -i 's|image: .*frontend:.*|image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:'${TAG}'|' kubernetes/frontend-deployment.yaml
+          VERSION=v1.0.${{ github.run_number }}
+          
+          # Update backend deployment
+          cat <<EOF | kubectl apply -f -
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: backend-deployment
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: backend
+            template:
+              metadata:
+                labels:
+                  app: backend
+              spec:
+                containers:
+                - name: backend
+                  image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/major-league-github-backend:${VERSION}
+                  ports:
+                  - containerPort: 8450
+                  resources:
+                    requests:
+                      memory: "2Gi"
+                      cpu: "1"
+                    limits:
+                      memory: "2560Mi"
+                      cpu: "2"
+                  env:
+                  - name: github.tokens
+                    valueFrom:
+                      secretKeyRef:
+                        name: github-tokens
+                        key: github.tokens
+                  - name: JAVA_TOOL_OPTIONS
+                    value: "-Xmx1536m -Xms768m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
+                imagePullSecrets:
+                - name: github-registry
+          EOF
+          
+          # Update frontend deployment
+          cat <<EOF | kubectl apply -f -
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: frontend-deployment
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: frontend
+            template:
+              metadata:
+                labels:
+                  app: frontend
+              spec:
+                containers:
+                - name: frontend
+                  image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/major-league-github-frontend:${VERSION}
+                  ports:
+                  - containerPort: 80
+                  resources:
+                    requests:
+                      memory: "256Mi"
+                      cpu: "200m"
+                    limits:
+                      memory: "512Mi"
+                      cpu: "500m"
+                imagePullSecrets:
+                - name: github-registry
+          EOF
 
       - name: Create GitHub Tokens Secret 🔐 🦩
         run: |
