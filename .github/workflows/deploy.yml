@@ -109,43 +109,51 @@ jobs:
 
       - name: Setup DigitalOcean Infrastructure 🏗️
         run: |
+          echo "🦩 Validating DigitalOcean credentials..."
+          if ! doctl account get > /dev/null 2>&1; then
+            echo "❌ Error: Invalid DigitalOcean credentials"
+            exit 1
+          fi
+          
           echo "🦩 Checking DigitalOcean Registry..."
-          if ! doctl registry get ${REGISTRY_NAME} 2>/dev/null; then
-            echo "🦩 Creating DigitalOcean Registry: ${REGISTRY_NAME}..."
-            if ! doctl registry create ${REGISTRY_NAME} \
+          if ! doctl registry get > /dev/null 2>&1; then
+            echo "🦩 Creating DigitalOcean Registry..."
+            if ! doctl registry create \
               --subscription-tier basic \
-              --region ${CLUSTER_REGION}; then
-              echo "❌ Error: Failed to create registry ${REGISTRY_NAME}"
+              --region ${CLUSTER_REGION} \
+              --wait; then
+              echo "❌ Error: Failed to create registry"
               exit 1
             fi
             
             echo "🦩 Configuring registry garbage collection..."
-            if ! doctl registry garbage-collection configure ${REGISTRY_NAME} \
+            if ! doctl registry garbage-collection configure \
               --include-untagged-manifests \
               --exclude-tags latest \
               --keep-tags 5 \
               --schedule "0 0 * * 6" \
-              --include-all-repositories; then
+              --include-all-repositories \
+              --wait; then
               echo "⚠️ Warning: Failed to configure garbage collection"
             fi
             
             echo "✅ Registry created and configured successfully"
           else
-            echo "✅ Registry ${REGISTRY_NAME} already exists"
+            echo "✅ Registry already exists"
           fi
           
           echo "🦩 Checking Kubernetes cluster..."
-          if ! doctl kubernetes cluster get "${CLUSTER_NAME}" 2>/dev/null; then
+          if ! doctl kubernetes cluster get "${CLUSTER_NAME}" > /dev/null 2>&1; then
             echo "🦩 Creating Kubernetes cluster: ${CLUSTER_NAME}..."
             if ! doctl kubernetes cluster create "${CLUSTER_NAME}" \
-              --region ${CLUSTER_REGION} \
-              --size ${CLUSTER_SIZE} \
-              --count ${CLUSTER_NODE_COUNT} \
-              --version ${CLUSTER_VERSION} \
+              --region "${CLUSTER_REGION}" \
+              --size "${CLUSTER_SIZE}" \
+              --count "${CLUSTER_NODE_COUNT}" \
+              --version "${CLUSTER_VERSION}" \
               --auto-upgrade true \
               --maintenance-window "saturday=21:00" \
               --ha=true \
-              --tag major-league-github \
+              --tag "major-league-github" \
               --wait; then
               echo "❌ Error: Failed to create cluster ${CLUSTER_NAME}"
               exit 1
@@ -155,7 +163,8 @@ jobs:
             if ! doctl kubernetes cluster node-pool update "${CLUSTER_NAME}" default \
               --auto-scale \
               --min-nodes 2 \
-              --max-nodes 4; then
+              --max-nodes 4 \
+              --wait; then
               echo "⚠️ Warning: Failed to configure auto-scaling"
             fi
             
