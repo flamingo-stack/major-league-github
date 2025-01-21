@@ -93,12 +93,26 @@ jobs:
           helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx --create-namespace \
             --set controller.publishService.enabled=true
+          
+          echo "🦩 Waiting for NGINX Ingress pods to be ready..."
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=120s
 
       - name: Install cert-manager 🔒 🦩
         run: |
           echo "🦩 Setting up cert-manager..."
           helm repo add jetstack https://charts.jetstack.io
           helm repo update
+          
+          # Check if there's any Helm operation in progress
+          echo "🦩 Checking for ongoing Helm operations..."
+          while helm list --pending -A | grep -q "pending"; do
+            echo "🦩 Waiting for other Helm operations to complete..."
+            sleep 10
+          done
+          
           helm upgrade --install cert-manager jetstack/cert-manager \
             --namespace cert-manager --create-namespace \
             --set installCRDs=true
