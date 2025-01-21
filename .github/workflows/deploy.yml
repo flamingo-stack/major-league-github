@@ -387,7 +387,7 @@ jobs:
       - name: Cleanup Old Images 🧹 🦩
         run: |
           echo "🦩 Getting repository list..."
-          REPOS=$(doctl registry repository list --format Repository --no-header)
+          REPOS=$(doctl registry repository list-v2 --format Name --no-header)
           
           for REPO in $REPOS; do
             echo "🦩 Processing repository: $REPO"
