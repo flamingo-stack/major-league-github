@@ -176,48 +176,40 @@ jobs:
 
           echo "🦩 Managing DNS records..."
           
-          # Function to check if record exists
-          record_exists() {
+          # Function to check if record exists and get its ID
+          get_record_id() {
             local record_type=$1
             local record_name=$2
-            doctl compute domain records list ${{ env.URL_SUFFIX }} --format ID,Type,Name --no-header | grep -i "^[0-9]* *${record_type} *${record_name}$" > /dev/null
+            doctl compute domain records list ${{ env.URL_SUFFIX }} --format ID,Type,Name --no-header | grep -i "^[0-9]* *${record_type} *${record_name}$" | awk '{print $1}'
           }
 
           # Handle A record for subdomain
-          if record_exists "A" "${{ env.URL_PREFIX }}"; then
-            echo "🦩 A record exists, getting ID..."
-            A_RECORD_ID=$(doctl compute domain records list ${{ env.URL_SUFFIX }} --format ID,Type,Name --no-header | grep -i "^[0-9]* *A *${{ env.URL_PREFIX }}$" | awk '{print $1}')
-            echo "🦩 Found A record ID: ${A_RECORD_ID}"
-            echo "🦩 Executing command: doctl compute domain records update ${{ env.URL_SUFFIX }} ${A_RECORD_ID} --record-type A --record-name \"${{ env.URL_PREFIX }}\" --record-data \"${LB_IP}\""
-            doctl compute domain records update ${{ env.URL_SUFFIX }} $A_RECORD_ID \
-              --record-type A \
-              --record-name "${{ env.URL_PREFIX }}" \
-              --record-data "${LB_IP}"
-          else
-            echo "🦩 Creating new A record..."
-            echo "🦩 Executing command: doctl compute domain records create ${{ env.URL_SUFFIX }} --record-type A --record-name \"${{ env.URL_PREFIX }}\" --record-data \"${LB_IP}\""
-            doctl compute domain records create ${{ env.URL_SUFFIX }} \
-              --record-type A \
-              --record-name "${{ env.URL_PREFIX }}" \
-              --record-data "${LB_IP}"
+          A_RECORD_ID=$(get_record_id "A" "${{ env.URL_PREFIX }}")
+          if [ ! -z "$A_RECORD_ID" ]; then
+            echo "🦩 A record exists with ID: ${A_RECORD_ID}"
+            echo "🦩 Deleting old A record..."
+            doctl compute domain records delete ${{ env.URL_SUFFIX }} $A_RECORD_ID --force
           fi
+          
+          echo "🦩 Creating new A record..."
+          doctl compute domain records create ${{ env.URL_SUFFIX }} \
+            --record-type A \
+            --record-name "${{ env.URL_PREFIX }}" \
+            --record-data "${LB_IP}"
 
           # Handle CNAME record for www subdomain
-          if record_exists "CNAME" "www.${{ env.URL_PREFIX }}"; then
-            echo "🦩 CNAME record exists, getting ID..."
-            CNAME_RECORD_ID=$(doctl compute domain records list ${{ env.URL_SUFFIX }} --format ID,Type,Name --no-header | grep -i "^[0-9]* *CNAME *www.${{ env.URL_PREFIX }}$" | awk '{print $1}')
-            echo "🦩 Updating CNAME record..."
-            doctl compute domain records update ${{ env.URL_SUFFIX }} $CNAME_RECORD_ID \
-              --record-type CNAME \
-              --record-name "www.${{ env.URL_PREFIX }}" \
-              --record-data "${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}."
-          else
-            echo "🦩 Creating new CNAME record..."
-            doctl compute domain records create ${{ env.URL_SUFFIX }} \
-              --record-type CNAME \
-              --record-name "www.${{ env.URL_PREFIX }}" \
-              --record-data "${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}."
+          CNAME_RECORD_ID=$(get_record_id "CNAME" "www.${{ env.URL_PREFIX }}")
+          if [ ! -z "$CNAME_RECORD_ID" ]; then
+            echo "🦩 CNAME record exists with ID: ${CNAME_RECORD_ID}"
+            echo "🦩 Deleting old CNAME record..."
+            doctl compute domain records delete ${{ env.URL_SUFFIX }} $CNAME_RECORD_ID --force
           fi
+          
+          echo "🦩 Creating new CNAME record..."
+          doctl compute domain records create ${{ env.URL_SUFFIX }} \
+            --record-type CNAME \
+            --record-name "www.${{ env.URL_PREFIX }}" \
+            --record-data "${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}."
 
       - name: Update deployment file 📝 🦩
         run: |
