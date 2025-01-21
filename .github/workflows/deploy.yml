@@ -115,6 +115,23 @@ jobs:
             exit 1
           fi
           
+          echo "🦩 Creating DigitalOcean Project..."
+          PROJECT_NAME="major-league-github"
+          if ! doctl projects get ${PROJECT_NAME} > /dev/null 2>&1; then
+            echo "🦩 Creating new project: ${PROJECT_NAME}..."
+            if ! doctl projects create \
+              --name "${PROJECT_NAME}" \
+              --purpose "Production" \
+              --environment "Production" \
+              --description "Major League GitHub Infrastructure" > /dev/null; then
+              echo "❌ Error: Failed to create project"
+              exit 1
+            fi
+            echo "✅ Project created successfully"
+          else
+            echo "✅ Project ${PROJECT_NAME} already exists"
+          fi
+          
           echo "🦩 Checking DigitalOcean Registry..."
           if ! doctl registry get > /dev/null 2>&1; then
             echo "🦩 Creating DigitalOcean Registry..."
@@ -149,7 +166,7 @@ jobs:
               --region "${CLUSTER_REGION}" \
               --size "${CLUSTER_SIZE}" \
               --count "${CLUSTER_NODE_COUNT}" \
-              --tag "major-league-github" \
+              --tag "${CLUSTER_NAME}" \
               --wait; then
               echo "❌ Error: Failed to create cluster ${CLUSTER_NAME}"
               exit 1
@@ -169,14 +186,31 @@ jobs:
             echo "✅ Cluster ${CLUSTER_NAME} already exists"
           fi
           
+          echo "🦩 Attaching resources to project..."
+          # Get the project ID
+          PROJECT_ID=$(doctl projects get ${PROJECT_NAME} --format ID --no-header)
+          
+          # Get the Kubernetes cluster URN
+          CLUSTER_URN=$(doctl kubernetes cluster get "${CLUSTER_NAME}" --format URN --no-header)
+          
+          # Attach resources to the project
+          if ! doctl projects resources assign ${PROJECT_ID} --resource "${CLUSTER_URN}"; then
+            echo "⚠️ Warning: Failed to attach Kubernetes cluster to project"
+          fi
+          
           echo "🦩 Verifying infrastructure..."
-          if ! doctl registry get ${REGISTRY_NAME} >/dev/null 2>&1; then
+          if ! doctl registry get > /dev/null 2>&1; then
             echo "❌ Error: Registry verification failed"
             exit 1
           fi
           
-          if ! doctl kubernetes cluster get "${CLUSTER_NAME}" >/dev/null 2>&1; then
+          if ! doctl kubernetes cluster get "${CLUSTER_NAME}" > /dev/null 2>&1; then
             echo "❌ Error: Cluster verification failed"
+            exit 1
+          fi
+          
+          if ! doctl projects get ${PROJECT_NAME} > /dev/null 2>&1; then
+            echo "❌ Error: Project verification failed"
             exit 1
           fi
           

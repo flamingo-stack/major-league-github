@@ -23,16 +23,10 @@ spec:
         - name: registry-credentials
       containers:
         - name: frontend
-          image: ${REGISTRY_URL}/major-league-github-frontend:${VERSION}
-          imagePullPolicy: Always
+          image: ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}
           ports:
-            - name: http
-              containerPort: 80
-          envFrom:
-            - configMapRef:
-                name: app-config
-            - configMapRef:
-                name: frontend-config
+            - containerPort: 80
+              name: http
           resources:
             requests:
               memory: ${FRONTEND_REQUEST_MEMORY}
@@ -45,17 +39,18 @@ spec:
               path: /
               port: http
             initialDelaySeconds: 30
-            periodSeconds: 15
             timeoutSeconds: 5
-            failureThreshold: 3
+            periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /
               port: http
             initialDelaySeconds: 15
-            periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 3
+            periodSeconds: 10
+          envFrom:
+            - configMapRef:
+                name: app-config
 ---
 apiVersion: v1
 kind: Service

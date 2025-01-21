@@ -25,7 +25,7 @@ spec:
         - name: registry-credentials
       containers:
         - name: backend
-          image: ${REGISTRY_URL}/major-league-github-backend:${VERSION}
+          image: ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}
           imagePullPolicy: Always
           ports:
             - name: http
