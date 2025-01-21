@@ -378,37 +378,6 @@ jobs:
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo update
           
-          # Function to retry commands
-          retry_command() {
-            local -r cmd="${1}"
-            local -r description="${2}"
-            local -r max_attempts=3
-            local -r sleep_time=30
-            
-            for ((i = 1; i <= max_attempts; i++)); do
-              echo "🦩 Attempt $i/$max_attempts: $description"
-              if eval "$cmd"; then
-                echo "✅ $description successful"
-                return 0
-              else
-                echo "⚠️ Attempt $i failed"
-                if [ $i -lt $max_attempts ]; then
-                  echo "🦩 Waiting ${sleep_time}s before retrying..."
-                  sleep $sleep_time
-                  
-                  echo "🦩 Verifying Kubernetes connection..."
-                  kubectl cluster-info
-                  
-                  echo "🦩 Refreshing Kubernetes credentials..."
-                  doctl kubernetes cluster kubeconfig save "$CLUSTER_NAME" --expiry-seconds 3600
-                fi
-              fi
-            done
-            
-            echo "❌ Error: $description failed after $max_attempts attempts"
-            return 1
-          }
-          
           echo "🦩 Installing NGINX Ingress Controller..."
           NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx --create-namespace \
@@ -418,14 +387,13 @@ jobs:
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-enable-proxy-protocol\"=true \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${DOMAIN_NAME}.${DOMAIN_SUFFIX}\" \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-redirect-http-to-https\"=true \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=tcp \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-passthrough\"=true \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=https \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports\"=443 \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-size-unit\"=1 \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-size-unit-type\"=basic \
-            --set admissionWebhooks.enabled=false \
             --wait --timeout 5m"
           
-          if ! retry_command "$NGINX_CMD" "Install NGINX Ingress Controller"; then
+          if ! eval "$NGINX_CMD"; then
             echo "❌ Error: Failed to install NGINX Ingress"
             kubectl get pods -n ingress-nginx
             kubectl describe pods -n ingress-nginx
