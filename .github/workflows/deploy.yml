@@ -35,7 +35,10 @@ jobs:
       - name: Configure Docker 🔑
         run: |
           echo "🦩 Setting up Docker config..."
-          doctl registry login -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --registry ${{ env.REGISTRY_NAME }}
+          doctl registry login --expiry-seconds 1800
+          
+          # Create registry if it doesn't exist
+          doctl registry create ${{ env.REGISTRY_NAME }} || true
           
           # Verify registry access
           doctl registry repository list-v2
