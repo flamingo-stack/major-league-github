@@ -118,38 +118,34 @@ jobs:
           
           echo "🦩 Creating DigitalOcean Project..."
           PROJECT_ID=""
+          PROJECT_NAME_CLEAN="major-league-github"  # Clean name without spaces
           
-          # First try to list all projects and find ours (case insensitive)
+          # First try to list all projects and find ours
           echo "🦩 Checking for existing project..."
-          if PROJECT_INFO=$(doctl projects list --format "ID,Name" --no-header | grep -i "${PROJECT_NAME}" | awk '{print $1}'); then
-            PROJECT_ID=$PROJECT_INFO
+          if PROJECT_ID=$(doctl projects list --format ID,Name --no-header | grep -i "${PROJECT_NAME_CLEAN}" | awk '{print $1}') && [ ! -z "$PROJECT_ID" ]; then
             echo "✅ Found existing project with ID: ${PROJECT_ID}"
           else
-            echo "🦩 Creating new project: ${PROJECT_NAME}..."
-            if PROJECT_INFO=$(doctl projects create \
-              --name "${PROJECT_NAME}" \
+            echo "🦩 Creating new project: ${PROJECT_NAME_CLEAN}..."
+            if PROJECT_ID=$(doctl projects create \
+              --name "${PROJECT_NAME_CLEAN}" \
               --purpose "Production" \
               --environment "Production" \
               --description "Major League GitHub Infrastructure" \
               --format ID --no-header); then
-              PROJECT_ID=$PROJECT_INFO
               echo "✅ Project created successfully with ID: ${PROJECT_ID}"
             else
-              # If creation failed, try one more time to find it (in case of race condition)
-              if PROJECT_INFO=$(doctl projects list --format "ID,Name" --no-header | grep -i "${PROJECT_NAME}" | awk '{print $1}'); then
-                PROJECT_ID=$PROJECT_INFO
-                echo "✅ Found existing project with ID: ${PROJECT_ID}"
-              else
-                echo "❌ Error: Failed to create or find project"
-                exit 1
-              fi
+              echo "❌ Error: Failed to create project"
+              exit 1
             fi
           fi
           
-          if [ -z "$PROJECT_ID" ]; then
-            echo "❌ Error: Could not determine project ID"
+          # Double check we have a valid project ID
+          if [ -z "$PROJECT_ID" ] || ! doctl projects get "$PROJECT_ID" > /dev/null 2>&1; then
+            echo "❌ Error: Invalid project ID: ${PROJECT_ID}"
             exit 1
           fi
+          
+          echo "🦩 Project ID confirmed: ${PROJECT_ID}"
           
           echo "🦩 Checking DigitalOcean Registry..."
           if ! doctl registry get > /dev/null 2>&1; then
