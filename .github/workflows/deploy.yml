@@ -384,6 +384,38 @@ jobs:
           
           echo "✅ Frontend image build and push completed"
 
+      - name: Cleanup Old Images 🧹 🦩
+        run: |
+          echo "🦩 Getting repository list..."
+          REPOS=$(doctl registry repository list --format Repository --no-header)
+          
+          for REPO in $REPOS; do
+            echo "🦩 Processing repository: $REPO"
+            
+            # Get all tags except 'latest' and the current version
+            echo "🦩 Getting tags for $REPO..."
+            ALL_TAGS=$(doctl registry repository list-tags $REPO --format Tag --no-header)
+            
+            # Filter out 'latest' and current version
+            OLD_TAGS=$(echo "$ALL_TAGS" | grep -v "^latest$" | grep -v "^${VERSION}$" || true)
+            
+            if [ ! -z "$OLD_TAGS" ]; then
+              echo "🦩 Found old tags to delete:"
+              echo "$OLD_TAGS"
+              
+              for TAG in $OLD_TAGS; do
+                echo "🦩 Deleting tag: $REPO:$TAG"
+                if ! doctl registry repository delete-tag $REPO $TAG --force; then
+                  echo "⚠️ Warning: Failed to delete tag $REPO:$TAG"
+                fi
+              done
+            else
+              echo "🦩 No old tags to clean up for $REPO"
+            fi
+          done
+          
+          echo "✅ Image cleanup completed"
+
       - name: Setup Kubernetes Dependencies 🎯 🦩
         run: |
           echo "🦩 Installing Helm..."
@@ -636,13 +668,32 @@ jobs:
             exit 1
           fi
           
-          echo "🦩 Updating DNS A record..."
+          echo "🦩 Finding existing DNS records..."
+          EXISTING_RECORDS=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_NAME }}" || true)
+          
+          if [ ! -z "$EXISTING_RECORDS" ]; then
+            echo "🦩 Found existing records to delete:"
+            echo "$EXISTING_RECORDS"
+            
+            echo "🦩 Deleting existing records..."
+            while IFS= read -r record; do
+              RECORD_ID=$(echo $record | awk '{print $1}')
+              echo "🦩 Deleting record ID: $RECORD_ID"
+              if ! doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force; then
+                echo "⚠️ Warning: Failed to delete record $RECORD_ID"
+              fi
+            done <<< "$EXISTING_RECORDS"
+          else
+            echo "🦩 No existing records found"
+          fi
+          
+          echo "🦩 Creating new DNS A record..."
           if ! doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
             --record-type A \
             --record-name "${{ env.DOMAIN_NAME }}" \
             --record-data "${LB_IP}" \
             --record-ttl 300; then
-            echo "❌ Error: Failed to update DNS record"
+            echo "❌ Error: Failed to create DNS record"
             exit 1
           fi
           
