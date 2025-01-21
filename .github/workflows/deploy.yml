@@ -32,27 +32,27 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Log in to DigitalOcean Container Registry 🔑
-        run: doctl registry login
-
-      - name: Build backend image 🏗️ 🦩
+      - name: Log in to registry 🔑
+        run: |
+          doctl registry login --expiry-seconds 1200
+          doctl registry get
+          
+      - name: Build and push backend image 🏗️ 🦩
         env:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building backend image..."
-          docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/backend:${VERSION} ./backend
+          docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/backend:${VERSION} -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/backend:latest ./backend
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/backend:${VERSION}
-          docker tag registry.digitalocean.com/${{ env.REGISTRY_NAME }}/backend:${VERSION} registry.digitalocean.com/${{ env.REGISTRY_NAME }}/backend:latest
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/backend:latest
 
-      - name: Build frontend image 🎨 🦩
+      - name: Build and push frontend image 🎨 🦩
         env:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building frontend image..."
-          docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/frontend:${VERSION} ./frontend
+          docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/frontend:${VERSION} -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/frontend:latest ./frontend
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/frontend:${VERSION}
-          docker tag registry.digitalocean.com/${{ env.REGISTRY_NAME }}/frontend:${VERSION} registry.digitalocean.com/${{ env.REGISTRY_NAME }}/frontend:latest
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/frontend:latest
 
       - name: Configure Kubernetes registry access 🔑
