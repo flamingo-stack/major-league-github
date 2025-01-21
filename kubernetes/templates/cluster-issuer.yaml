@@ -9,10 +9,7 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
-    - selector:
-        dnsZones:
-          - ${DOMAIN_SUFFIX}
-      http01:
+    - http01:
         ingress:
           class: nginx
           podTemplate:
