@@ -148,41 +148,41 @@ jobs:
           record_exists() {
             local record_type=$1
             local record_name=$2
-            doctl compute domain records list ${{ secrets.URL_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *${record_type} *${record_name}$" > /dev/null
+            doctl compute domain records list ${{ secrets.URL_SUFFIX }} --format ID,Type,Name --no-header | grep -i "^[0-9]* *${record_type} *${record_name}$" > /dev/null
           }
 
           # Handle A record for subdomain
-          if record_exists "A" "${{ env.URL_PREFIX }}"; then
+          if record_exists "A" "${{ secrets.URL_PREFIX }}"; then
             echo "🦩 A record exists, getting ID..."
-            A_RECORD_ID=$(doctl compute domain records list ${{ secrets.URL_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.URL_PREFIX }}$" | awk '{print $1}')
+            A_RECORD_ID=$(doctl compute domain records list ${{ secrets.URL_SUFFIX }} --format ID,Type,Name --no-header | grep -i "^[0-9]* *A *${{ secrets.URL_PREFIX }}$" | awk '{print $1}')
             echo "🦩 Updating A record..."
             doctl compute domain records update ${{ secrets.URL_SUFFIX }} $A_RECORD_ID \
               --record-type A \
-              --record-name "${{ env.URL_PREFIX }}" \
+              --record-name "${{ secrets.URL_PREFIX }}" \
               --record-data "${LB_IP}"
           else
             echo "🦩 Creating new A record..."
             doctl compute domain records create ${{ secrets.URL_SUFFIX }} \
               --record-type A \
-              --record-name "${{ env.URL_PREFIX }}" \
+              --record-name "${{ secrets.URL_PREFIX }}" \
               --record-data "${LB_IP}"
           fi
 
           # Handle CNAME record for www subdomain
-          if record_exists "CNAME" "www.${{ env.URL_PREFIX }}"; then
+          if record_exists "CNAME" "www.${{ secrets.URL_PREFIX }}"; then
             echo "🦩 CNAME record exists, getting ID..."
-            CNAME_RECORD_ID=$(doctl compute domain records list ${{ secrets.URL_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.URL_PREFIX }}$" | awk '{print $1}')
+            CNAME_RECORD_ID=$(doctl compute domain records list ${{ secrets.URL_SUFFIX }} --format ID,Type,Name --no-header | grep -i "^[0-9]* *CNAME *www.${{ secrets.URL_PREFIX }}$" | awk '{print $1}')
             echo "🦩 Updating CNAME record..."
             doctl compute domain records update ${{ secrets.URL_SUFFIX }} $CNAME_RECORD_ID \
               --record-type CNAME \
-              --record-name "www.${{ env.URL_PREFIX }}" \
-              --record-data "${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}."
+              --record-name "www.${{ secrets.URL_PREFIX }}" \
+              --record-data "${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}."
           else
             echo "🦩 Creating new CNAME record..."
             doctl compute domain records create ${{ secrets.URL_SUFFIX }} \
               --record-type CNAME \
-              --record-name "www.${{ env.URL_PREFIX }}" \
-              --record-data "${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}."
+              --record-name "www.${{ secrets.URL_PREFIX }}" \
+              --record-data "${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}."
           fi
 
       - name: Update deployment file 📝 🦩
@@ -217,8 +217,8 @@ jobs:
           spec:
             secretName: ${{ secrets.IMAGE_NAME }}-tls
             dnsNames:
-            - ${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
-            - www.${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
+            - ${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
+            - www.${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
             issuerRef:
               name: letsencrypt-prod
               kind: ClusterIssuer
@@ -241,11 +241,11 @@ jobs:
           spec:
             tls:
             - hosts:
-              - ${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
-              - www.${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
+              - ${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
+              - www.${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
               secretName: ${{ secrets.IMAGE_NAME }}-tls
             rules:
-            - host: ${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
+            - host: ${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
               http:
                 paths:
                 - path: /
@@ -255,7 +255,7 @@ jobs:
                       name: frontend-service
                       port:
                         number: 80
-            - host: www.${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
+            - host: www.${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
               http:
                 paths:
                 - path: /
