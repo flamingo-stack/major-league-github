@@ -38,13 +38,7 @@ jobs:
           doctl registry login --expiry-seconds 1800
           
           echo "🦩 Creating registry..."
-          doctl registry create ${{ env.REGISTRY_NAME }} --subscription-tier basic || true
-          doctl registry create ${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend --subscription-tier basic || true
-          doctl registry create ${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend --subscription-tier basic || true
-          
-          echo "🦩 Creating repositories..."
-          doctl registry repository create-v2 ${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend || true
-          doctl registry repository create-v2 ${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend || true
+          doctl registry create major-league-github --subscription-tier basic || true
           
           echo "🦩 Configuring Docker credentials..."
           doctl registry docker-config > ~/.docker/config.json
@@ -52,24 +46,24 @@ jobs:
       - name: Build and push backend image 🏗️ 🦩
         run: |
           echo "🦩 Building backend image..."
-          docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest ./backend
+          docker build -t registry.digitalocean.com/major-league-github/test-backend:latest ./backend
           
           echo "🦩 Pushing backend image..."
-          docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest
+          docker push registry.digitalocean.com/major-league-github/test-backend:latest
           
           echo "🦩 Tagging version..."
-          docker tag registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:v1.0.${{ github.run_number }}
+          docker tag registry.digitalocean.com/major-league-github/test-backend:latest registry.digitalocean.com/registry.digitalocean.com/test-backend:v1.0.${{ github.run_number }}
           
           echo "🦩 Pushing version tag..."
-          docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:v1.0.${{ github.run_number }}
+          docker push registry.digitalocean.com/major-league-github/test-backend:v1.0.${{ github.run_number }}
 
       - name: Build and push frontend image 🎨 🦩
         run: |
           echo "🦩 Building frontend image..."
-          docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest ./frontend --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          docker tag registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:v1.0.${{ github.run_number }} --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:v1.0.${{ github.run_number }} --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          docker build -t registry.digitalocean.com/registry.digitalocean.com/test-frontend:latest ./frontend --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          docker push registry.digitalocean.com/registry.digitalocean.com/test-frontend:latest --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          docker tag registry.digitalocean.com/registry.digitalocean.com/test-frontend:latest registry.digitalocean.com/registry.digitalocean.com/test-frontend:v1.0.${{ github.run_number }} --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          docker push registry.digitalocean.com/registry.digitalocean.com/test-frontend:v1.0.${{ github.run_number }} --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Configure Kubernetes registry access 🔑
         run: |
@@ -219,7 +213,7 @@ jobs:
               spec:
                 containers:
                 - name: backend
-                  image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:${VERSION}
+                  image: ${{ env.REGISTRY }}/registry.digitalocean.com/backend:${VERSION}
                   ports:
                   - containerPort: 8450
                   resources:
@@ -259,7 +253,7 @@ jobs:
               spec:
                 containers:
                 - name: frontend
-                  image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:${VERSION}
+                  image: ${{ env.REGISTRY }}/registry.digitalocean.com/frontend:${VERSION}
                   ports:
                   - containerPort: 80
                   resources:
@@ -293,10 +287,10 @@ jobs:
           apiVersion: cert-manager.io/v1
           kind: Certificate
           metadata:
-            name: ${{ secrets.IMAGE_NAME }}-tls
+            name: test-tls
             namespace: default
           spec:
-            secretName: ${{ secrets.IMAGE_NAME }}-tls
+            secretName: test-tls
             dnsNames:
             - ${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
             - www.${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
@@ -324,7 +318,7 @@ jobs:
             - hosts:
               - ${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
               - www.${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
-              secretName: ${{ secrets.IMAGE_NAME }}-tls
+              secretName: test-tls
             rules:
             - host: ${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
               http:
