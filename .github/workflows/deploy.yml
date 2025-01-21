@@ -391,6 +391,7 @@ jobs:
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-http-ports\"=80 \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports\"=443 \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-disable-lets-encrypt-dns-records\"=false \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-certificate-name\"=\"${DOMAIN_NAME}.${DOMAIN_SUFFIX}\" \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-size-unit\"=1 \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-size-unit-type\"=basic \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-healthcheck-protocol\"=http \
