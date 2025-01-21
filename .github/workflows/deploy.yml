@@ -7,9 +7,10 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  APP_URL: https://${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
   URL_SUFFIX: "flaming.cx"
   URL_PREFIX: "major-league-github"
+  APP_URL: https://${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
+  
 
 jobs:
   build-and-deploy:
