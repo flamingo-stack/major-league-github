@@ -32,22 +32,38 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Log in to registry 🔑
+      - name: Reset and configure Docker 🔑
         run: |
-          # Get registry auth token
-          REGISTRY_TOKEN=$(doctl registry docker-config --access-token ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | grep -o '"auth":"[^"]*"' | cut -d'"' -f4 | base64 -d | cut -d':' -f2)
+          echo "🦩 Resetting Docker configuration..."
+          rm -rf ~/.docker
+          mkdir -p ~/.docker
           
-          # Login using the token
-          echo $REGISTRY_TOKEN | docker login registry.digitalocean.com \
+          echo "🦩 Logging out of any existing sessions..."
+          docker logout
+          
+          echo "🦩 Configuring Docker credentials..."
+          doctl registry login --expiry-seconds 600
+          
+          echo "🦩 Verifying Docker config..."
+          cat ~/.docker/config.json
+          
+          echo "🦩 Testing Docker login..."
+          docker login registry.digitalocean.com \
             --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
-            --password-stdin
+            --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Build and push backend image 🏗️ 🦩
         run: |
           echo "🦩 Building backend image..."
           docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest ./backend
+          
+          echo "🦩 Pushing backend image..."
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest
+          
+          echo "🦩 Tagging version..."
           docker tag registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:v1.0.${{ github.run_number }}
+          
+          echo "🦩 Pushing version tag..."
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:v1.0.${{ github.run_number }}
 
       - name: Build and push frontend image 🎨 🦩
