@@ -8,7 +8,6 @@ on:
 env:
   REGISTRY: ghcr.io
   APP_URL: https://${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
-  URL_PREFIX: ${{ secrets.URL_PREFIX }}
 
 jobs:
   build-and-deploy:
@@ -27,12 +26,11 @@ jobs:
       - name: Set registry name 🏷️
         run: |
           echo "REGISTRY_NAME=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          echo "IMAGE_NAME=${{ secrets.DIGITALOCEAN_CLUSTER_NAME }}" >> $GITHUB_ENV
 
       - name: Log in to GitHub Container Registry 🔑
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -50,20 +48,20 @@ jobs:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building backend image..."
-          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-backend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-backend:latest ./backend
+          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest ./backend
           echo "🦩 Pushing backend image..."
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-backend:${VERSION}
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-backend:latest
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:${VERSION}
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest
 
       - name: Build and push frontend image 🎨 🦩
         env:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building frontend image..."
-          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-frontend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-frontend:latest ./frontend
+          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest ./frontend
           echo "🦩 Pushing frontend image..."
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-frontend:${VERSION}
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-frontend:latest
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:${VERSION}
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest
 
       - name: Configure Kubernetes registry access 🔑
         run: |
@@ -191,8 +189,8 @@ jobs:
         run: |
           echo "🦩 Updating deployment configurations..."
           TAG=${{ github.sha }}
-          sed -i 's|image: .*backend:.*|image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-backend:'${TAG}'|' kubernetes/backend-deployment.yaml
-          sed -i 's|image: .*frontend:.*|image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}-frontend:'${TAG}'|' kubernetes/frontend-deployment.yaml
+          sed -i 's|image: .*backend:.*|image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:'${TAG}'|' kubernetes/backend-deployment.yaml
+          sed -i 's|image: .*frontend:.*|image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:'${TAG}'|' kubernetes/frontend-deployment.yaml
 
       - name: Create GitHub Tokens Secret 🔐 🦩
         run: |
@@ -214,10 +212,10 @@ jobs:
           apiVersion: cert-manager.io/v1
           kind: Certificate
           metadata:
-            name: ${{ env.IMAGE_NAME }}-tls
+            name: ${{ secrets.IMAGE_NAME }}-tls
             namespace: default
           spec:
-            secretName: ${{ env.IMAGE_NAME }}-tls
+            secretName: ${{ secrets.IMAGE_NAME }}-tls
             dnsNames:
             - ${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
             - www.${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
@@ -245,7 +243,7 @@ jobs:
             - hosts:
               - ${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
               - www.${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
-              secretName: ${{ env.IMAGE_NAME }}-tls
+              secretName: ${{ secrets.IMAGE_NAME }}-tls
             rules:
             - host: ${{ env.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
               http:
