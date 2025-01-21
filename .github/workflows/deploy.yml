@@ -533,17 +533,23 @@ jobs:
           # Create a temporary file for the tokens
           echo "${{ secrets.GH_API_TOKENS }}" > github_tokens.txt
           
+          # Delete existing secret if it exists
+          kubectl delete secret app-secrets --namespace=${REGISTRY_NAME} --ignore-not-found=true
+          
+          # Create the secret with the correct key
           if ! kubectl create secret generic app-secrets \
             --namespace=${REGISTRY_NAME} \
-            --from-file=github.tokens=github_tokens.txt \
-            --dry-run=client -o yaml | kubectl apply -f -; then
+            --from-literal=github.tokens="${{ secrets.GH_API_TOKENS }}"; then
             echo "❌ Error: Failed to create application secrets"
-            rm -f github_tokens.txt
             exit 1
           fi
           
-          # Clean up the temporary file
-          rm -f github_tokens.txt
+          # Verify secret was created correctly
+          echo "🦩 Verifying secret creation..."
+          if ! kubectl get secret app-secrets --namespace=${REGISTRY_NAME} -o jsonpath='{.data}' | grep 'github\.tokens'; then
+            echo "❌ Error: Secret verification failed"
+            exit 1
+          fi
           
           echo "✅ Kubernetes secrets created successfully"
 
