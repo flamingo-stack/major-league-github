@@ -378,29 +378,39 @@ jobs:
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo update
           
-          echo "🦩 Creating SSL certificate..."
+          echo "🦩 Setting up SSL certificate..."
           CERT_NAME="${{ env.DOMAIN_NAME }}-cert"
-          if ! doctl compute certificate create \
-            --name ${CERT_NAME} \
-            --type lets_encrypt \
-            --dns-names ${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}; then
-            echo "❌ Error: Failed to create certificate"
-            exit 1
-          fi
           
-          echo "🦩 Waiting for certificate to be ready..."
-          for i in {1..30}; do
-            if doctl compute certificate list | grep -q "${CERT_NAME}.*verified"; then
-              echo "✅ Certificate is ready"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Error: Certificate creation timed out"
+          # Check if certificate already exists and is valid  
+          echo "🦩 Checking for existing certificate..."
+          EXISTING_CERT_ID=$(doctl compute certificate list --format ID,Name,State --no-header | grep "${CERT_NAME}" | grep "verified" | awk '{print $1}')
+          
+          if [ -z "$EXISTING_CERT_ID" ]; then
+            echo "🦩 No valid certificate found. Creating new one..."
+            if ! doctl compute certificate create \
+              --name ${CERT_NAME} \
+              --type lets_encrypt \
+              --dns-names ${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}; then
+              echo "❌ Error: Failed to create certificate"
               exit 1
             fi
-            echo "🦩 Waiting for certificate... (attempt $i/30)"
-            sleep 10
-          done
+            
+            echo "🦩 Waiting for certificate to be ready..."
+            for i in {1..30}; do
+              if doctl compute certificate list | grep -q "${CERT_NAME}.*verified"; then
+                echo "✅ Certificate is ready"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "❌ Error: Certificate creation timed out"
+                exit 1
+              fi
+              echo "🦩 Waiting for certificate... (attempt $i/30)"
+              sleep 10
+            done
+          else
+            echo "✅ Using existing verified certificate with ID: $EXISTING_CERT_ID"
+          fi
           
           echo "🦩 Installing NGINX Ingress Controller..."
           NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
@@ -541,58 +551,6 @@ jobs:
           fi
           
           echo "✅ Kubernetes configurations deployed successfully"
-
-      - name: Update DNS Records 🌍 🦩
-        run: |
-          echo "🦩 Getting LoadBalancer IP..."
-          LB_IP=""
-          RETRY_COUNT=0
-          MAX_RETRIES=30
-          
-          while [ -z "$LB_IP" ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            LB_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-            if [ -z "$LB_IP" ]; then
-              echo "🦩 Waiting for LoadBalancer IP... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
-              sleep 10
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-            fi
-          done
-          
-          if [ -z "$LB_IP" ]; then
-            echo "❌ Error: Failed to get LoadBalancer IP after $MAX_RETRIES attempts"
-            exit 1
-          fi
-          
-          echo "🦩 Finding existing DNS records..."
-          EXISTING_RECORDS=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_NAME }}" || true)
-          
-          if [ ! -z "$EXISTING_RECORDS" ]; then
-            echo "🦩 Found existing records to delete:"
-            echo "$EXISTING_RECORDS"
-            
-            echo "🦩 Deleting existing records..."
-            while IFS= read -r record; do
-              RECORD_ID=$(echo $record | awk '{print $1}')
-              echo "🦩 Deleting record ID: $RECORD_ID"
-              if ! doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force; then
-                echo "⚠️ Warning: Failed to delete record $RECORD_ID"
-              fi
-            done <<< "$EXISTING_RECORDS"
-          else
-            echo "🦩 No existing records found"
-          fi
-          
-          echo "🦩 Creating new DNS A record..."
-          if ! doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
-            --record-type A \
-            --record-name "${{ env.DOMAIN_NAME }}" \
-            --record-data "${LB_IP}" \
-            --record-ttl 300; then
-            echo "❌ Error: Failed to create DNS record"
-            exit 1
-          fi
-          
-          echo "✅ DNS records updated successfully"
 
       - name: Verify Deployment 🔍 🦩
         run: |
