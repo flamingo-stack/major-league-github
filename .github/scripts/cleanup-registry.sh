@@ -25,7 +25,7 @@ for repo in $repos; do
     if [ -z "$manifests" ]; then
         echo "No manifests found for $repo"
         continue
-    }
+    fi
     
     echo "🦩 Found manifests:"
     echo "$manifests"
