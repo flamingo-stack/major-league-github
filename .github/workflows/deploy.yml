@@ -49,7 +49,8 @@ jobs:
           echo "🦩 Building backend image..."
           docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:latest ./backend
           echo "🦩 Pushing backend image..."
-          docker push --all-tags ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend
+          doctl registry repository push-manifest ${{ env.REGISTRY_NAME }}/backend:${VERSION}
+          doctl registry repository push-manifest ${{ env.REGISTRY_NAME }}/backend:latest
 
       - name: Build and push frontend image 🎨 🦩
         env:
@@ -58,7 +59,8 @@ jobs:
           echo "🦩 Building frontend image..."
           docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:latest ./frontend
           echo "🦩 Pushing frontend image..."
-          docker push --all-tags ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend
+          doctl registry repository push-manifest ${{ env.REGISTRY_NAME }}/frontend:${VERSION}
+          doctl registry repository push-manifest ${{ env.REGISTRY_NAME }}/frontend:latest
 
       - name: Configure Kubernetes registry access 🔑
         run: |
