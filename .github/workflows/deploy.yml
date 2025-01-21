@@ -32,25 +32,24 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Reset and configure Docker 🔑
+      - name: Configure Docker 🔑
         run: |
-          echo "🦩 Resetting Docker configuration..."
-          rm -rf ~/.docker
+          echo "🦩 Setting up Docker config..."
           mkdir -p ~/.docker
           
-          echo "🦩 Logging out of any existing sessions..."
-          docker logout
+          # Create Docker config with registry auth
+          cat > ~/.docker/config.json << EOF
+          {
+            "auths": {
+              "registry.digitalocean.com": {
+                "auth": "$(echo -n "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}:${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | base64)"
+              }
+            }
+          }
+          EOF
           
-          echo "🦩 Configuring Docker credentials..."
-          doctl registry login --expiry-seconds 600
-          
-          echo "🦩 Verifying Docker config..."
+          # Verify config
           cat ~/.docker/config.json
-          
-          echo "🦩 Testing Docker login..."
-          docker login registry.digitalocean.com \
-            --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
-            --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Build and push backend image 🏗️ 🦩
         run: |
