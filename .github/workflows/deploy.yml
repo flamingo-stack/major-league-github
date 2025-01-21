@@ -13,7 +13,7 @@ env:
   ENVIRONMENT: production
   BACKEND_REPLICAS: "2"
   FRONTEND_REPLICAS: "2"
-  CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+  CLUSTER_NAME: major-league-github
 
 jobs:
   build-and-deploy:
@@ -24,6 +24,55 @@ jobs:
       deployments: write
 
     steps:
+      - name: Verify Required Secrets 🔒
+        run: |
+          missing_secrets=()
+          
+          if [ -z "${{ secrets.CLUSTER_NAME }}" ]; then
+            missing_secrets+=("CLUSTER_NAME")
+          fi
+          
+          if [ -z "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" ]; then
+            missing_secrets+=("DIGITALOCEAN_ACCESS_TOKEN")
+          fi
+          
+          if [ -z "${{ secrets.GH_PAT }}" ]; then
+            missing_secrets+=("GH_PAT")
+          fi
+          
+          if [ -z "${{ secrets.GH_API_TOKENS }}" ]; then
+            missing_secrets+=("GH_API_TOKENS")
+          fi
+          
+          if [ -z "${{ secrets.LETSENCRYPT_EMAIL }}" ]; then
+            missing_secrets+=("LETSENCRYPT_EMAIL")
+          fi
+          
+          if [ -z "${{ secrets.DOMAIN_SUFFIX }}" ]; then
+            missing_secrets+=("DOMAIN_SUFFIX")
+          fi
+          
+          if [ ${#missing_secrets[@]} -ne 0 ]; then
+            echo "❌ Error: The following required secrets are missing:"
+            printf '%s\n' "${missing_secrets[@]}"
+            echo ""
+            echo "Please add these secrets in your GitHub repository:"
+            echo "1. Go to Settings → Secrets and variables → Actions"
+            echo "2. Click on 'New repository secret'"
+            echo "3. Add each missing secret with its value"
+            echo ""
+            echo "Required secrets and their purposes:"
+            echo "- CLUSTER_NAME: Your DigitalOcean Kubernetes cluster name"
+            echo "- DIGITALOCEAN_ACCESS_TOKEN: Your DigitalOcean API token"
+            echo "- GH_PAT: GitHub Personal Access Token"
+            echo "- GH_API_TOKENS: GitHub API tokens for the application"
+            echo "- LETSENCRYPT_EMAIL: Email for SSL certificates"
+            echo "- DOMAIN_SUFFIX: Domain suffix (e.g., 'flamingo.cx')"
+            exit 1
+          fi
+          
+          echo "✅ All required secrets are set"
+
       - name: Checkout code 📦
         uses: actions/checkout@v4
         with:
@@ -36,12 +85,6 @@ jobs:
 
       - name: Configure Docker and Kubernetes 🔑
         run: |
-          # Verify environment variables
-          if [ -z "$CLUSTER_NAME" ]; then
-            echo "❌ Error: CLUSTER_NAME is not set"
-            exit 1
-          fi
-          
           echo "🦩 Setting up Docker..."
           if ! doctl registry login --expiry-seconds 1800; then
             echo "❌ Error: Failed to log in to Docker registry"
