@@ -35,9 +35,8 @@ jobs:
       - name: Log in to DigitalOcean Container Registry 🔑
         run: |
           echo "🦩 Logging into DigitalOcean Container Registry..."
-          TOKEN=$(doctl registry docker-config --access-token ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | jq -r '.auths["registry.digitalocean.com"].auth' | base64 -d)
-          echo $TOKEN | docker login registry.digitalocean.com -u $TOKEN --password-stdin
-
+          doctl registry login
+          
       - name: Create DigitalOcean registry 🏗️
         run: |
           echo "🦩 Creating/ensuring registry exists..."
