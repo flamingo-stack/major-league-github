@@ -383,11 +383,24 @@ jobs:
           if ! doctl compute certificate create \
             --name "${CERT_NAME}" \
             --type lets_encrypt \
-            --dns-names "${DOMAIN_NAME}.${DOMAIN_SUFFIX}" \
-            --wait; then
+            --dns-names "${DOMAIN_NAME}.${DOMAIN_SUFFIX}"; then
             echo "❌ Error: Failed to create certificate"
             exit 1
-          fi 
+          fi
+          
+          echo "🦩 Waiting for certificate to be ready..."
+          for i in {1..30}; do
+            if doctl compute certificate list | grep -q "${CERT_NAME}.*verified"; then
+              echo "✅ Certificate is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Error: Certificate creation timed out"
+              exit 1
+            fi
+            echo "🦩 Waiting for certificate... (attempt $i/30)"
+            sleep 10
+          done
           
           echo "🦩 Installing NGINX Ingress Controller..."
           NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
