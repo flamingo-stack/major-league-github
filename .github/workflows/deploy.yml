@@ -110,36 +110,72 @@ jobs:
       - name: Setup DigitalOcean Infrastructure 🏗️
         run: |
           echo "🦩 Checking DigitalOcean Registry..."
-          if ! doctl registry get; then
-            echo "🦩 Creating DigitalOcean Registry..."
-            if ! doctl registry create --subscription-tier basic; then
-              echo "❌ Error: Failed to create registry"
+          if ! doctl registry get ${REGISTRY_NAME} 2>/dev/null; then
+            echo "🦩 Creating DigitalOcean Registry: ${REGISTRY_NAME}..."
+            if ! doctl registry create ${REGISTRY_NAME} \
+              --subscription-tier basic \
+              --region ${CLUSTER_REGION}; then
+              echo "❌ Error: Failed to create registry ${REGISTRY_NAME}"
               exit 1
             fi
-            echo "✅ Registry created successfully"
+            
+            echo "🦩 Configuring registry garbage collection..."
+            if ! doctl registry garbage-collection configure ${REGISTRY_NAME} \
+              --include-untagged-manifests \
+              --exclude-tags latest \
+              --keep-tags 5 \
+              --schedule "0 0 * * 6" \
+              --include-all-repositories; then
+              echo "⚠️ Warning: Failed to configure garbage collection"
+            fi
+            
+            echo "✅ Registry created and configured successfully"
           else
-            echo "✅ Registry already exists"
+            echo "✅ Registry ${REGISTRY_NAME} already exists"
           fi
           
           echo "🦩 Checking Kubernetes cluster..."
-          if ! doctl kubernetes cluster get "$CLUSTER_NAME" 2>/dev/null; then
-            echo "🦩 Creating Kubernetes cluster..."
-            if ! doctl kubernetes cluster create "$CLUSTER_NAME" \
-              --region $CLUSTER_REGION \
-              --size $CLUSTER_SIZE \
-              --count $CLUSTER_NODE_COUNT \
-              --version $CLUSTER_VERSION \
+          if ! doctl kubernetes cluster get "${CLUSTER_NAME}" 2>/dev/null; then
+            echo "🦩 Creating Kubernetes cluster: ${CLUSTER_NAME}..."
+            if ! doctl kubernetes cluster create "${CLUSTER_NAME}" \
+              --region ${CLUSTER_REGION} \
+              --size ${CLUSTER_SIZE} \
+              --count ${CLUSTER_NODE_COUNT} \
+              --version ${CLUSTER_VERSION} \
               --auto-upgrade true \
               --maintenance-window "saturday=21:00" \
               --ha=true \
+              --tag major-league-github \
               --wait; then
-              echo "❌ Error: Failed to create cluster"
+              echo "❌ Error: Failed to create cluster ${CLUSTER_NAME}"
               exit 1
             fi
-            echo "✅ Cluster created successfully"
+            
+            echo "🦩 Configuring cluster auto-scaling..."
+            if ! doctl kubernetes cluster node-pool update "${CLUSTER_NAME}" default \
+              --auto-scale \
+              --min-nodes 2 \
+              --max-nodes 4; then
+              echo "⚠️ Warning: Failed to configure auto-scaling"
+            fi
+            
+            echo "✅ Cluster created and configured successfully"
           else
-            echo "✅ Cluster already exists"
+            echo "✅ Cluster ${CLUSTER_NAME} already exists"
           fi
+          
+          echo "🦩 Verifying infrastructure..."
+          if ! doctl registry get ${REGISTRY_NAME} >/dev/null 2>&1; then
+            echo "❌ Error: Registry verification failed"
+            exit 1
+          fi
+          
+          if ! doctl kubernetes cluster get "${CLUSTER_NAME}" >/dev/null 2>&1; then
+            echo "❌ Error: Cluster verification failed"
+            exit 1
+          fi
+          
+          echo "✅ Infrastructure setup completed successfully"
 
       - name: Configure Docker and Kubernetes 🔑
         run: |
