@@ -7,9 +7,9 @@ on:
 
 env:
   REGISTRY: registry.digitalocean.com
-  IMAGE_NAME: major-league-github
-  URL_PREFIX: ${{ secrets.URL_PREFIX }}
-  APP_URL: https://${{ secrets.URL_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}
+  REGISTRY_NAME: ${{ secrets.DIGITALOCEAN_REGISTRY }}
+  APP_URL: https://${{ secrets.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}
+  DOMAIN_PREFIX: ${{ secrets.DOMAIN_PREFIX }}
 
 jobs:
   build-and-deploy:
@@ -62,14 +62,7 @@ jobs:
           doctl registry repository list-v2 || doctl registry repository create-v2 ${{ env.IMAGE_NAME }}
 
       - name: Log in to DO Container Registry 🔑
-        run: |
-          echo "🦩 Logging into DigitalOcean Container Registry..."
-          doctl registry login --expiry-seconds 1200
-          
-          # Also configure Docker with registry credentials
-          echo ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | docker login registry.digitalocean.com \
-            --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
-            --password-stdin
+        run: doctl registry login --expiry-seconds 600
 
       - name: Configure Kubernetes registry access 🔑
         run: |
@@ -90,54 +83,20 @@ jobs:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building backend image..."
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:latest ./backend
-          
+          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:latest ./backend
           echo "🦩 Pushing backend image..."
-          max_retries=3
-          retry_count=0
-          
-          while [ $retry_count -lt $max_retries ]; do
-            if docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:${VERSION} && \
-               docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:latest; then
-              echo "✅ Successfully pushed backend images"
-              break
-            else
-              retry_count=$((retry_count+1))
-              if [ $retry_count -eq $max_retries ]; then
-                echo "❌ Failed to push backend images after $max_retries attempts"
-                exit 1
-              fi
-              echo "🔄 Retry attempt $retry_count of $max_retries"
-              sleep 5
-            fi
-          done
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:${VERSION}
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:latest
 
       - name: Build and push frontend image 🎨 🦩
         env:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building frontend image..."
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:latest ./frontend
-          
+          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:latest ./frontend
           echo "🦩 Pushing frontend image..."
-          max_retries=3
-          retry_count=0
-          
-          while [ $retry_count -lt $max_retries ]; do
-            if docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:${VERSION} && \
-               docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:latest; then
-              echo "✅ Successfully pushed frontend images"
-              break
-            else
-              retry_count=$((retry_count+1))
-              if [ $retry_count -eq $max_retries ]; then
-                echo "❌ Failed to push frontend images after $max_retries attempts"
-                exit 1
-              fi
-              echo "🔄 Retry attempt $retry_count of $max_retries"
-              sleep 5
-            fi
-          done
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:${VERSION}
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:latest
 
       - name: Install Helm ⚓
         run: |
@@ -202,13 +161,13 @@ jobs:
         run: |
           echo "🦩 Cleaning up old DNS records..."
           # Delete A record for the main domain
-          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.URL_PREFIX }}" | awk '{print $1}')
+          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
           if [ ! -z "$RECORD_ID" ]; then
             doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force
           fi
 
           # Delete CNAME record for www subdomain
-          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.URL_PREFIX }}" | awk '{print $1}')
+          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
           if [ ! -z "$RECORD_ID" ]; then
             doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force
           fi
@@ -224,22 +183,22 @@ jobs:
           echo "🦩 Creating A record..."
           doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
             --record-type A \
-            --record-name "${{ env.URL_PREFIX }}" \
+            --record-name "${{ env.DOMAIN_PREFIX }}" \
             --record-data "${LB_IP}"
 
           # Create CNAME record for www subdomain
           echo "🦩 Creating CNAME record..."
           doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
             --record-type CNAME \
-            --record-name "www.${{ env.URL_PREFIX }}" \
-            --record-data "${{ env.URL_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}."
+            --record-name "www.${{ env.DOMAIN_PREFIX }}" \
+            --record-data "${{ env.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}."
 
       - name: Update deployment file 📝 🦩
         run: |
           echo "🦩 Updating deployment configurations..."
           TAG=${{ github.sha }}
-          sed -i 's|image: .*major-league-github-backend:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-backend:'${TAG}'|' kubernetes/backend-deployment.yaml
-          sed -i 's|image: .*major-league-github-frontend:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/major-league-github-frontend:'${TAG}'|' kubernetes/frontend-deployment.yaml
+          sed -i 's|image: .*backend:.*|image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:'${TAG}'|' kubernetes/backend-deployment.yaml
+          sed -i 's|image: .*frontend:.*|image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:'${TAG}'|' kubernetes/frontend-deployment.yaml
 
       - name: Create GitHub Tokens Secret 🔐 🦩
         run: |
@@ -261,13 +220,13 @@ jobs:
           apiVersion: cert-manager.io/v1
           kind: Certificate
           metadata:
-            name: ${{ env.URL_PREFIX }}-tls
+            name: ${{ env.IMAGE_NAME }}-tls
             namespace: default
           spec:
-            secretName: ${{ env.URL_PREFIX }}-tls
+            secretName: ${{ env.IMAGE_NAME }}-tls
             dnsNames:
-            - ${{ env.URL_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}
-            - www.${{ env.URL_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}
+            - ${{ env.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}
+            - www.${{ env.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}
             issuerRef:
               name: letsencrypt-prod
               kind: ClusterIssuer
@@ -290,11 +249,11 @@ jobs:
           spec:
             tls:
             - hosts:
-              - ${{ env.URL_PREFIX }}.${DOMAIN_SUFFIX}
-              - www.${{ env.URL_PREFIX }}.${DOMAIN_SUFFIX}
-              secretName: ${{ env.URL_PREFIX }}-tls
+              - ${{ env.DOMAIN_PREFIX }}.${DOMAIN_SUFFIX}
+              - www.${{ env.DOMAIN_PREFIX }}.${DOMAIN_SUFFIX}
+              secretName: ${{ env.IMAGE_NAME }}-tls
             rules:
-            - host: ${{ env.URL_PREFIX }}.${DOMAIN_SUFFIX}
+            - host: ${{ env.DOMAIN_PREFIX }}.${DOMAIN_SUFFIX}
               http:
                 paths:
                 - path: /
@@ -304,7 +263,7 @@ jobs:
                       name: frontend-service
                       port:
                         number: 80
-            - host: www.${{ env.URL_PREFIX }}.${DOMAIN_SUFFIX}
+            - host: www.${{ env.DOMAIN_PREFIX }}.${DOMAIN_SUFFIX}
               http:
                 paths:
                 - path: /
