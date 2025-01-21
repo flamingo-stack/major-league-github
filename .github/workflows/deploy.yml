@@ -13,6 +13,7 @@ env:
   ENVIRONMENT: production
   BACKEND_REPLICAS: "2"
   FRONTEND_REPLICAS: "2"
+  CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
 
 jobs:
   build-and-deploy:
@@ -35,41 +36,94 @@ jobs:
 
       - name: Configure Docker and Kubernetes 🔑
         run: |
+          # Verify environment variables
+          if [ -z "$CLUSTER_NAME" ]; then
+            echo "❌ Error: CLUSTER_NAME is not set"
+            exit 1
+          fi
+          
           echo "🦩 Setting up Docker..."
-          doctl registry login --expiry-seconds 1800
+          if ! doctl registry login --expiry-seconds 1800; then
+            echo "❌ Error: Failed to log in to Docker registry"
+            exit 1
+          fi
           
           echo "🦩 Setting up Kubernetes..."
-          doctl kubernetes cluster kubeconfig save --expiry-seconds 1800 ${{ secrets.CLUSTER_NAME }}
+          if ! doctl kubernetes cluster kubeconfig save "$CLUSTER_NAME" --expiry-seconds 1800; then
+            echo "❌ Error: Failed to save Kubernetes config"
+            exit 1
+          fi
+          
+          echo "🦩 Verifying Kubernetes connection..."
+          if ! kubectl cluster-info; then
+            echo "❌ Error: Failed to connect to Kubernetes cluster"
+            exit 1
+          fi
           
           echo "🦩 Creating registry credentials..."
-          doctl registry docker-config > docker-config.json
+          if ! doctl registry docker-config > docker-config.json; then
+            echo "❌ Error: Failed to get Docker config"
+            exit 1
+          fi
+          
           DOCKER_CONFIG_BASE64=$(base64 -w 0 docker-config.json)
           echo "DOCKER_CONFIG_BASE64=${DOCKER_CONFIG_BASE64}" >> $GITHUB_ENV
+          
+          echo "✅ Configuration completed successfully"
 
       - name: Build and push backend image 🏗️ 🦩
         run: |
           echo "🦩 Building backend image..."
-          docker build -t ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ./backend
-          docker push ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}
+          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ./backend; then
+            echo "❌ Error: Failed to build backend image"
+            exit 1
+          fi
           
-          echo "🦩 Tagging latest..."
+          echo "🦩 Pushing versioned backend image..."
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}; then
+            echo "❌ Error: Failed to push backend versioned image"
+            exit 1
+          fi
+          
+          echo "🦩 Tagging and pushing latest..."
           docker tag ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/backend:latest
-          docker push ${REGISTRY}/${REGISTRY_NAME}/backend:latest
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/backend:latest; then
+            echo "❌ Error: Failed to push backend latest image"
+            exit 1
+          fi
+          
+          echo "✅ Backend image build and push completed"
 
       - name: Build and push frontend image 🎨 🦩
         run: |
           echo "🦩 Building frontend image..."
-          docker build -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend
-          docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}
+          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend; then
+            echo "❌ Error: Failed to build frontend image"
+            exit 1
+          fi
           
-          echo "🦩 Tagging latest..."
+          echo "🦩 Pushing versioned frontend image..."
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}; then
+            echo "❌ Error: Failed to push frontend versioned image"
+            exit 1
+          fi
+          
+          echo "🦩 Tagging and pushing latest..."
           docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest
-          docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
+            echo "❌ Error: Failed to push frontend latest image"
+            exit 1
+          fi
+          
+          echo "✅ Frontend image build and push completed"
 
       - name: Setup Kubernetes Dependencies 🎯 🦩
         run: |
           echo "🦩 Installing Helm..."
-          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+          if ! curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash; then
+            echo "❌ Error: Failed to install Helm"
+            exit 1
+          fi
           
           echo "🦩 Adding Helm repositories..."
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
@@ -77,35 +131,54 @@ jobs:
           helm repo update
           
           echo "🦩 Installing NGINX Ingress Controller..."
-          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+          if ! helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx --create-namespace \
             --set controller.publishService.enabled=true \
-            --wait
+            --wait --timeout 5m; then
+            echo "❌ Error: Failed to install NGINX Ingress"
+            exit 1
+          fi
           
           echo "🦩 Installing cert-manager..."
-          helm upgrade --install cert-manager jetstack/cert-manager \
+          if ! helm upgrade --install cert-manager jetstack/cert-manager \
             --namespace cert-manager --create-namespace \
             --set installCRDs=true \
-            --wait
+            --wait --timeout 5m; then
+            echo "❌ Error: Failed to install cert-manager"
+            exit 1
+          fi
+          
+          echo "✅ Kubernetes dependencies setup completed"
 
       - name: Create Kubernetes Secrets 🔐 🦩
         run: |
           echo "🦩 Creating namespace if not exists..."
-          kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -
+          if ! kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -; then
+            echo "❌ Error: Failed to create namespace"
+            exit 1
+          fi
           
           echo "🦩 Creating registry credentials..."
-          kubectl create secret docker-registry registry-credentials \
+          if ! kubectl create secret docker-registry registry-credentials \
             --namespace=${REGISTRY_NAME} \
             --docker-server=${REGISTRY} \
             --docker-username=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
             --docker-password=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
-            --dry-run=client -o yaml | kubectl apply -f -
+            --dry-run=client -o yaml | kubectl apply -f -; then
+            echo "❌ Error: Failed to create registry credentials"
+            exit 1
+          fi
           
           echo "🦩 Creating application secrets..."
-          kubectl create secret generic app-secrets \
+          if ! kubectl create secret generic app-secrets \
             --namespace=${REGISTRY_NAME} \
             --from-literal=GITHUB_TOKENS=${{ secrets.GH_API_TOKENS }} \
-            --dry-run=client -o yaml | kubectl apply -f -
+            --dry-run=client -o yaml | kubectl apply -f -; then
+            echo "❌ Error: Failed to create application secrets"
+            exit 1
+          fi
+          
+          echo "✅ Kubernetes secrets created successfully"
 
       - name: Deploy Kubernetes Configurations 🚀 🦩
         env:
@@ -116,38 +189,81 @@ jobs:
           
           for file in kubernetes/base/*.yaml; do
             echo "🦩 Processing $file..."
-            envsubst < $file | kubectl apply -n ${REGISTRY_NAME} -f -
+            if ! envsubst < $file | kubectl apply -n ${REGISTRY_NAME} -f -; then
+              echo "❌ Error: Failed to apply $file"
+              exit 1
+            fi
           done
           
           echo "🦩 Waiting for deployments to be ready..."
-          kubectl -n ${REGISTRY_NAME} rollout status deployment/backend
-          kubectl -n ${REGISTRY_NAME} rollout status deployment/frontend
+          if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/backend --timeout=5m; then
+            echo "❌ Error: Backend deployment failed to roll out"
+            exit 1
+          fi
+          
+          if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/frontend --timeout=5m; then
+            echo "❌ Error: Frontend deployment failed to roll out"
+            exit 1
+          fi
+          
+          echo "✅ Kubernetes configurations deployed successfully"
 
       - name: Update DNS Records 🌍 🦩
         run: |
           echo "🦩 Getting LoadBalancer IP..."
-          LB_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          LB_IP=""
+          RETRY_COUNT=0
+          MAX_RETRIES=30
+          
+          while [ -z "$LB_IP" ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            LB_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            if [ -z "$LB_IP" ]; then
+              echo "🦩 Waiting for LoadBalancer IP... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+              sleep 10
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+          
+          if [ -z "$LB_IP" ]; then
+            echo "❌ Error: Failed to get LoadBalancer IP after $MAX_RETRIES attempts"
+            exit 1
+          fi
           
           echo "🦩 Updating DNS A record..."
-          doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
+          if ! doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
             --record-type A \
             --record-name "major-league-github" \
             --record-data "${LB_IP}" \
-            --record-ttl 300
+            --record-ttl 300; then
+            echo "❌ Error: Failed to update DNS record"
+            exit 1
+          fi
+          
+          echo "✅ DNS records updated successfully"
 
       - name: Verify Deployment 🔍 🦩
         run: |
-          echo "🦩 Checking pod status..."
+          echo "🦩 Checking deployment status..."
+          
+          echo "🦩 Pod Status:"
           kubectl -n ${REGISTRY_NAME} get pods
           
-          echo "🦩 Checking service status..."
+          echo "🦩 Service Status:"
           kubectl -n ${REGISTRY_NAME} get services
           
-          echo "🦩 Checking ingress status..."
+          echo "🦩 Ingress Status:"
           kubectl -n ${REGISTRY_NAME} get ingress
           
-          echo "🦩 Checking certificate status..."
+          echo "🦩 Certificate Status:"
           kubectl -n ${REGISTRY_NAME} get certificates
+          
+          # Verify all pods are running
+          if [ $(kubectl -n ${REGISTRY_NAME} get pods -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}' | wc -w) -ne 0 ]; then
+            echo "❌ Error: Not all pods are running"
+            exit 1
+          fi
+          
+          echo "✅ Deployment verification completed"
 
       - name: Create GitHub Deployment 📦 🦩
         uses: chrnorm/deployment-action@v2
