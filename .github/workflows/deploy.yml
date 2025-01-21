@@ -379,11 +379,11 @@ jobs:
           helm repo update
           
           echo "🦩 Creating SSL certificate..."
-          CERT_NAME="${DOMAIN_NAME}-cert"
+          CERT_NAME="${{ env.DOMAIN_NAME }}-cert"
           if ! doctl compute certificate create \
-            --name "${CERT_NAME}" \
+            --name ${CERT_NAME} \
             --type lets_encrypt \
-            --dns-names "${DOMAIN_NAME}.${DOMAIN_SUFFIX}"; then
+            --dns-names ${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}; then
             echo "❌ Error: Failed to create certificate"
             exit 1
           fi
@@ -407,9 +407,9 @@ jobs:
             --namespace ingress-nginx --create-namespace \
             --set controller.publishService.enabled=true \
             --set controller.service.type=LoadBalancer \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-name\"=\"${DOMAIN_NAME}-lb\" \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-name\"=\"${{ env.DOMAIN_NAME }}-lb\" \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-enable-proxy-protocol\"=true \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${DOMAIN_NAME}.${DOMAIN_SUFFIX}\" \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}\" \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-redirect-http-to-https\"=true \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=https \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-http-ports\"=80 \
