@@ -144,33 +144,43 @@ jobs:
           LB_IP=$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           echo "🎯 LoadBalancer IP is: ${LB_IP}"
 
-          echo "🦩 Updating DNS records..."
-          # Get existing A record ID
-          A_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
-          if [ ! -z "$A_RECORD_ID" ]; then
+          echo "🦩 Managing DNS records..."
+          
+          # Function to check if record exists
+          record_exists() {
+            local record_type=$1
+            local record_name=$2
+            doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *${record_type} *${record_name}$" > /dev/null
+          }
+
+          # Handle A record
+          if record_exists "A" "${{ env.DOMAIN_PREFIX }}"; then
+            echo "🦩 A record exists, getting ID..."
+            A_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_PREFIX }}$" | awk '{print $1}')
             echo "🦩 Updating A record..."
             doctl compute domain records update ${{ secrets.DOMAIN_SUFFIX }} $A_RECORD_ID \
               --record-type A \
               --record-name "${{ env.DOMAIN_PREFIX }}" \
               --record-data "${LB_IP}"
           else
-            echo "🦩 Creating A record..."
+            echo "🦩 Creating new A record..."
             doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
               --record-type A \
               --record-name "${{ env.DOMAIN_PREFIX }}" \
               --record-data "${LB_IP}"
           fi
 
-          # Get existing CNAME record ID
-          CNAME_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
-          if [ ! -z "$CNAME_RECORD_ID" ]; then
+          # Handle CNAME record
+          if record_exists "CNAME" "www.${{ env.DOMAIN_PREFIX }}"; then
+            echo "🦩 CNAME record exists, getting ID..."
+            CNAME_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.DOMAIN_PREFIX }}$" | awk '{print $1}')
             echo "🦩 Updating CNAME record..."
             doctl compute domain records update ${{ secrets.DOMAIN_SUFFIX }} $CNAME_RECORD_ID \
               --record-type CNAME \
               --record-name "www.${{ env.DOMAIN_PREFIX }}" \
               --record-data "${{ env.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}."
           else
-            echo "🦩 Creating CNAME record..."
+            echo "🦩 Creating new CNAME record..."
             doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
               --record-type CNAME \
               --record-name "www.${{ env.DOMAIN_PREFIX }}" \
