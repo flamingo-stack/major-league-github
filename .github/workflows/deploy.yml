@@ -171,11 +171,19 @@ jobs:
               --include-all-repositories \
               --wait; then
               echo "⚠️ Warning: Failed to configure garbage collection"
+              # Don't exit on garbage collection failure, it's not critical
             fi
             
             echo "✅ Registry created and configured successfully"
           else
             echo "✅ Registry already exists"
+          fi
+          
+          # Verify registry is accessible
+          echo "🦩 Verifying registry access..."
+          if ! doctl registry get > /dev/null 2>&1; then
+            echo "❌ Error: Registry verification failed"
+            exit 1
           fi
           
           echo "🦩 Checking Kubernetes cluster..."
@@ -215,8 +223,9 @@ jobs:
             echo "⚠️ Warning: Could not get cluster ID"
           fi
           
-          # Get registry URN
+          # Get registry URN (use registry name directly)
           if doctl registry get > /dev/null 2>&1; then
+            # For registries, the URN is simply the registry name
             REGISTRY_URN="do:registry:${REGISTRY_NAME}"
             echo "Found registry URN: ${REGISTRY_URN}"
           else
@@ -229,12 +238,12 @@ jobs:
           # Add resources if they exist
           if [ ! -z "$CLUSTER_URN" ]; then
             RESOURCES+=("${CLUSTER_URN}")
-            echo "Adding cluster to resources"
+            echo "Adding cluster to resources: ${CLUSTER_URN}"
           fi
           
           if [ ! -z "$REGISTRY_URN" ]; then
             RESOURCES+=("${REGISTRY_URN}")
-            echo "Adding registry to resources"
+            echo "Adding registry to resources: ${REGISTRY_URN}"
           fi
           
           # Debug output
@@ -257,8 +266,9 @@ jobs:
             # Try to attach resources with full error output
             if ! doctl projects resources assign "${PROJECT_ID}" ${RESOURCES_STRING} 2>&1; then
               echo "⚠️ Warning: Failed to attach resources to project"
-              echo "🦩 Attempting to list current project resources..."
+              echo "🦩 Current project resources:"
               doctl projects resources list "${PROJECT_ID}" --format "Resource Type,Resource ID" --no-header || true
+              # Don't exit on attachment failure, it's not critical
             else
               echo "✅ Resources attached to project successfully"
               echo "🦩 Current project resources:"
