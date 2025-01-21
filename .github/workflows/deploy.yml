@@ -118,16 +118,15 @@ jobs:
           
           echo "🦩 Creating DigitalOcean Project..."
           PROJECT_ID=""
-          PROJECT_NAME_CLEAN="major-league-github"  # Clean name without spaces
           
           # First try to list all projects and find ours
           echo "🦩 Checking for existing project..."
-          if PROJECT_ID=$(doctl projects list --format ID,Name --no-header | grep -i "${PROJECT_NAME_CLEAN}" | awk '{print $1}') && [ ! -z "$PROJECT_ID" ]; then
+          if PROJECT_ID=$(doctl projects list --format ID,Name --no-header | grep -i "${PROJECT_NAME}" | awk '{print $1}') && [ ! -z "$PROJECT_ID" ]; then
             echo "✅ Found existing project with ID: ${PROJECT_ID}"
           else
-            echo "🦩 Creating new project: ${PROJECT_NAME_CLEAN}..."
+            echo "🦩 Creating new project: ${PROJECT_NAME}..."
             if PROJECT_ID=$(doctl projects create \
-              --name "${PROJECT_NAME_CLEAN}" \
+              --name "${PROJECT_NAME}" \
               --purpose "Production" \
               --environment "Production" \
               --description "Major League GitHub Infrastructure" \
@@ -379,6 +378,14 @@ jobs:
           fi
           
           echo "✅ Frontend image build and push completed"
+
+      - name: Cleanup old images 🧹 🦩
+        run: |
+          echo "🦩 Cleaning up old images..."
+          if ! ./.github/scripts/cleanup-registry.sh; then
+            echo "⚠️ Warning: Image cleanup had some issues"
+          fi
+          echo "✅ Image cleanup completed"
 
       - name: Setup Kubernetes Dependencies 🎯 🦩
         run: |
@@ -700,76 +707,6 @@ jobs:
           fi
           
           echo "✅ Deployment verification completed"
-
-      - name: Cleanup Old Images 🧹 🦩
-        run: |
-          echo "🦩 Getting repository list..."
-          REPOS="backend frontend"
-          
-          for REPO in $REPOS; do
-            echo "🦩 Processing repository: $REPO"
-            
-            # Get all manifests and their associated tags
-            echo "🦩 Getting manifests for $REPO..."
-            MANIFESTS=$(doctl registry repository list-manifests $REPO --format Digest,Tags,CompressedSize --no-header)
-            
-            echo "🦩 Found manifests:"
-            echo "$MANIFESTS"
-            
-            # Process each manifest
-            while IFS=$'\t' read -r DIGEST TAGS SIZE; do
-              # Skip if manifest has the latest tag or current version
-              if [[ "$TAGS" == *"latest"* ]] || [[ "$TAGS" == *"$VERSION"* ]]; then
-                echo "🦩 Keeping manifest $DIGEST (has latest or current version: $VERSION)"
-                continue
-              fi
-              
-              echo "🦩 Processing manifest: $DIGEST (Size: $SIZE)"
-              
-              # First delete all tags associated with this manifest
-              if [ ! -z "$TAGS" ] && [ "$TAGS" != "[]" ]; then
-                # Convert comma-separated list to array
-                IFS=',' read -ra TAG_ARRAY <<< "$TAGS"
-                for TAG in "${TAG_ARRAY[@]}"; do
-                  # Clean up the tag (remove brackets and spaces)
-                  TAG=$(echo "$TAG" | tr -d '[][:space:]')
-                  if [ ! -z "$TAG" ] && [ "$TAG" != "latest" ] && [ "$TAG" != "$VERSION" ]; then
-                    echo "🦩 Deleting tag: $REPO:$TAG"
-                    if ! doctl registry repository delete-tag $REPO $TAG --force; then
-                      echo "⚠️ Warning: Failed to delete tag $TAG"
-                    fi
-                  else
-                    echo "🦩 Skipping protected tag: $TAG"
-                  fi
-                done
-              fi
-              
-              # Check if all tags were deleted before deleting the manifest
-              REMAINING_TAGS=$(doctl registry repository list-tags $REPO --format Tag --no-header | grep "^$DIGEST" || true)
-              if [ -z "$REMAINING_TAGS" ]; then
-                echo "🦩 Deleting manifest: $DIGEST"
-                if ! doctl registry repository delete-manifest $REPO "$DIGEST" --force; then
-                  echo "⚠️ Warning: Failed to delete manifest $DIGEST"
-                fi
-              else
-                echo "🦩 Skipping manifest deletion as it still has tags: $REMAINING_TAGS"
-              fi
-            done <<< "$MANIFESTS"
-          done
-          
-          echo "🦩 Checking for active garbage collection..."
-          GC_STATUS=$(doctl registry garbage-collection get-active --format Status --no-header || echo "none")
-          
-          if [ "$GC_STATUS" == "none" ]; then
-            echo "🦩 Starting garbage collection..."
-            if ! doctl registry garbage-collection start --force; then
-              echo "⚠️ Warning: Failed to start garbage collection"
-            fi
-          else
-            echo "⚠️ Garbage collection already running, skipping..."
-          fi
-          
-          echo "✅ Image cleanup completed"
 
       - name: Create GitHub Deployment 📦 🦩
         uses: chrnorm/deployment-action@v2
