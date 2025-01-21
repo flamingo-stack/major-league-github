@@ -67,20 +67,20 @@ jobs:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building backend image..."
-          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest ./backend
+          docker build -t ghcr.io/flamingo-cx/major-league-github-backend:${VERSION} -t ghcr.io/flamingo-cx/major-league-github-backend:latest ./backend
           echo "🦩 Pushing backend image..."
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:${VERSION}
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest
+          docker push ghcr.io/flamingo-cx/major-league-github-backend:${VERSION}
+          docker push ghcr.io/flamingo-cx/major-league-github-backend:latest
 
       - name: Build and push frontend image 🎨 🦩
         env:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building frontend image..."
-          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest ./frontend
+          docker build -t ghcr.io/flamingo-cx/major-league-github-frontend:${VERSION} -t ghcr.io/flamingo-cx/major-league-github-frontend:latest ./frontend
           echo "🦩 Pushing frontend image..."
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:${VERSION}
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest
+          docker push ghcr.io/flamingo-cx/major-league-github-frontend:${VERSION}
+          docker push ghcr.io/flamingo-cx/major-league-github-frontend:latest
 
       - name: Configure Kubernetes registry access 🔑
         run: |
@@ -234,7 +234,7 @@ jobs:
               spec:
                 containers:
                 - name: backend
-                  image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/major-league-github-backend:${VERSION}
+                  image: ghcr.io/flamingo-cx/major-league-github-backend:${VERSION}
                   ports:
                   - containerPort: 8450
                   resources:
@@ -274,7 +274,7 @@ jobs:
               spec:
                 containers:
                 - name: frontend
-                  image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/major-league-github-frontend:${VERSION}
+                  image: ghcr.io/flamingo-cx/major-league-github-frontend:${VERSION}
                   ports:
                   - containerPort: 80
                   resources:
