@@ -8,10 +8,11 @@ on:
 env:
   REGISTRY: registry.digitalocean.com
   REGISTRY_NAME: major-league-github
-  URL_SUFFIX: "flamingo.cx"
-  URL_PREFIX: "major-league-github"
-  APP_URL: "https://major-league-github.flamingo.cx"
-  
+  VERSION: v1.0.${{ github.run_number }}
+  DOMAIN_NAME: major-league-github.flamingo.cx
+  ENVIRONMENT: production
+  BACKEND_REPLICAS: "2"
+  FRONTEND_REPLICAS: "2"
 
 jobs:
   build-and-deploy:
@@ -32,353 +33,126 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Configure Docker 🔑
+      - name: Configure Docker and Kubernetes 🔑
         run: |
-          echo "🦩 Creating registry..."
-          doctl registry create major-league-github --subscription-tier basic --access-token ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} || true
-            
-          echo "🦩 Setting up Docker config..."
+          echo "🦩 Setting up Docker..."
           doctl registry login --expiry-seconds 1800
           
-          echo "🦩 Configuring Docker credentials..."
-          doctl registry docker-config > ~/.docker/config.json
+          echo "🦩 Setting up Kubernetes..."
+          doctl kubernetes cluster kubeconfig save --expiry-seconds 1800 ${{ secrets.CLUSTER_NAME }}
+          
+          echo "🦩 Creating registry credentials..."
+          doctl registry docker-config > docker-config.json
+          DOCKER_CONFIG_BASE64=$(base64 -w 0 docker-config.json)
+          echo "DOCKER_CONFIG_BASE64=${DOCKER_CONFIG_BASE64}" >> $GITHUB_ENV
 
       - name: Build and push backend image 🏗️ 🦩
         run: |
           echo "🦩 Building backend image..."
-          docker build -t registry.digitalocean.com/major-league-github/test-backend:latest ./backend
+          docker build -t ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ./backend
+          docker push ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}
           
-          echo "🦩 Pushing backend image..."
-          docker push registry.digitalocean.com/major-league-github/test-backend:latest
-          
-          echo "🦩 Tagging version..."
-          docker tag registry.digitalocean.com/major-league-github/test-backend:latest registry.digitalocean.com/registry.digitalocean.com/test-backend:v1.0.${{ github.run_number }}
-          
-          echo "🦩 Pushing version tag..."
-          docker push registry.digitalocean.com/major-league-github/test-backend:v1.0.${{ github.run_number }}
+          echo "🦩 Tagging latest..."
+          docker tag ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/backend:latest
+          docker push ${REGISTRY}/${REGISTRY_NAME}/backend:latest
 
       - name: Build and push frontend image 🎨 🦩
         run: |
           echo "🦩 Building frontend image..."
-          docker build -t registry.digitalocean.com/registry.digitalocean.com/test-frontend:latest ./frontend --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          docker push registry.digitalocean.com/registry.digitalocean.com/test-frontend:latest --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          docker tag registry.digitalocean.com/registry.digitalocean.com/test-frontend:latest registry.digitalocean.com/registry.digitalocean.com/test-frontend:v1.0.${{ github.run_number }} --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          docker push registry.digitalocean.com/registry.digitalocean.com/test-frontend:v1.0.${{ github.run_number }} --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
-      - name: Configure Kubernetes registry access 🔑
-        run: |
-          echo "🦩 Creating registry secret in Kubernetes..."
-          kubectl delete secret registry-major-league-github --ignore-not-found
-          doctl registry kubernetes-manifest | kubectl apply -f -
+          docker build -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend
+          docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}
           
-          echo "🦩 Patching default service account..."
-          kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "registry-major-league-github"}]}'
+          echo "🦩 Tagging latest..."
+          docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest
+          docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest
 
-      - name: Install Helm ⚓
+      - name: Setup Kubernetes Dependencies 🎯 🦩
         run: |
           echo "🦩 Installing Helm..."
-          cURL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-
-      - name: Install NGINX Ingress Controller 🌐 🦩
-        run: |
-          echo "🦩 Setting up NGINX Ingress..."
-          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-          helm repo update
-          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-            --namespace ingress-nginx --create-namespace \
-            --set controller.publishService.enabled=true
+          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
           
-          echo "🦩 Waiting for NGINX Ingress pods to be ready..."
-          kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=controller \
-            --timeout=120s
-
-      - name: Install cert-manager 🔒 🦩
-        run: |
-          echo "🦩 Setting up cert-manager..."
+          echo "🦩 Adding Helm repositories..."
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo add jetstack https://charts.jetstack.io
           helm repo update
           
-          # Check if there's any Helm operation in progress
-          echo "🦩 Checking for ongoing Helm operations..."
-          while helm list --pending -A | grep -q "pending"; do
-            echo "🦩 Waiting for other Helm operations to complete..."
-            sleep 10
-          done
+          echo "🦩 Installing NGINX Ingress Controller..."
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+            --namespace ingress-nginx --create-namespace \
+            --set controller.publishService.enabled=true \
+            --wait
           
+          echo "🦩 Installing cert-manager..."
           helm upgrade --install cert-manager jetstack/cert-manager \
             --namespace cert-manager --create-namespace \
-            --set installCRDs=true
+            --set installCRDs=true \
+            --wait
 
-      - name: Wait for cert-manager to be ready ⏳
+      - name: Create Kubernetes Secrets 🔐 🦩
         run: |
-          echo "🦩 Waiting for cert-manager..."
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s
+          echo "🦩 Creating namespace if not exists..."
+          kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -
+          
+          echo "🦩 Creating registry credentials..."
+          kubectl create secret docker-registry registry-credentials \
+            --namespace=${REGISTRY_NAME} \
+            --docker-server=${REGISTRY} \
+            --docker-username=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --docker-password=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          echo "🦩 Creating application secrets..."
+          kubectl create secret generic app-secrets \
+            --namespace=${REGISTRY_NAME} \
+            --from-literal=GITHUB_TOKENS=${{ secrets.GH_API_TOKENS }} \
+            --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Create ClusterIssuer 🔑 🦩
-        run: |
-          echo "🦩 Creating Let's Encrypt ClusterIssuer..."
-          cat <<EOF | kubectl apply -f -
-          apiVersion: cert-manager.io/v1
-          kind: ClusterIssuer
-          metadata:
-            name: letsencrypt-prod
-          spec:
-            acme:
-              server: https://acme-v02.api.letsencrypt.org/directory
-              email: ${LETSENCRYPT_EMAIL}
-              privateKeySecretRef:
-                name: letsencrypt-prod
-              solvers:
-              - http01:
-                  ingress:
-                    class: nginx
-          EOF
+      - name: Deploy Kubernetes Configurations 🚀 🦩
         env:
+          REGISTRY_URL: ${REGISTRY}/${REGISTRY_NAME}
           LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
-
-      - name: Wait for NGINX Ingress Controller ⌛ 🦩
         run: |
-          echo "🦩 Waiting for NGINX Ingress Controller LoadBalancer IP..."
-          while [ -z "$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)" ]; do
-            sleep 10
-            echo "🦩 Still waiting..."
+          echo "🦩 Processing and applying Kubernetes configurations..."
+          
+          for file in kubernetes/base/*.yaml; do
+            echo "🦩 Processing $file..."
+            envsubst < $file | kubectl apply -n ${REGISTRY_NAME} -f -
           done
-          echo "🎉 LoadBalancer IP is ready!"
+          
+          echo "🦩 Waiting for deployments to be ready..."
+          kubectl -n ${REGISTRY_NAME} rollout status deployment/backend
+          kubectl -n ${REGISTRY_NAME} rollout status deployment/frontend
 
       - name: Update DNS Records 🌍 🦩
         run: |
           echo "🦩 Getting LoadBalancer IP..."
-          LB_IP=$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          echo "🎯 LoadBalancer IP is: ${LB_IP}"
-
-          echo "🦩 Managing DNS records..."
+          LB_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           
-          # Function to check if record exists and get its ID
-          get_record_id() {
-            local record_type=$1
-            local record_name=$2
-            doctl compute domain records list ${{ env.URL_SUFFIX }} --format ID,Type,Name --no-header | grep -i "^[0-9]* *${record_type} *${record_name}$" | awk '{print $1}'
-          }
-
-          # Handle A record for subdomain
-          A_RECORD_ID=$(get_record_id "A" "${{ env.URL_PREFIX }}")
-          if [ ! -z "$A_RECORD_ID" ]; then
-            echo "🦩 A record exists with ID: ${A_RECORD_ID}"
-            echo "🦩 Deleting old A record..."
-            doctl compute domain records delete ${{ env.URL_SUFFIX }} $A_RECORD_ID --force
-          fi
-          
-          echo "🦩 Creating new A record..."
-          doctl compute domain records create ${{ env.URL_SUFFIX }} \
+          echo "🦩 Updating DNS A record..."
+          doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
             --record-type A \
-            --record-name "${{ env.URL_PREFIX }}" \
-            --record-data "${LB_IP}"
+            --record-name "major-league-github" \
+            --record-data "${LB_IP}" \
+            --record-ttl 300
 
-          # Handle CNAME record for www subdomain
-          CNAME_RECORD_ID=$(get_record_id "CNAME" "www.${{ env.URL_PREFIX }}")
-          if [ ! -z "$CNAME_RECORD_ID" ]; then
-            echo "🦩 CNAME record exists with ID: ${CNAME_RECORD_ID}"
-            echo "🦩 Deleting old CNAME record..."
-            doctl compute domain records delete ${{ env.URL_SUFFIX }} $CNAME_RECORD_ID --force
-          fi
-          
-          echo "🦩 Creating new CNAME record..."
-          doctl compute domain records create ${{ env.URL_SUFFIX }} \
-            --record-type CNAME \
-            --record-name "www.${{ env.URL_PREFIX }}" \
-            --record-data "${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}."
-
-      - name: Update deployment file 📝 🦩
+      - name: Verify Deployment 🔍 🦩
         run: |
-          echo "🦩 Updating deployment configurations..."
-          VERSION=v1.0.${{ github.run_number }}
+          echo "🦩 Checking pod status..."
+          kubectl -n ${REGISTRY_NAME} get pods
           
-          # Update backend deployment
-          cat <<EOF | kubectl apply -f -
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: backend-deployment
-          spec:
-            replicas: 2
-            selector:
-              matchLabels:
-                app: backend
-            template:
-              metadata:
-                labels:
-                  app: backend
-              spec:
-                containers:
-                - name: backend
-                  image: ${{ env.REGISTRY }}/registry.digitalocean.com/backend:${VERSION}
-                  ports:
-                  - containerPort: 8450
-                  resources:
-                    requests:
-                      memory: "1Gi"
-                      cpu: "500m"
-                    limits:
-                      memory: "1536Mi"
-                      cpu: "1"
-                  env:
-                  - name: github.tokens
-                    valueFrom:
-                      secretKeyRef:
-                        name: github-tokens
-                        key: github.tokens
-                  - name: JAVA_TOOL_OPTIONS
-                    value: "-Xmx1024m -Xms512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
-                imagePullSecrets:
-                - name: registry-major-league-github
-          EOF
+          echo "🦩 Checking service status..."
+          kubectl -n ${REGISTRY_NAME} get services
           
-          # Update frontend deployment
-          cat <<EOF | kubectl apply -f -
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: frontend-deployment
-          spec:
-            replicas: 2
-            selector:
-              matchLabels:
-                app: frontend
-            template:
-              metadata:
-                labels:
-                  app: frontend
-              spec:
-                containers:
-                - name: frontend
-                  image: ${{ env.REGISTRY }}/registry.digitalocean.com/frontend:${VERSION}
-                  ports:
-                  - containerPort: 80
-                  resources:
-                    requests:
-                      memory: "128Mi"
-                      cpu: "100m"
-                    limits:
-                      memory: "256Mi"
-                      cpu: "200m"
-                imagePullSecrets:
-                - name: registry-major-league-github
-          EOF
-
-      - name: Create GitHub Tokens Secret 🔐 🦩
-        run: |
-          echo "🦩 Creating GitHub tokens secret..."
-          cat <<EOF | kubectl apply -f -
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: github-tokens
-          type: Opaque
-          stringData:
-            github.tokens: ${{ secrets.GH_API_TOKENS }}
-          EOF
-
-      - name: Create TLS Certificate 🔒 🦩
-        run: |
-          echo "🦩 Setting up TLS certificate..."
-          cat <<EOF | kubectl apply -f -
-          apiVersion: cert-manager.io/v1
-          kind: Certificate
-          metadata:
-            name: test-tls
-            namespace: default
-          spec:
-            secretName: test-tls
-            dnsNames:
-            - ${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
-            - www.${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
-            issuerRef:
-              name: letsencrypt-prod
-              kind: ClusterIssuer
-          EOF
-
-      - name: Deploy to DigitalOcean Kubernetes 🚀 🦩
-        run: |
-          echo "🦩 Deploying to Kubernetes..."
+          echo "🦩 Checking ingress status..."
+          kubectl -n ${REGISTRY_NAME} get ingress
           
-          # Create Ingress configuration with proper domain substitution
-          cat <<EOF | kubectl apply -f -
-          apiVersion: networking.k8s.io/v1
-          kind: Ingress
-          metadata:
-            name: frontend-ingress
-            annotations:
-              kubernetes.io/ingress.class: nginx
-              cert-manager.io/cluster-issuer: letsencrypt-prod
-              nginx.ingress.kubernetes.io/ssl-redirect: "true"
-          spec:
-            tls:
-            - hosts:
-              - ${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
-              - www.${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
-              secretName: test-tls
-            rules:
-            - host: ${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
-              http:
-                paths:
-                - path: /
-                  pathType: Prefix
-                  backend:
-                    service:
-                      name: frontend-service
-                      port:
-                        number: 80
-            - host: www.${{ env.URL_PREFIX }}.${{ env.URL_SUFFIX }}
-              http:
-                paths:
-                - path: /
-                  pathType: Prefix
-                  backend:
-                    service:
-                      name: frontend-service
-                      port:
-                        number: 80
-          EOF
-          
-          # Apply other Kubernetes configurations
-          kubectl apply -f kubernetes/
-          kubectl rollout restart deployment/backend-deployment
-          kubectl rollout restart deployment/frontend-deployment
-        env:
-          URL_SUFFIX: ${{ env.URL_SUFFIX }}
+          echo "🦩 Checking certificate status..."
+          kubectl -n ${REGISTRY_NAME} get certificates
 
-      - name: Create Deployment 📦 🦩
-        id: deployment
-        uses: actions/github-script@v7
+      - name: Create GitHub Deployment 📦 🦩
+        uses: chrnorm/deployment-action@v2
         with:
-          github-token: ${{ secrets.GH_PAT }}
-          script: |
-            console.log("🦩 Creating deployment...");
-            const deployment = await github.rest.repos.createDeployment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: context.sha,
-              environment: 'production',
-              auto_merge: false,
-              required_contexts: []
-            });
-            return deployment.data.id;
-
-      - name: Update Deployment Status ✨ 🦩
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GH_PAT }}
-          script: |
-            console.log("🦩 Updating deployment status...");
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
-              state: 'success',
-              environment_url: process.env.APP_URL,
-              description: 'Deployment successful! :rocket:',
-              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
-            }); 
+          token: ${{ secrets.GH_PAT }}
+          environment: production
+          initial-status: success
+          environment-url: https://${{ env.DOMAIN_NAME }} 

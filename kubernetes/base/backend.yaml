@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: ${BACKEND_REPLICAS:-2}
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      imagePullSecrets:
+        - name: registry-credentials
+      containers:
+        - name: backend
+          image: ${REGISTRY_URL}/major-league-github-backend:${VERSION}
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8450
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - configMapRef:
+                name: backend-config
+          env:
+            - name: GITHUB_TOKENS
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: GITHUB_TOKENS
+          resources:
+            requests:
+              memory: ${BACKEND_REQUEST_MEMORY:-2Gi}
+              cpu: ${BACKEND_REQUEST_CPU:-1000m}
+            limits:
+              memory: ${BACKEND_LIMIT_MEMORY:-2.5Gi}
+              cpu: ${BACKEND_LIMIT_CPU:-2000m}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  labels:
+    app: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 8450
+      targetPort: http
+  type: ClusterIP 

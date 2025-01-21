@@ -1,0 +1,43 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_cache_bypass $http_upgrade;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection 'upgrade';
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+spec:
+  tls:
+    - hosts:
+        - ${DOMAIN_NAME}
+      secretName: app-tls
+  rules:
+    - host: ${DOMAIN_NAME}
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8450
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80 
