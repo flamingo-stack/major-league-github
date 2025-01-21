@@ -5,7 +5,7 @@ metadata:
   labels:
     app: backend
 spec:
-  replicas: ${BACKEND_REPLICAS:-2}
+  replicas: ${BACKEND_REPLICAS}
   selector:
     matchLabels:
       app: backend
@@ -38,14 +38,14 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: GITHUB_TOKENS
+                  key: github.tokens
           resources:
             requests:
-              memory: ${BACKEND_REQUEST_MEMORY:-2Gi}
-              cpu: ${BACKEND_REQUEST_CPU:-1000m}
+              memory: ${BACKEND_REQUEST_MEMORY}
+              cpu: ${BACKEND_REQUEST_CPU}
             limits:
-              memory: ${BACKEND_LIMIT_MEMORY:-2.5Gi}
-              cpu: ${BACKEND_LIMIT_CPU:-2000m}
+              memory: ${BACKEND_LIMIT_MEMORY}
+              cpu: ${BACKEND_LIMIT_CPU}
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness

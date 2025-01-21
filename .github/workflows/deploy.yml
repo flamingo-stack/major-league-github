@@ -11,8 +11,28 @@ env:
   VERSION: v1.0.${{ github.run_number }}
   DOMAIN_NAME: major-league-github.flamingo.cx
   ENVIRONMENT: production
+  
+  # Replica counts
   BACKEND_REPLICAS: "2"
   FRONTEND_REPLICAS: "2"
+  
+  # Backend resources
+  BACKEND_REQUEST_MEMORY: "2048Mi"
+  BACKEND_REQUEST_CPU: "1000m"
+  BACKEND_LIMIT_MEMORY: "2560Mi"
+  BACKEND_LIMIT_CPU: "2000m"
+  
+  # Frontend resources
+  FRONTEND_REQUEST_MEMORY: "128Mi"
+  FRONTEND_REQUEST_CPU: "100m"
+  FRONTEND_LIMIT_MEMORY: "256Mi"
+  FRONTEND_LIMIT_CPU: "200m"
+  
+  # Java settings
+  JAVA_MAX_HEAP: "1536m"
+  JAVA_MIN_HEAP: "768m"
+  
+  # Cluster settings
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
 
 jobs:

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: frontend
 spec:
-  replicas: ${FRONTEND_REPLICAS:-2}
+  replicas: ${FRONTEND_REPLICAS}
   selector:
     matchLabels:
       app: frontend
@@ -35,11 +35,11 @@ spec:
                 name: frontend-config
           resources:
             requests:
-              memory: ${FRONTEND_REQUEST_MEMORY:-128Mi}
-              cpu: ${FRONTEND_REQUEST_CPU:-100m}
+              memory: ${FRONTEND_REQUEST_MEMORY}
+              cpu: ${FRONTEND_REQUEST_CPU}
             limits:
-              memory: ${FRONTEND_LIMIT_MEMORY:-256Mi}
-              cpu: ${FRONTEND_LIMIT_CPU:-200m}
+              memory: ${FRONTEND_LIMIT_MEMORY}
+              cpu: ${FRONTEND_LIMIT_CPU}
           livenessProbe:
             httpGet:
               path: /
