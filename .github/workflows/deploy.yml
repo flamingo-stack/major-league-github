@@ -8,6 +8,8 @@ on:
 env:
   REGISTRY: ghcr.io
   APP_URL: https://${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
+  URL_SUFFIX: ${{ secrets.URL_SUFFIX }}
+  URL_PREFIX: ${{ secrets.URL_PREFIX }}
 
 jobs:
   build-and-deploy:
@@ -155,13 +157,15 @@ jobs:
           if record_exists "A" "${{ secrets.URL_PREFIX }}"; then
             echo "🦩 A record exists, getting ID..."
             A_RECORD_ID=$(doctl compute domain records list ${{ secrets.URL_SUFFIX }} --format ID,Type,Name --no-header | grep -i "^[0-9]* *A *${{ secrets.URL_PREFIX }}$" | awk '{print $1}')
-            echo "🦩 Updating A record..."
+            echo "🦩 Found A record ID: ${A_RECORD_ID}"
+            echo "🦩 Executing command: doctl compute domain records update ${{ env.URL_SUFFIX }} ${A_RECORD_ID} --record-type A --record-name \"${{ env.URL_PREFIX }}\" --record-data \"${LB_IP}\""
             doctl compute domain records update ${{ secrets.URL_SUFFIX }} $A_RECORD_ID \
               --record-type A \
               --record-name "${{ secrets.URL_PREFIX }}" \
               --record-data "${LB_IP}"
           else
             echo "🦩 Creating new A record..."
+            echo "🦩 Executing command: doctl compute domain records create ${{ env.URL_SUFFIX }} --record-type A --record-name \"${{ env.URL_PREFIX }}\" --record-data \"${LB_IP}\""
             doctl compute domain records create ${{ secrets.URL_SUFFIX }} \
               --record-type A \
               --record-name "${{ secrets.URL_PREFIX }}" \
