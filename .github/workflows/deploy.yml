@@ -223,9 +223,11 @@ jobs:
             echo "⚠️ Warning: Could not get cluster ID"
           fi
           
-          # Get registry URN
-          REGISTRY_ID=$(doctl registry get --format ID --no-header)
-          if [ ! -z "$REGISTRY_ID" ]; then
+          # Get registry ID - note that we need to extract just the ID from the registry info
+          REGISTRY_INFO=$(doctl registry get --format ID --no-header)
+          if [ ! -z "$REGISTRY_INFO" ]; then
+            # The registry ID is the last part of the registry info
+            REGISTRY_ID=$(echo "$REGISTRY_INFO" | tr -d '\r')
             REGISTRY_URN="do:registry:${REGISTRY_ID}"
             echo "Found registry URN: ${REGISTRY_URN}"
           else
@@ -235,15 +237,19 @@ jobs:
           # Build resources array with error checking
           RESOURCES=()
           
-          # Add resources if they exist
-          if [ ! -z "$CLUSTER_URN" ]; then
+          # Add resources if they exist and are properly formatted
+          if [ ! -z "$CLUSTER_URN" ] && [[ "$CLUSTER_URN" =~ ^do:kubernetes:[a-zA-Z0-9-]+$ ]]; then
             RESOURCES+=("${CLUSTER_URN}")
             echo "Adding cluster to resources: ${CLUSTER_URN}"
+          else
+            echo "⚠️ Warning: Invalid cluster URN format: ${CLUSTER_URN}"
           fi
           
-          if [ ! -z "$REGISTRY_URN" ]; then
+          if [ ! -z "$REGISTRY_URN" ] && [[ "$REGISTRY_URN" =~ ^do:registry:[a-zA-Z0-9-]+$ ]]; then
             RESOURCES+=("${REGISTRY_URN}")
             echo "Adding registry to resources: ${REGISTRY_URN}"
+          else
+            echo "⚠️ Warning: Invalid registry URN format: ${REGISTRY_URN}"
           fi
           
           # Debug output
@@ -251,31 +257,30 @@ jobs:
           echo "Resources array contents:"
           printf '%s\n' "${RESOURCES[@]}"
           
-          # Build the resources string for doctl
-          RESOURCES_STRING=""
-          for resource in "${RESOURCES[@]}"; do
-            RESOURCES_STRING+="--resource ${resource} "
-          done
-          
-          echo "Resource string for doctl: ${RESOURCES_STRING}"
-          
           # Only try to attach if we have resources
-          if [ ! -z "$RESOURCES_STRING" ]; then
+          if [ ${#RESOURCES[@]} -gt 0 ]; then
             echo "🦩 Attaching resources to project ${PROJECT_NAME} (ID: ${PROJECT_ID})..."
             
+            # Build the resources string with proper quoting
+            RESOURCES_STRING=""
+            for resource in "${RESOURCES[@]}"; do
+              RESOURCES_STRING+="--resource='${resource}' "
+            done
+            
+            echo "Resource string for doctl: ${RESOURCES_STRING}"
+            
             # Try to attach resources with full error output
-            if ! doctl projects resources assign "${PROJECT_ID}" ${RESOURCES_STRING} 2>&1; then
+            if ! eval "doctl projects resources assign '${PROJECT_ID}' ${RESOURCES_STRING}"; then
               echo "⚠️ Warning: Failed to attach resources to project"
               echo "🦩 Current project resources:"
               doctl projects resources list "${PROJECT_ID}" --format "Resource Type,Resource ID" --no-header || true
-              # Don't exit on attachment failure, it's not critical
             else
               echo "✅ Resources attached to project successfully"
               echo "🦩 Current project resources:"
               doctl projects resources list "${PROJECT_ID}" --format "Resource Type,Resource ID" --no-header || true
             fi
           else
-            echo "⚠️ Warning: No resources to attach"
+            echo "⚠️ Warning: No valid resources to attach"
           fi
           
           # Verify project resources
@@ -437,14 +442,57 @@ jobs:
           fi
           
           echo "🦩 Installing cert-manager..."
-          # Delete any failed cert-manager installation if exists
+          
+          # Function to check for ongoing Helm operations
+          check_helm_operations() {
+            local namespace=$1
+            if kubectl get pods -n $namespace 2>/dev/null | grep -q "helm-install"; then
+              return 1
+            fi
+            return 0
+          }
+          
+          # Clean up any existing cert-manager installation
+          echo "🦩 Cleaning up existing cert-manager resources..."
           kubectl delete --ignore-not-found=true -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.crds.yaml
           
+          # Delete the namespace if it exists (this will remove all resources including Helm releases)
+          echo "🦩 Removing existing cert-manager namespace if it exists..."
+          kubectl delete namespace cert-manager --ignore-not-found=true
+          
+          # Wait for namespace deletion to complete
+          echo "🦩 Waiting for cert-manager namespace cleanup..."
+          while kubectl get namespace cert-manager 2>/dev/null; do
+            echo "🦩 Waiting for namespace deletion..."
+            sleep 5
+          done
+          
+          # Helm release cleanup
+          echo "🦩 Cleaning up Helm release..."
+          helm delete cert-manager --namespace cert-manager --ignore-not-found
+          
+          # Wait for any ongoing Helm operations to complete
+          echo "🦩 Waiting for any ongoing Helm operations..."
+          WAIT_SECONDS=0
+          MAX_WAIT=120
+          while ! check_helm_operations "cert-manager" && [ $WAIT_SECONDS -lt $MAX_WAIT ]; do
+            echo "🦩 Waiting for Helm operations to complete... ($WAIT_SECONDS/$MAX_WAIT seconds)"
+            sleep 5
+            WAIT_SECONDS=$((WAIT_SECONDS + 5))
+          done
+          
+          if [ $WAIT_SECONDS -ge $MAX_WAIT ]; then
+            echo "❌ Error: Timeout waiting for Helm operations to complete"
+            exit 1
+          fi
+          
+          # Install cert-manager with retries
           CERT_MANAGER_CMD="helm upgrade --install cert-manager jetstack/cert-manager \
             --namespace cert-manager --create-namespace \
             --set installCRDs=true \
             --wait --timeout 5m \
-            --set global.leaderElection.namespace=cert-manager"
+            --set global.leaderElection.namespace=cert-manager \
+            --atomic"
           
           if ! retry_command "$CERT_MANAGER_CMD" "Install cert-manager"; then
             echo "❌ Error: Failed to install cert-manager"
@@ -452,9 +500,11 @@ jobs:
             kubectl get pods -n cert-manager
             kubectl describe pods -n cert-manager
             echo "🦩 Checking cert-manager CRDs..."
-            kubectl get crds | grep cert-manager
+            kubectl get crds | grep cert-manager || true
             echo "🦩 Checking cert-manager logs..."
-            kubectl logs -n cert-manager -l app=cert-manager --tail=100
+            kubectl logs -n cert-manager -l app=cert-manager --tail=100 || true
+            echo "🦩 Checking Helm history..."
+            helm history cert-manager -n cert-manager || true
             exit 1
           fi
           
