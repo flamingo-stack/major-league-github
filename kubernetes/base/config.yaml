@@ -12,7 +12,7 @@ kind: ConfigMap
 metadata:
   name: backend-config
 data:
-  SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+  SPRING_PROFILES_ACTIVE: "prod"
   JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP:-1536m} -Xms${JAVA_MIN_HEAP:-768m} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
 ---
 apiVersion: v1
