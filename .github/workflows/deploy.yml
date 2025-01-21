@@ -565,8 +565,8 @@ jobs:
           echo "🦩 Ingress Status:"
           kubectl -n ${REGISTRY_NAME} get ingress
           
-          echo "🦩 Certificate Status:"
-          kubectl -n ${REGISTRY_NAME} get certificates
+          echo "🦩 Load Balancer Status:"
+          kubectl -n ingress-nginx get service ingress-nginx-controller
           
           echo "🦩 Events:"
           kubectl -n ${REGISTRY_NAME} get events --sort-by='.lastTimestamp'
