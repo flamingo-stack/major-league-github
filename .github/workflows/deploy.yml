@@ -34,8 +34,13 @@ jobs:
 
       - name: Log in to registry 🔑
         run: |
-          doctl registry login
-          docker login registry.digitalocean.com -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          # Get registry auth token
+          REGISTRY_TOKEN=$(doctl registry docker-config --access-token ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} | grep -o '"auth":"[^"]*"' | cut -d'"' -f4 | base64 -d | cut -d':' -f2)
+          
+          # Login using the token
+          echo $REGISTRY_TOKEN | docker login registry.digitalocean.com \
+            --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --password-stdin
 
       - name: Build and push backend image 🏗️ 🦩
         run: |
