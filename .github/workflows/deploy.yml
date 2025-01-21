@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: registry.digitalocean.com
+  REGISTRY_NAME: major-league-github
   URL_SUFFIX: "flamingo.cx"
   URL_PREFIX: "major-league-github"
   APP_URL: "https://major-league-github.flamingo.cx"
@@ -26,74 +27,47 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Set registry name 🏷️
-        run: |
-          echo "REGISTRY_NAME=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Log in to GitHub Container Registry 🔑
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Install doctl 🛠️
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Create or get Kubernetes cluster 🎯 🦩
-        run: |
-          echo "🦩 Checking if cluster exists..."
-          if ! doctl kubernetes cluster get ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }} &>/dev/null; then
-            echo "🦩 Cluster not found, creating new cluster..."
-            doctl kubernetes cluster create ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }} \
-              --region sfo3 \
-              --size s-2vcpu-4gb \
-              --count 2 \
-              --version latest \
-              --wait
-            echo "🦩 Cluster created successfully!"
-          else
-            echo "🦩 Cluster already exists!"
-          fi
+      - name: Log in to DigitalOcean Container Registry 🔑
+        run: doctl registry login --expiry-seconds 1200
 
-      - name: Save DigitalOcean kubeconfig 💾
+      - name: Create DigitalOcean registry 🏗️
         run: |
-          doctl kubernetes cluster kubeconfig save ${{ secrets.DIGITALOCEAN_CLUSTER_NAME }}
+          echo "🦩 Creating/ensuring registry exists..."
+          doctl registry create ${{ env.REGISTRY_NAME }} --subscription-tier basic || true
 
       - name: Build and push backend image 🏗️ 🦩
         env:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building backend image..."
-          docker build -t ghcr.io/flamingo-cx/major-league-github-backend:${VERSION} -t ghcr.io/flamingo-cx/major-league-github-backend:latest ./backend
+          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:latest ./backend
           echo "🦩 Pushing backend image..."
-          docker push ghcr.io/flamingo-cx/major-league-github-backend:${VERSION}
-          docker push ghcr.io/flamingo-cx/major-league-github-backend:latest
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:${VERSION}
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:latest
 
       - name: Build and push frontend image 🎨 🦩
         env:
           VERSION: v1.0.${{ github.run_number }}
         run: |
           echo "🦩 Building frontend image..."
-          docker build -t ghcr.io/flamingo-cx/major-league-github-frontend:${VERSION} -t ghcr.io/flamingo-cx/major-league-github-frontend:latest ./frontend
+          docker build -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:${VERSION} -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:latest ./frontend
           echo "🦩 Pushing frontend image..."
-          docker push ghcr.io/flamingo-cx/major-league-github-frontend:${VERSION}
-          docker push ghcr.io/flamingo-cx/major-league-github-frontend:latest
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:${VERSION}
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:latest
 
       - name: Configure Kubernetes registry access 🔑
         run: |
           echo "🦩 Creating registry secret in Kubernetes..."
-          kubectl delete secret github-registry --ignore-not-found
-          kubectl create secret docker-registry github-registry \
-            --docker-server=${{ env.REGISTRY }} \
-            --docker-username=${{ github.actor }} \
-            --docker-password=${{ secrets.GITHUB_TOKEN }} \
-            --docker-email=${{ secrets.LETSENCRYPT_EMAIL }}
+          kubectl delete secret registry-major-league-github --ignore-not-found
+          doctl registry kubernetes-manifest | kubectl apply -f -
           
           echo "🦩 Patching default service account..."
-          kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "github-registry"}]}'
+          kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "registry-major-league-github"}]}'
 
       - name: Install Helm ⚓
         run: |
@@ -234,16 +208,16 @@ jobs:
               spec:
                 containers:
                 - name: backend
-                  image: ghcr.io/flamingo-cx/major-league-github-backend:${VERSION}
+                  image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend:${VERSION}
                   ports:
                   - containerPort: 8450
                   resources:
                     requests:
-                      memory: "2Gi"
-                      cpu: "1"
+                      memory: "1Gi"
+                      cpu: "500m"
                     limits:
-                      memory: "2560Mi"
-                      cpu: "2"
+                      memory: "1536Mi"
+                      cpu: "1"
                   env:
                   - name: github.tokens
                     valueFrom:
@@ -251,9 +225,9 @@ jobs:
                         name: github-tokens
                         key: github.tokens
                   - name: JAVA_TOOL_OPTIONS
-                    value: "-Xmx1536m -Xms768m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
+                    value: "-Xmx1024m -Xms512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
                 imagePullSecrets:
-                - name: github-registry
+                - name: registry-major-league-github
           EOF
           
           # Update frontend deployment
@@ -274,18 +248,18 @@ jobs:
               spec:
                 containers:
                 - name: frontend
-                  image: ghcr.io/flamingo-cx/major-league-github-frontend:${VERSION}
+                  image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:${VERSION}
                   ports:
                   - containerPort: 80
                   resources:
                     requests:
+                      memory: "128Mi"
+                      cpu: "100m"
+                    limits:
                       memory: "256Mi"
                       cpu: "200m"
-                    limits:
-                      memory: "512Mi"
-                      cpu: "500m"
                 imagePullSecrets:
-                - name: github-registry
+                - name: registry-major-league-github
           EOF
 
       - name: Create GitHub Tokens Secret 🔐 🦩
