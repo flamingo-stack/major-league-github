@@ -378,6 +378,17 @@ jobs:
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo update
           
+          echo "🦩 Creating SSL certificate..."
+          CERT_NAME="${DOMAIN_NAME}-cert"
+          if ! doctl compute certificate create \
+            --name "${CERT_NAME}" \
+            --type lets_encrypt \
+            --dns-names "${DOMAIN_NAME}.${DOMAIN_SUFFIX}" \
+            --wait; then
+            echo "❌ Error: Failed to create certificate"
+            exit 1
+          fi
+          
           echo "🦩 Installing NGINX Ingress Controller..."
           NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx --create-namespace \
@@ -390,7 +401,7 @@ jobs:
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=https \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-http-ports\"=80 \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports\"=443 \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-disable-lets-encrypt-dns-records\"=false \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-certificate-name\"=\"${CERT_NAME}\" \
             --wait --timeout 5m"
           
           if ! eval "$NGINX_CMD"; then
