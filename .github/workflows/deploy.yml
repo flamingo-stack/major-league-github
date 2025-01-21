@@ -153,7 +153,7 @@ jobs:
             doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *${record_type} *${record_name}$" > /dev/null
           }
 
-          # Handle A record
+          # Handle A record for subdomain
           if record_exists "A" "${{ env.DOMAIN_PREFIX }}"; then
             echo "🦩 A record exists, getting ID..."
             A_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_PREFIX }}$" | awk '{print $1}')
@@ -170,7 +170,7 @@ jobs:
               --record-data "${LB_IP}"
           fi
 
-          # Handle CNAME record
+          # Handle CNAME record for www subdomain
           if record_exists "CNAME" "www.${{ env.DOMAIN_PREFIX }}"; then
             echo "🦩 CNAME record exists, getting ID..."
             CNAME_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.DOMAIN_PREFIX }}$" | awk '{print $1}')
