@@ -9,7 +9,7 @@ env:
   REGISTRY: ghcr.io
   URL_SUFFIX: "flamingo.cx"
   URL_PREFIX: "major-league-github"
-  APP_URL: https://${{ secrets.URL_PREFIX }}.${{ secrets.URL_SUFFIX }}
+  APP_URL: "https://major-league-github.flamingo.cx"
   
 
 jobs:
@@ -83,7 +83,7 @@ jobs:
       - name: Install Helm ⚓
         run: |
           echo "🦩 Installing Helm..."
-          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+          cURL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
       - name: Install NGINX Ingress Controller 🌐 🦩
         run: |
