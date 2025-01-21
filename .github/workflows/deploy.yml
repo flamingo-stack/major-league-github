@@ -44,7 +44,7 @@ jobs:
           echo "🦩 Building backend image..."
           doctl auth init --access-token ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           doctl registry login --expiry-seconds 1200
-          echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}=$DIGITALOCEAN_ACCESS_TOKEN" >> $GITHUB_ENV && doctl auth init
+          echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}=$DIGITALOCEAN_ACCESS_TOKEN" >> $GITHUB_ENV && doctl auth init  --access-token ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:${VERSION} -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest ./backend
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:${VERSION}
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend:latest
@@ -56,7 +56,7 @@ jobs:
           echo "🦩 Building frontend image..."
           doctl auth init --access-token ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           doctl registry login --expiry-seconds 1200
-          echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}=$DIGITALOCEAN_ACCESS_TOKEN" >> $GITHUB_ENV && doctl auth init
+          echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}=$DIGITALOCEAN_ACCESS_TOKEN" >> $GITHUB_ENV && doctl auth init  --access-token ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:${VERSION} -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest ./frontend
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:${VERSION}
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest
