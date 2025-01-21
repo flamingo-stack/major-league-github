@@ -13,7 +13,7 @@ env:
   ENVIRONMENT: production
   BACKEND_REPLICAS: "2"
   FRONTEND_REPLICAS: "2"
-  CLUSTER_NAME: major-league-github
+  CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
 
 jobs:
   build-and-deploy:
@@ -213,13 +213,20 @@ jobs:
           fi
           
           echo "🦩 Creating application secrets..."
+          # Create a temporary file for the tokens
+          echo "${{ secrets.GH_API_TOKENS }}" > github_tokens.txt
+          
           if ! kubectl create secret generic app-secrets \
             --namespace=${REGISTRY_NAME} \
-            --from-literal=GITHUB_TOKENS=${{ secrets.GH_API_TOKENS }} \
+            --from-file=github.tokens=github_tokens.txt \
             --dry-run=client -o yaml | kubectl apply -f -; then
             echo "❌ Error: Failed to create application secrets"
+            rm -f github_tokens.txt
             exit 1
           fi
+          
+          # Clean up the temporary file
+          rm -f github_tokens.txt
           
           echo "✅ Kubernetes secrets created successfully"
 
