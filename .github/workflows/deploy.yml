@@ -193,41 +193,43 @@ jobs:
           fi
           
           echo "🦩 Attaching resources to project..."
-          # Get the Kubernetes cluster URN
-          CLUSTER_URN=$(doctl kubernetes cluster get "${CLUSTER_NAME}" --format URN --no-header)
           
-          # Get other resource URNs
-          REGISTRY_URN="do:registry:${REGISTRY_NAME}"
-          DOMAIN_URN="do:domain:${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
+          # Get the Kubernetes cluster ID
+          CLUSTER_ID=$(doctl kubernetes cluster get "${CLUSTER_NAME}" --format ID --no-header)
+          if [ ! -z "$CLUSTER_ID" ]; then
+            CLUSTER_URN="do:kubernetes:${CLUSTER_ID}"
+            echo "Found cluster URN: ${CLUSTER_URN}"
+          fi
           
-          # Get LoadBalancer URN (from ingress controller)
+          # Get registry ID
+          REGISTRY_ID=$(doctl registry get --format Registry --no-header)
+          if [ ! -z "$REGISTRY_ID" ]; then
+            REGISTRY_URN="do:registry:${REGISTRY_ID}"
+            echo "Found registry URN: ${REGISTRY_URN}"
+          fi
+          
+          # Get domain ID
+          DOMAIN_ID=$(doctl compute domain get "${DOMAIN_NAME}.${DOMAIN_SUFFIX}" --format ID --no-header 2>/dev/null)
+          if [ ! -z "$DOMAIN_ID" ]; then
+            DOMAIN_URN="do:domain:${DOMAIN_ID}"
+            echo "Found domain URN: ${DOMAIN_URN}"
+          fi
+          
+          # Get LoadBalancer ID
           LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "ingress-nginx-controller" | awk '{print $1}')
           if [ ! -z "$LB_ID" ]; then
             LB_URN="do:loadbalancer:${LB_ID}"
+            echo "Found load balancer URN: ${LB_URN}"
           fi
           
           # Build resources array
           RESOURCES=()
           
-          # Add cluster URN if available
-          if [ ! -z "$CLUSTER_URN" ]; then
-            RESOURCES+=("${CLUSTER_URN}")
-          fi
-          
-          # Add registry URN if registry exists
-          if doctl registry get > /dev/null 2>&1; then
-            RESOURCES+=("${REGISTRY_URN}")
-          fi
-          
-          # Add domain URN if domain exists
-          if doctl compute domain get "${DOMAIN_NAME}.${DOMAIN_SUFFIX}" > /dev/null 2>&1; then
-            RESOURCES+=("${DOMAIN_URN}")
-          fi
-          
-          # Add load balancer URN if available
-          if [ ! -z "$LB_URN" ]; then
-            RESOURCES+=("${LB_URN}")
-          fi
+          # Add resources if they exist
+          [ ! -z "$CLUSTER_URN" ] && RESOURCES+=("${CLUSTER_URN}")
+          [ ! -z "$REGISTRY_URN" ] && RESOURCES+=("${REGISTRY_URN}")
+          [ ! -z "$DOMAIN_URN" ] && RESOURCES+=("${DOMAIN_URN}")
+          [ ! -z "$LB_URN" ] && RESOURCES+=("${LB_URN}")
           
           # Build the resources string for doctl
           RESOURCES_STRING=""
@@ -239,12 +241,16 @@ jobs:
           if [ ! -z "$RESOURCES_STRING" ]; then
             echo "🦩 Attaching resources to project ${PROJECT_NAME}..."
             echo "🦩 Resources to attach: ${RESOURCES[@]}"
+            
+            # Try to attach resources
             if ! doctl projects resources assign ${PROJECT_ID} ${RESOURCES_STRING}; then
               echo "⚠️ Warning: Failed to attach some resources to project"
               echo "🦩 Current project resources:"
-              doctl projects resources list ${PROJECT_ID} --format "Resource Type,Resource ID" --no-header
+              doctl projects resources list ${PROJECT_ID} --format "Resource Type,Resource ID" --no-header || true
             else
               echo "✅ Resources attached to project successfully"
+              echo "🦩 Current project resources:"
+              doctl projects resources list ${PROJECT_ID} --format "Resource Type,Resource ID" --no-header || true
             fi
           else
             echo "⚠️ Warning: No resources to attach"
