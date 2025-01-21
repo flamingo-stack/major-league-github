@@ -149,7 +149,10 @@ jobs:
           A_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
           if [ ! -z "$A_RECORD_ID" ]; then
             echo "🦩 Updating A record..."
-            doctl compute domain records update-record ${{ secrets.DOMAIN_SUFFIX }} --record-id $A_RECORD_ID --record-data "${LB_IP}"
+            doctl compute domain records update ${{ secrets.DOMAIN_SUFFIX }} $A_RECORD_ID \
+              --record-type A \
+              --record-name "${{ env.DOMAIN_PREFIX }}" \
+              --record-data "${LB_IP}"
           else
             echo "🦩 Creating A record..."
             doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
@@ -162,7 +165,10 @@ jobs:
           CNAME_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
           if [ ! -z "$CNAME_RECORD_ID" ]; then
             echo "🦩 Updating CNAME record..."
-            doctl compute domain records update-record ${{ secrets.DOMAIN_SUFFIX }} --record-id $CNAME_RECORD_ID --record-data "${{ env.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}."
+            doctl compute domain records update ${{ secrets.DOMAIN_SUFFIX }} $CNAME_RECORD_ID \
+              --record-type CNAME \
+              --record-name "www.${{ env.DOMAIN_PREFIX }}" \
+              --record-data "${{ env.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}."
           else
             echo "🦩 Creating CNAME record..."
             doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
