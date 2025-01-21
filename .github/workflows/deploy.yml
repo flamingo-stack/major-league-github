@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: registry.digitalocean.com
-  PROJECT_NAME: Major League Github
+  PROJECT_NAME: major-league-github
   REGISTRY_NAME: major-league-github
   VERSION: v1.0.${{ github.run_number }}
   DOMAIN_NAME: major-league-github
@@ -183,8 +183,7 @@ jobs:
             if ! doctl kubernetes cluster node-pool update "${CLUSTER_NAME}" default \
               --auto-scale \
               --min-nodes 2 \
-              --max-nodes 4 \
-              --wait; then
+              --max-nodes 4; then
               echo "⚠️ Warning: Failed to configure auto-scaling"
             fi
             
@@ -208,7 +207,24 @@ jobs:
           fi
           
           # Build resources array
-          RESOURCES=("${CLUSTER_URN}" "${REGISTRY_URN}" "${DOMAIN_URN}")
+          RESOURCES=()
+          
+          # Add cluster URN if available
+          if [ ! -z "$CLUSTER_URN" ]; then
+            RESOURCES+=("${CLUSTER_URN}")
+          fi
+          
+          # Add registry URN if registry exists
+          if doctl registry get > /dev/null 2>&1; then
+            RESOURCES+=("${REGISTRY_URN}")
+          fi
+          
+          # Add domain URN if domain exists
+          if doctl compute domain get "${DOMAIN_NAME}.${DOMAIN_SUFFIX}" > /dev/null 2>&1; then
+            RESOURCES+=("${DOMAIN_URN}")
+          fi
+          
+          # Add load balancer URN if available
           if [ ! -z "$LB_URN" ]; then
             RESOURCES+=("${LB_URN}")
           fi
@@ -219,14 +235,19 @@ jobs:
             RESOURCES_STRING+="--resource ${resource} "
           done
           
-          # Attach all resources to the project
-          echo "🦩 Attaching resources to project ${PROJECT_NAME}..."
-          if ! doctl projects resources assign ${PROJECT_ID} ${RESOURCES_STRING}; then
-            echo "⚠️ Warning: Failed to attach some resources to project"
-            echo "🦩 Attached resources:"
-            doctl projects resources list ${PROJECT_ID} --format "Resource Type,Resource ID" --no-header
+          # Only try to attach if we have resources
+          if [ ! -z "$RESOURCES_STRING" ]; then
+            echo "🦩 Attaching resources to project ${PROJECT_NAME}..."
+            echo "🦩 Resources to attach: ${RESOURCES[@]}"
+            if ! doctl projects resources assign ${PROJECT_ID} ${RESOURCES_STRING}; then
+              echo "⚠️ Warning: Failed to attach some resources to project"
+              echo "🦩 Current project resources:"
+              doctl projects resources list ${PROJECT_ID} --format "Resource Type,Resource ID" --no-header
+            else
+              echo "✅ Resources attached to project successfully"
+            fi
           else
-            echo "✅ Resources attached to project successfully"
+            echo "⚠️ Warning: No resources to attach"
           fi
           
           echo "🦩 Verifying infrastructure..."
