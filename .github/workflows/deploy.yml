@@ -69,10 +69,10 @@ jobs:
       - name: Build and push frontend image 🎨 🦩
         run: |
           echo "🦩 Building frontend image..."
-          docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest ./frontend
+          docker build -t registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest ./frontend --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest
-          docker tag registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:v1.0.${{ github.run_number }}
-          docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:v1.0.${{ github.run_number }}
+          docker tag registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:latest registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:v1.0.${{ github.run_number }} --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          docker push registry.digitalocean.com/${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend:v1.0.${{ github.run_number }} --no-cache --username ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Configure Kubernetes registry access 🔑
         run: |
