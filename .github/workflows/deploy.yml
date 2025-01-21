@@ -211,46 +211,36 @@ jobs:
           if [ ! -z "$CLUSTER_ID" ]; then
             CLUSTER_URN="do:kubernetes:${CLUSTER_ID}"
             echo "Found cluster URN: ${CLUSTER_URN}"
+          else
+            echo "⚠️ Warning: Could not get cluster ID"
           fi
           
-          # Get registry URN (registry name is the URN ID for registries)
+          # Get registry URN
           if doctl registry get > /dev/null 2>&1; then
             REGISTRY_URN="do:registry:${REGISTRY_NAME}"
             echo "Found registry URN: ${REGISTRY_URN}"
+          else
+            echo "⚠️ Warning: Could not verify registry"
           fi
           
-          # Get domain ID
-          DOMAIN_ID=$(doctl compute domain get "${DOMAIN_NAME}.${DOMAIN_SUFFIX}" --format ID --no-header 2>/dev/null)
-          if [ ! -z "$DOMAIN_ID" ]; then
-            DOMAIN_URN="do:domain:${DOMAIN_ID}"
-            echo "Found domain URN: ${DOMAIN_URN}"
-          fi
-          
-          # Get LoadBalancer ID (wait for it to be created by ingress)
-          RETRY_COUNT=0
-          MAX_RETRIES=10
-          while [ -z "$LB_ID" ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "ingress-nginx-controller" | awk '{print $1}')
-            if [ -z "$LB_ID" ]; then
-              echo "🦩 Waiting for LoadBalancer... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
-              sleep 10
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-            fi
-          done
-          
-          if [ ! -z "$LB_ID" ]; then
-            LB_URN="do:loadbalancer:${LB_ID}"
-            echo "Found load balancer URN: ${LB_URN}"
-          fi
-          
-          # Build resources array
+          # Build resources array with error checking
           RESOURCES=()
           
           # Add resources if they exist
-          [ ! -z "$CLUSTER_URN" ] && RESOURCES+=("${CLUSTER_URN}")
-          [ ! -z "$REGISTRY_URN" ] && RESOURCES+=("${REGISTRY_URN}")
-          [ ! -z "$DOMAIN_URN" ] && RESOURCES+=("${DOMAIN_URN}")
-          [ ! -z "$LB_URN" ] && RESOURCES+=("${LB_URN}")
+          if [ ! -z "$CLUSTER_URN" ]; then
+            RESOURCES+=("${CLUSTER_URN}")
+            echo "Adding cluster to resources"
+          fi
+          
+          if [ ! -z "$REGISTRY_URN" ]; then
+            RESOURCES+=("${REGISTRY_URN}")
+            echo "Adding registry to resources"
+          fi
+          
+          # Debug output
+          echo "Number of resources to attach: ${#RESOURCES[@]}"
+          echo "Resources array contents:"
+          printf '%s\n' "${RESOURCES[@]}"
           
           # Build the resources string for doctl
           RESOURCES_STRING=""
@@ -258,23 +248,30 @@ jobs:
             RESOURCES_STRING+="--resource ${resource} "
           done
           
+          echo "Resource string for doctl: ${RESOURCES_STRING}"
+          
           # Only try to attach if we have resources
           if [ ! -z "$RESOURCES_STRING" ]; then
-            echo "🦩 Attaching resources to project ${PROJECT_NAME}..."
-            echo "🦩 Resources to attach: ${RESOURCES[@]}"
+            echo "🦩 Attaching resources to project ${PROJECT_NAME} (ID: ${PROJECT_ID})..."
             
-            # Try to attach resources
-            if ! doctl projects resources assign ${PROJECT_ID} ${RESOURCES_STRING}; then
-              echo "⚠️ Warning: Failed to attach some resources to project"
-              echo "🦩 Current project resources:"
-              doctl projects resources list ${PROJECT_ID} --format "Resource Type,Resource ID" --no-header || true
+            # Try to attach resources with full error output
+            if ! doctl projects resources assign "${PROJECT_ID}" ${RESOURCES_STRING} 2>&1; then
+              echo "⚠️ Warning: Failed to attach resources to project"
+              echo "🦩 Attempting to list current project resources..."
+              doctl projects resources list "${PROJECT_ID}" --format "Resource Type,Resource ID" --no-header || true
             else
               echo "✅ Resources attached to project successfully"
               echo "🦩 Current project resources:"
-              doctl projects resources list ${PROJECT_ID} --format "Resource Type,Resource ID" --no-header || true
+              doctl projects resources list "${PROJECT_ID}" --format "Resource Type,Resource ID" --no-header || true
             fi
           else
             echo "⚠️ Warning: No resources to attach"
+          fi
+          
+          # Verify project resources
+          echo "🦩 Verifying project resources..."
+          if ! doctl projects resources list "${PROJECT_ID}" --format "Resource Type,Resource ID" --no-header; then
+            echo "⚠️ Warning: Could not verify project resources"
           fi
           
           echo "🦩 Verifying infrastructure..."
