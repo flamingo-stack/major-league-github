@@ -11,7 +11,7 @@ spec:
     solvers:
     - selector:
         dnsZones:
-          - "${DOMAIN_SUFFIX}"
+          - ${DOMAIN_SUFFIX}
       http01:
         ingress:
           class: nginx

@@ -11,7 +11,7 @@ spec:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - "${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
+    - ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
   privateKey:
     algorithm: RSA
     size: 2048 
