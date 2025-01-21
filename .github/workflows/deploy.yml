@@ -12,6 +12,13 @@ env:
   DOMAIN_NAME: major-league-github.flamingo.cx
   ENVIRONMENT: production
   
+  # Cluster configuration
+  CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+  CLUSTER_REGION: sfo3
+  CLUSTER_SIZE: s-2vcpu-4gb
+  CLUSTER_NODE_COUNT: "2"
+  CLUSTER_VERSION: latest
+  
   # Replica counts
   BACKEND_REPLICAS: "2"
   FRONTEND_REPLICAS: "2"
@@ -31,9 +38,6 @@ env:
   # Java settings
   JAVA_MAX_HEAP: "1536m"
   JAVA_MIN_HEAP: "768m"
-  
-  # Cluster settings
-  CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
 
 jobs:
   build-and-deploy:
@@ -102,6 +106,40 @@ jobs:
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Setup DigitalOcean Infrastructure 🏗️
+        run: |
+          echo "🦩 Checking DigitalOcean Registry..."
+          if ! doctl registry get; then
+            echo "🦩 Creating DigitalOcean Registry..."
+            if ! doctl registry create --subscription-tier basic; then
+              echo "❌ Error: Failed to create registry"
+              exit 1
+            fi
+            echo "✅ Registry created successfully"
+          else
+            echo "✅ Registry already exists"
+          fi
+          
+          echo "🦩 Checking Kubernetes cluster..."
+          if ! doctl kubernetes cluster get "$CLUSTER_NAME" 2>/dev/null; then
+            echo "🦩 Creating Kubernetes cluster..."
+            if ! doctl kubernetes cluster create "$CLUSTER_NAME" \
+              --region $CLUSTER_REGION \
+              --size $CLUSTER_SIZE \
+              --count $CLUSTER_NODE_COUNT \
+              --version $CLUSTER_VERSION \
+              --auto-upgrade true \
+              --maintenance-window "saturday=21:00" \
+              --ha=true \
+              --wait; then
+              echo "❌ Error: Failed to create cluster"
+              exit 1
+            fi
+            echo "✅ Cluster created successfully"
+          else
+            echo "✅ Cluster already exists"
+          fi
 
       - name: Configure Docker and Kubernetes 🔑
         run: |
@@ -266,13 +304,47 @@ jobs:
           done
           
           echo "🦩 Waiting for deployments to be ready..."
+          
+          # Function to check pod status and logs
+          check_deployment() {
+            local deployment=$1
+            echo "🦩 Checking status for deployment: $deployment"
+            
+            # Get pod status
+            echo "🦩 Pod status:"
+            kubectl -n ${REGISTRY_NAME} get pods -l app=$deployment -o wide
+            
+            # Get failed pods if any
+            failed_pods=$(kubectl -n ${REGISTRY_NAME} get pods -l app=$deployment -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}')
+            
+            if [ ! -z "$failed_pods" ]; then
+              echo "🦩 Found failed pods: $failed_pods"
+              for pod in $failed_pods; do
+                echo "🦩 Logs for failed pod $pod:"
+                kubectl -n ${REGISTRY_NAME} logs $pod --all-containers --tail=50
+                
+                echo "🦩 Events for failed pod $pod:"
+                kubectl -n ${REGISTRY_NAME} get events --field-selector involvedObject.name=$pod
+                
+                echo "🦩 Describing failed pod $pod:"
+                kubectl -n ${REGISTRY_NAME} describe pod $pod
+              done
+            fi
+          }
+          
+          # Wait for backend deployment
+          echo "🦩 Waiting for backend deployment..."
           if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/backend --timeout=5m; then
             echo "❌ Error: Backend deployment failed to roll out"
+            check_deployment "backend"
             exit 1
           fi
           
+          # Wait for frontend deployment
+          echo "🦩 Waiting for frontend deployment..."
           if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/frontend --timeout=5m; then
             echo "❌ Error: Frontend deployment failed to roll out"
+            check_deployment "frontend"
             exit 1
           fi
           
@@ -316,7 +388,7 @@ jobs:
           echo "🦩 Checking deployment status..."
           
           echo "🦩 Pod Status:"
-          kubectl -n ${REGISTRY_NAME} get pods
+          kubectl -n ${REGISTRY_NAME} get pods -o wide
           
           echo "🦩 Service Status:"
           kubectl -n ${REGISTRY_NAME} get services
@@ -327,9 +399,22 @@ jobs:
           echo "🦩 Certificate Status:"
           kubectl -n ${REGISTRY_NAME} get certificates
           
+          echo "🦩 Events:"
+          kubectl -n ${REGISTRY_NAME} get events --sort-by='.lastTimestamp'
+          
           # Verify all pods are running
-          if [ $(kubectl -n ${REGISTRY_NAME} get pods -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}' | wc -w) -ne 0 ]; then
-            echo "❌ Error: Not all pods are running"
+          failed_pods=$(kubectl -n ${REGISTRY_NAME} get pods -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}')
+          if [ ! -z "$failed_pods" ]; then
+            echo "❌ Error: The following pods are not running:"
+            echo "$failed_pods"
+            
+            for pod in $failed_pods; do
+              echo "🦩 Describing failed pod $pod:"
+              kubectl -n ${REGISTRY_NAME} describe pod $pod
+              
+              echo "🦩 Logs for failed pod $pod:"
+              kubectl -n ${REGISTRY_NAME} logs $pod --all-containers --tail=50 || true
+            done
             exit 1
           fi
           
