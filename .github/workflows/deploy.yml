@@ -435,6 +435,7 @@ jobs:
           NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx --create-namespace \
             --set controller.publishService.enabled=true \
+            --set controller.extraArgs.enable-ssl-passthrough='' \
             --wait --timeout 5m"
           
           if ! retry_command "$NGINX_CMD" "Install NGINX Ingress Controller"; then
@@ -443,75 +444,109 @@ jobs:
             kubectl describe pods -n ingress-nginx
             exit 1
           fi
-          
+
+          # Wait for ingress controller to be fully ready
+          echo "🦩 Waiting for Ingress Controller to be ready..."
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=5m
+
           echo "🦩 Installing cert-manager..."
-          
-          # Function to check for ongoing Helm operations
-          check_helm_operations() {
-            local namespace=$1
-            if kubectl get pods -n $namespace 2>/dev/null | grep -q "helm-install"; then
-              return 1
-            fi
-            return 0
-          }
-          
-          # Clean up any existing cert-manager installation
-          echo "🦩 Cleaning up existing cert-manager resources..."
-          kubectl delete --ignore-not-found=true -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.crds.yaml
-          
-          # Delete the namespace if it exists (this will remove all resources including Helm releases)
-          echo "🦩 Removing existing cert-manager namespace if it exists..."
-          kubectl delete namespace cert-manager --ignore-not-found=true
-          
-          # Wait for namespace deletion to complete
-          echo "🦩 Waiting for cert-manager namespace cleanup..."
-          while kubectl get namespace cert-manager 2>/dev/null; do
-            echo "🦩 Waiting for namespace deletion..."
-            sleep 5
-          done
-          
-          # Helm release cleanup
-          echo "🦩 Cleaning up Helm release..."
-          helm delete cert-manager --namespace cert-manager --ignore-not-found
-          
-          # Wait for any ongoing Helm operations to complete
-          echo "🦩 Waiting for any ongoing Helm operations..."
-          WAIT_SECONDS=0
-          MAX_WAIT=120
-          while ! check_helm_operations "cert-manager" && [ $WAIT_SECONDS -lt $MAX_WAIT ]; do
-            echo "🦩 Waiting for Helm operations to complete... ($WAIT_SECONDS/$MAX_WAIT seconds)"
-            sleep 5
-            WAIT_SECONDS=$((WAIT_SECONDS + 5))
-          done
-          
-          if [ $WAIT_SECONDS -ge $MAX_WAIT ]; then
-            echo "❌ Error: Timeout waiting for Helm operations to complete"
-            exit 1
-          fi
-          
-          # Install cert-manager with retries
           CERT_MANAGER_CMD="helm upgrade --install cert-manager jetstack/cert-manager \
             --namespace cert-manager --create-namespace \
             --set installCRDs=true \
-            --wait --timeout 5m \
             --set global.leaderElection.namespace=cert-manager \
-            --atomic"
+            --wait --timeout 5m"
           
           if ! retry_command "$CERT_MANAGER_CMD" "Install cert-manager"; then
             echo "❌ Error: Failed to install cert-manager"
-            echo "🦩 Checking cert-manager namespace status..."
             kubectl get pods -n cert-manager
             kubectl describe pods -n cert-manager
-            echo "🦩 Checking cert-manager CRDs..."
-            kubectl get crds | grep cert-manager || true
+            exit 1
+          fi
+
+          # Wait for cert-manager webhook to be ready
+          echo "🦩 Waiting for cert-manager webhook..."
+          kubectl wait --namespace cert-manager \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=webhook \
+            --timeout=5m
+
+          echo "🦩 Creating namespace if not exists..."
+          if ! kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -; then
+            echo "❌ Error: Failed to create namespace"
+            exit 1
+          fi
+
+          echo "🦩 Creating ClusterIssuer for Let's Encrypt..."
+          envsubst < kubernetes/templates/cluster-issuer.yaml | kubectl apply -f -
+
+          # Wait for ClusterIssuer to be ready
+          echo "🦩 Waiting for ClusterIssuer to be ready..."
+          RETRY_COUNT=0
+          MAX_RETRIES=12
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if kubectl get clusterissuer letsencrypt-prod -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; then
+              echo "✅ ClusterIssuer is ready"
+              break
+            fi
+            echo "🦩 Waiting for ClusterIssuer to be ready... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+            kubectl describe clusterissuer letsencrypt-prod
+            sleep 10
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+          done
+
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "❌ Error: ClusterIssuer failed to become ready"
+            kubectl describe clusterissuer letsencrypt-prod
+            exit 1
+          fi
+
+          # Create Certificate
+          echo "🦩 Creating Certificate..."
+          envsubst < kubernetes/templates/certificate.yaml | kubectl apply -f -
+
+          # Wait for Certificate with better debugging
+          echo "🦩 Waiting for Certificate to be ready..."
+          RETRY_COUNT=0
+          MAX_RETRIES=30
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "🦩 Certificate status (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES):"
+            kubectl get certificate -n ${REGISTRY_NAME} app-certificate -o yaml
+            kubectl describe certificate -n ${REGISTRY_NAME} app-certificate
+            
+            if kubectl get certificate -n ${REGISTRY_NAME} app-certificate -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; then
+              echo "✅ Certificate is ready"
+              break
+            fi
+            
             echo "🦩 Checking cert-manager logs..."
-            kubectl logs -n cert-manager -l app=cert-manager --tail=100 || true
-            echo "🦩 Checking Helm history..."
-            helm history cert-manager -n cert-manager || true
+            kubectl logs -n cert-manager -l app=cert-manager -c cert-manager --tail=50
+            
+            sleep 20
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+          done
+
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "❌ Error: Certificate failed to become ready. Full debug information:"
+            kubectl get events -n ${REGISTRY_NAME} --sort-by='.lastTimestamp'
+            kubectl get events -n cert-manager --sort-by='.lastTimestamp'
+            kubectl describe certificate -n ${REGISTRY_NAME} app-certificate
+            kubectl describe challenges -n ${REGISTRY_NAME}
+            kubectl describe orders.acme.cert-manager.io -n ${REGISTRY_NAME}
+            kubectl describe clusterissuer letsencrypt-prod
+            exit 1
+          fi
+
+          # Verify the secret exists and contains the correct data
+          echo "🦩 Verifying TLS secret..."
+          if ! kubectl get secret -n ${REGISTRY_NAME} app-tls -o yaml; then
+            echo "❌ Error: TLS secret not found"
             exit 1
           fi
           
-          echo "✅ Kubernetes dependencies setup completed"
+          echo "✅ Certificate setup completed"
 
       - name: Create Kubernetes Secrets 🔐 🦩
         run: |
