@@ -213,10 +213,9 @@ jobs:
             echo "Found cluster URN: ${CLUSTER_URN}"
           fi
           
-          # Get registry ID
-          REGISTRY_ID=$(doctl registry get --format Registry --no-header)
-          if [ ! -z "$REGISTRY_ID" ]; then
-            REGISTRY_URN="do:registry:${REGISTRY_ID}"
+          # Get registry URN (registry name is the URN ID for registries)
+          if doctl registry get > /dev/null 2>&1; then
+            REGISTRY_URN="do:registry:${REGISTRY_NAME}"
             echo "Found registry URN: ${REGISTRY_URN}"
           fi
           
@@ -227,8 +226,18 @@ jobs:
             echo "Found domain URN: ${DOMAIN_URN}"
           fi
           
-          # Get LoadBalancer ID
-          LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "ingress-nginx-controller" | awk '{print $1}')
+          # Get LoadBalancer ID (wait for it to be created by ingress)
+          RETRY_COUNT=0
+          MAX_RETRIES=10
+          while [ -z "$LB_ID" ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "ingress-nginx-controller" | awk '{print $1}')
+            if [ -z "$LB_ID" ]; then
+              echo "🦩 Waiting for LoadBalancer... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+              sleep 10
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+          
           if [ ! -z "$LB_ID" ]; then
             LB_URN="do:loadbalancer:${LB_ID}"
             echo "Found load balancer URN: ${LB_URN}"
