@@ -138,41 +138,38 @@ jobs:
           done
           echo "🎉 LoadBalancer IP is ready!"
 
-      - name: Delete existing DNS records 🗑️ 🦩
+      - name: Update DNS Records 🌍 🦩
         run: |
-          echo "🦩 Cleaning up old DNS records..."
-          # Delete A record for the main domain
-          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
-          if [ ! -z "$RECORD_ID" ]; then
-            doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force
-          fi
-
-          # Delete CNAME record for www subdomain
-          RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
-          if [ ! -z "$RECORD_ID" ]; then
-            doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $RECORD_ID --force
-          fi
-
-      - name: Create DNS Records 🌍 🦩
-        run: |
-          echo "🦩 Setting up DNS records..."
-          # Get LoadBalancer IP and store it in a variable
+          echo "🦩 Getting LoadBalancer IP..."
           LB_IP=$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           echo "🎯 LoadBalancer IP is: ${LB_IP}"
 
-          # Create A record for the main domain
-          echo "🦩 Creating A record..."
-          doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
-            --record-type A \
-            --record-name "${{ env.DOMAIN_PREFIX }}" \
-            --record-data "${LB_IP}"
+          echo "🦩 Updating DNS records..."
+          # Get existing A record ID
+          A_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
+          if [ ! -z "$A_RECORD_ID" ]; then
+            echo "🦩 Updating A record..."
+            doctl compute domain records update ${{ secrets.DOMAIN_SUFFIX }} --record-id $A_RECORD_ID --record-data "${LB_IP}"
+          else
+            echo "🦩 Creating A record..."
+            doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
+              --record-type A \
+              --record-name "${{ env.DOMAIN_PREFIX }}" \
+              --record-data "${LB_IP}"
+          fi
 
-          # Create CNAME record for www subdomain
-          echo "🦩 Creating CNAME record..."
-          doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
-            --record-type CNAME \
-            --record-name "www.${{ env.DOMAIN_PREFIX }}" \
-            --record-data "${{ env.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}."
+          # Get existing CNAME record ID
+          CNAME_RECORD_ID=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *www.${{ env.DOMAIN_PREFIX }}" | awk '{print $1}')
+          if [ ! -z "$CNAME_RECORD_ID" ]; then
+            echo "🦩 Updating CNAME record..."
+            doctl compute domain records update ${{ secrets.DOMAIN_SUFFIX }} --record-id $CNAME_RECORD_ID --record-data "${{ env.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}."
+          else
+            echo "🦩 Creating CNAME record..."
+            doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
+              --record-type CNAME \
+              --record-name "www.${{ env.DOMAIN_PREFIX }}" \
+              --record-data "${{ env.DOMAIN_PREFIX }}.${{ secrets.DOMAIN_SUFFIX }}."
+          fi
 
       - name: Update deployment file 📝 🦩
         run: |
