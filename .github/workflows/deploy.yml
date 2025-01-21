@@ -37,11 +37,15 @@ jobs:
           echo "🦩 Setting up Docker config..."
           doctl registry login --expiry-seconds 1800
           
-          # Create registry if it doesn't exist
-          doctl registry create ${{ env.REGISTRY_NAME }} || true
+          echo "🦩 Creating registry..."
+          doctl registry create ${{ env.REGISTRY_NAME }} --subscription-tier basic || true
           
-          # Verify registry access
-          doctl registry repository list-v2
+          echo "🦩 Creating repositories..."
+          doctl registry repository create-v2 ${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-backend || true
+          doctl registry repository create-v2 ${{ env.REGISTRY_NAME }}/${{ secrets.IMAGE_NAME }}-frontend || true
+          
+          echo "🦩 Configuring Docker credentials..."
+          doctl registry docker-config > ~/.docker/config.json
 
       - name: Build and push backend image 🏗️ 🦩
         run: |
