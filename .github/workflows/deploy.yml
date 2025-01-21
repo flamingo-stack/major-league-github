@@ -35,20 +35,10 @@ jobs:
       - name: Configure Docker 🔑
         run: |
           echo "🦩 Setting up Docker config..."
-          mkdir -p ~/.docker
+          doctl registry login -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --registry ${{ env.REGISTRY_NAME }}
           
-          AUTH=$(echo -n "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}:${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | base64 -w 0)
-          
-          echo '{
-            "auths": {
-              "registry.digitalocean.com": {
-                "auth": "'$AUTH'"
-              }
-            }
-          }' > ~/.docker/config.json
-          
-          # Verify config
-          cat ~/.docker/config.json
+          # Verify registry access
+          doctl registry repository list-v2
 
       - name: Build and push backend image 🏗️ 🦩
         run: |
