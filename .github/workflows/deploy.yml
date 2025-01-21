@@ -69,30 +69,12 @@ jobs:
             missing_secrets+=("GH_API_TOKENS")
           fi
           
-          if [ -z "${{ secrets.LETSENCRYPT_EMAIL }}" ]; then
-            missing_secrets+=("LETSENCRYPT_EMAIL")
-          fi
-          
           if [ -z "${{ secrets.DOMAIN_SUFFIX }}" ]; then
             missing_secrets+=("DOMAIN_SUFFIX")
           fi
           
           if [ ${#missing_secrets[@]} -ne 0 ]; then
-            echo "❌ Error: The following required secrets are missing:"
-            printf '%s\n' "${missing_secrets[@]}"
-            echo ""
-            echo "Please add these secrets in your GitHub repository:"
-            echo "1. Go to Settings → Secrets and variables → Actions"
-            echo "2. Click on 'New repository secret'"
-            echo "3. Add each missing secret with its value"
-            echo ""
-            echo "Required secrets and their purposes:"
-            echo "- CLUSTER_NAME: Your DigitalOcean Kubernetes cluster name"
-            echo "- DIGITALOCEAN_ACCESS_TOKEN: Your DigitalOcean API token"
-            echo "- GH_PAT: GitHub Personal Access Token"
-            echo "- GH_API_TOKENS: GitHub API tokens for the application"
-            echo "- LETSENCRYPT_EMAIL: Email for SSL certificates"
-            echo "- DOMAIN_SUFFIX: Domain suffix (e.g., 'flamingo.cx')"
+            echo "❌ Error: Missing required secrets: ${missing_secrets[*]}"
             exit 1
           fi
           
@@ -390,14 +372,10 @@ jobs:
       - name: Setup Kubernetes Dependencies 🎯 🦩
         run: |
           echo "🦩 Installing Helm..."
-          if ! curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash; then
-            echo "❌ Error: Failed to install Helm"
-            exit 1
-          fi
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
           
           echo "🦩 Adding Helm repositories..."
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-          helm repo add jetstack https://charts.jetstack.io
           helm repo update
           
           # Function to retry commands
@@ -435,7 +413,15 @@ jobs:
           NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx --create-namespace \
             --set controller.publishService.enabled=true \
-            --set controller.extraArgs.enable-ssl-passthrough='' \
+            --set controller.service.type=LoadBalancer \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-name\"=\"${DOMAIN_NAME}-lb\" \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-enable-proxy-protocol\"=true \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${DOMAIN_NAME}.${DOMAIN_SUFFIX}\" \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-redirect-http-to-https\"=true \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=https \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports\"=443 \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-size-unit\"=1 \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-size-unit-type\"=basic \
             --wait --timeout 5m"
           
           if ! retry_command "$NGINX_CMD" "Install NGINX Ingress Controller"; then
@@ -452,103 +438,13 @@ jobs:
             --selector=app.kubernetes.io/component=controller \
             --timeout=5m
 
-          echo "🦩 Installing cert-manager..."
-          CERT_MANAGER_CMD="helm upgrade --install cert-manager jetstack/cert-manager \
-            --namespace cert-manager --create-namespace \
-            --set installCRDs=true \
-            --set global.leaderElection.namespace=cert-manager \
-            --wait --timeout 5m"
-          
-          if ! retry_command "$CERT_MANAGER_CMD" "Install cert-manager"; then
-            echo "❌ Error: Failed to install cert-manager"
-            kubectl get pods -n cert-manager
-            kubectl describe pods -n cert-manager
-            exit 1
-          fi
-
-          # Wait for cert-manager webhook to be ready
-          echo "🦩 Waiting for cert-manager webhook..."
-          kubectl wait --namespace cert-manager \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=webhook \
-            --timeout=5m
-
           echo "🦩 Creating namespace if not exists..."
           if ! kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -; then
             echo "❌ Error: Failed to create namespace"
             exit 1
           fi
 
-          echo "🦩 Creating ClusterIssuer for Let's Encrypt..."
-          envsubst < kubernetes/templates/cluster-issuer.yaml | kubectl apply -f -
-
-          # Wait for ClusterIssuer to be ready
-          echo "🦩 Waiting for ClusterIssuer to be ready..."
-          RETRY_COUNT=0
-          MAX_RETRIES=12
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if kubectl get clusterissuer letsencrypt-prod -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; then
-              echo "✅ ClusterIssuer is ready"
-              break
-            fi
-            echo "🦩 Waiting for ClusterIssuer to be ready... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
-            kubectl describe clusterissuer letsencrypt-prod
-            sleep 10
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-          done
-
-          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-            echo "❌ Error: ClusterIssuer failed to become ready"
-            kubectl describe clusterissuer letsencrypt-prod
-            exit 1
-          fi
-
-          # Create Certificate
-          echo "🦩 Creating Certificate..."
-          envsubst < kubernetes/templates/certificate.yaml | kubectl apply -f -
-
-          # Wait for Certificate with better debugging
-          echo "🦩 Waiting for Certificate to be ready..."
-          RETRY_COUNT=0
-          MAX_RETRIES=30
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            echo "🦩 Certificate status (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES):"
-            kubectl get certificate -n ${REGISTRY_NAME} app-certificate -o yaml
-            kubectl describe certificate -n ${REGISTRY_NAME} app-certificate
-            
-            if kubectl get certificate -n ${REGISTRY_NAME} app-certificate -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; then
-              echo "✅ Certificate is ready"
-              break
-            fi
-            
-            echo "🦩 Checking cert-manager logs..."
-            kubectl logs -n cert-manager -l app=cert-manager -c cert-manager --tail=50
-            
-            sleep 20
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-          done
-
-          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-            echo "❌ Error: Certificate failed to become ready. Full debug information:"
-            kubectl get events -n ${REGISTRY_NAME} --sort-by='.lastTimestamp'
-            kubectl get events -n cert-manager --sort-by='.lastTimestamp'
-            kubectl describe certificate -n ${REGISTRY_NAME} app-certificate
-            kubectl describe challenges -n ${REGISTRY_NAME}
-            kubectl describe orders.acme.cert-manager.io -n ${REGISTRY_NAME}
-            kubectl describe clusterissuer letsencrypt-prod
-            exit 1
-          fi
-
-          # Verify the secret exists and contains the correct data
-          echo "🦩 Verifying TLS secret..."
-          if ! kubectl get secret -n ${REGISTRY_NAME} app-tls -o yaml; then
-            echo "❌ Error: TLS secret not found"
-            exit 1
-          fi
-          
-          echo "✅ Certificate setup completed"
-
-      - name: Create Kubernetes Secrets 🔐 🦩
+      - name: Create Kubernetes Secrets 🦩
         run: |
           echo "🦩 Creating namespace if not exists..."
           if ! kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -; then
@@ -594,7 +490,6 @@ jobs:
       - name: Deploy Kubernetes Configurations 🚀 🦩
         env:
           REGISTRY_URL: ${REGISTRY}/${REGISTRY_NAME}
-          LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
           DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
         run: |
           echo "🦩 Processing and applying Kubernetes configurations..."
