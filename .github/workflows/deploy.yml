@@ -37,16 +37,14 @@ jobs:
           echo "🦩 Setting up Docker config..."
           mkdir -p ~/.docker
           
-          # Create Docker config with registry auth
-          cat > ~/.docker/config.json << EOF
-          {
+          # Create Docker config with registry auth (proper JSON formatting)
+          echo '{
             "auths": {
               "registry.digitalocean.com": {
-                "auth": "$(echo -n "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}:${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | base64)"
+                "auth": "'$(echo -n "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}:${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | base64)'"
               }
             }
-          }
-          EOF
+          }' > ~/.docker/config.json
           
           # Verify config
           cat ~/.docker/config.json
