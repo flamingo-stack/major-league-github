@@ -223,13 +223,13 @@ jobs:
             echo "⚠️ Warning: Could not get cluster ID"
           fi
           
-          # Get registry URN (use registry name directly)
-          if doctl registry get > /dev/null 2>&1; then
-            # For registries, the URN is simply the registry name
-            REGISTRY_URN="do:registry:${REGISTRY_NAME}"
+          # Get registry URN
+          REGISTRY_ID=$(doctl registry get --format ID --no-header)
+          if [ ! -z "$REGISTRY_ID" ]; then
+            REGISTRY_URN="do:registry:${REGISTRY_ID}"
             echo "Found registry URN: ${REGISTRY_URN}"
           else
-            echo "⚠️ Warning: Could not verify registry"
+            echo "⚠️ Warning: Could not get registry ID"
           fi
           
           # Build resources array with error checking
@@ -295,7 +295,7 @@ jobs:
             exit 1
           fi
           
-          if ! doctl projects get ${PROJECT_NAME} > /dev/null 2>&1; then
+          if ! doctl projects get "${PROJECT_ID}" > /dev/null 2>&1; then
             echo "❌ Error: Project verification failed"
             exit 1
           fi
