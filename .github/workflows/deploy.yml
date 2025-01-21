@@ -554,18 +554,44 @@ jobs:
 
       - name: Create DNS Record 🌍 🦩
         run: |
-          echo "🦩 Getting LoadBalancer IP..."
+          echo "🦩 Getting LoadBalancer information..."
+          
+          # Function to get LoadBalancer address
+          get_lb_address() {
+            # Get the EXTERNAL-IP directly from kubectl get service output
+            local EXTERNAL_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller --no-headers | awk '{print $3}')
+            
+            # Check if we got a valid IP (not pending or none)
+            if [[ "$EXTERNAL_IP" != "<pending>" && "$EXTERNAL_IP" != "<none>" && ! -z "$EXTERNAL_IP" ]]; then
+              echo "$EXTERNAL_IP"
+              return 0
+            fi
+            
+            return 1
+          }
+          
+          # Debug information
+          echo "🦩 Current service status:"
+          kubectl -n ingress-nginx get service ingress-nginx-controller
+          
+          # Try to get LoadBalancer address with timeout
           for i in {1..30}; do
-            LB_IP=$(kubectl -n ingress-nginx get service ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            echo "🦩 Attempt $i/30 to get LoadBalancer address..."
+            
+            LB_IP=$(get_lb_address)
             if [ ! -z "$LB_IP" ]; then
-              echo "✅ Got LoadBalancer IP: ${LB_IP}"
+              echo "✅ Got LoadBalancer address: ${LB_IP}"
               break
             fi
+            
             if [ $i -eq 30 ]; then
-              echo "❌ Error: Timed out waiting for LoadBalancer IP"
+              echo "❌ Error: Timed out waiting for LoadBalancer address"
+              echo "🦩 Debug information:"
+              kubectl -n ingress-nginx get service
               exit 1
             fi
-            echo "🦩 Waiting for LoadBalancer IP... (attempt $i/30)"
+            
+            echo "🦩 Waiting for LoadBalancer to be ready... (sleeping 10s)"
             sleep 10
           done
           
