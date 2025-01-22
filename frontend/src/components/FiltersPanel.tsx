@@ -318,7 +318,8 @@ export const FiltersPanel = () => {
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             Region
@@ -338,7 +339,8 @@ export const FiltersPanel = () => {
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             State
@@ -357,7 +359,8 @@ export const FiltersPanel = () => {
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             City
@@ -445,7 +448,8 @@ export const FiltersPanel = () => {
               sx={{ 
                 mb: 1,
                 fontWeight: 600,
-                color: 'text.primary'
+                color: 'text.primary',
+                display: { xs: 'none', sm: 'block' }
               }}
             >
               Soccer Team
@@ -463,7 +467,8 @@ export const FiltersPanel = () => {
               sx={{ 
                 mb: 1,
                 fontWeight: 600,
-                color: 'text.primary'
+                color: 'text.primary',
+                display: { xs: 'none', sm: 'block' }
               }}
             >
               Region
@@ -483,7 +488,8 @@ export const FiltersPanel = () => {
               sx={{ 
                 mb: 1,
                 fontWeight: 600,
-                color: 'text.primary'
+                color: 'text.primary',
+                display: { xs: 'none', sm: 'block' }
               }}
             >
               State
