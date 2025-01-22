@@ -77,8 +77,6 @@ export const TeamAutocomplete = ({
             fullWidth
             variant="outlined"
             InputProps={customInputProps}
-            onFocus={(e) => e.target.select()}
-            onSelect={(e) => (e.target as HTMLInputElement).select()}
           />
         );
       }}
