@@ -36,11 +36,23 @@ export const BaseAutocomplete = <T extends BaseEntity>({
       value={value}
       onChange={(_, newValue: any) => onChange(newValue as T | null)}
       inputValue={inputValue}
-      onInputChange={(_, value) => onInputChange(value)}
+      onInputChange={(_, value, reason) => {
+        if (reason === 'clear') {
+          onInputChange('');
+          onChange(null);
+        } else {
+          onInputChange(value);
+        }
+      }}
       options={options}
       getOptionLabel={(option: any) => typeof option === 'string' ? option : getOptionLabel(option)}
       fullWidth
       freeSolo
+      onBlur={() => {
+        if (value) {
+          onInputChange(getOptionLabel(value));
+        }
+      }}
       renderInput={(params) => (
         <TextField 
           {...(params as TextFieldProps)}
