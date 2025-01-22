@@ -12,6 +12,13 @@ import { autocompleteLanguages } from '../services/api';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
+// Utility function to dismiss keyboard
+const dismissKeyboard = () => {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+};
+
 export const FiltersPanel = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -20,7 +27,7 @@ export const FiltersPanel = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Local state for selected entities
-  const [selectedLanguage, setSelectedLanguage] = useState<Language | undefined>(undefined);
+  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<SoccerTeam | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
   const [selectedState, setSelectedState] = useState<State | null>(null);
@@ -119,32 +126,42 @@ export const FiltersPanel = () => {
 
   // Handle selection changes
   const handleLanguageChange = (language: Language | null) => {
-    // Don't allow deselecting language
-    if (!language) {
-      // Set back to Java
-      queryClient.fetchQuery({
-        queryKey: ['languages', 'Java'],
-        queryFn: ({ signal }) => autocompleteLanguages('Java', signal)
-      }).then(languages => {
-        const java = languages.find(lang => lang.name === 'Java');
-        if (java) {
-          setSelectedLanguage(java);
-          setLanguageInput(java.displayName);
-          updateUrlState({
-            ...urlState,
-            languageId: java.id
-          });
-        }
-      });
+    // Only set back to Java when explicitly clearing via the clear button
+    if (!language && selectedLanguage) {
+      // Set back to Java only if the input is empty
+      if (!languageInput.trim()) {
+        queryClient.fetchQuery({
+          queryKey: ['languages', 'Java'],
+          queryFn: ({ signal }) => autocompleteLanguages('Java', signal)
+        }).then(languages => {
+          const java = languages.find(lang => lang.name === 'Java');
+          if (java) {
+            setSelectedLanguage(java);
+            setLanguageInput(java.displayName);
+            updateUrlState({
+              ...urlState,
+              languageId: java.id
+            });
+            if (isMobile) dismissKeyboard();
+          }
+        }).catch(() => {
+          // Ignore query cancellation errors
+        });
+      }
       return;
     }
 
-    setSelectedLanguage(language || undefined);
-    setLanguageInput(language?.displayName || '');
+    setSelectedLanguage(language);
     updateUrlState({
       ...urlState,
       languageId: language?.id || null
     });
+    if (isMobile) dismissKeyboard();
+  };
+
+  // Handle input changes
+  const handleLanguageInputChange = (value: string) => {
+    setLanguageInput(value);
   };
 
   const handleTeamChange = (team: SoccerTeam | null) => {
@@ -154,6 +171,7 @@ export const FiltersPanel = () => {
       ...urlState,
       teamId: team?.id || null
     });
+    if (isMobile) dismissKeyboard();
   };
 
   const handleRegionChange = (region: Region | null) => {
@@ -187,6 +205,7 @@ export const FiltersPanel = () => {
         selectedCityId: null
       });
     }
+    if (isMobile) dismissKeyboard();
   };
 
   const handleStateChange = (state: State | null) => {
@@ -208,6 +227,7 @@ export const FiltersPanel = () => {
         selectedCityId: null
       });
     }
+    if (isMobile) dismissKeyboard();
   };
 
   const handleCityChange = (city: City | null) => {
@@ -218,15 +238,16 @@ export const FiltersPanel = () => {
       ...urlState,
       selectedCityId: city?.id || null
     });
+    if (isMobile) dismissKeyboard();
   };
 
   return (
     <Box sx={{ 
       display: 'flex', 
       flexDirection: 'column', 
-      gap: 2, 
+      gap: { xs: 0.5, sm: 2 },
       px: 2,
-      pt: 2,
+      pt: { xs: 1, sm: 2 },
       pb: 1,
       width: '100%'
     }}>
@@ -234,7 +255,7 @@ export const FiltersPanel = () => {
       <Box sx={{ 
         display: 'flex', 
         flexDirection: { xs: 'column', sm: 'row' },
-        gap: 2,
+        gap: { xs: 0.5, sm: 2 },
         width: '100%'
       }}>
         <Box sx={{ 
@@ -256,7 +277,7 @@ export const FiltersPanel = () => {
             value={selectedLanguage}
             onChange={handleLanguageChange}
             inputValue={languageInput}
-            onInputChange={setLanguageInput}
+            onInputChange={handleLanguageInputChange}
           />
         </Box>
         <Box sx={{ 
@@ -297,7 +318,8 @@ export const FiltersPanel = () => {
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             Region
@@ -317,7 +339,8 @@ export const FiltersPanel = () => {
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             State
@@ -336,7 +359,8 @@ export const FiltersPanel = () => {
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             City
@@ -356,7 +380,7 @@ export const FiltersPanel = () => {
       <Box sx={{ 
         display: { xs: 'block', sm: 'none' },
         width: '100%',
-        mb: 0.5
+        mb: 0
       }}>
         <Typography 
           variant="subtitle2" 
@@ -384,8 +408,8 @@ export const FiltersPanel = () => {
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'center',
-          mt: 0,
-          mb: isExpanded ? 0.5 : 0,
+          mt: -0.5,
+          mb: isExpanded ? 0 : 0,
           opacity: 0.8
         }}>
           <IconButton 
@@ -415,7 +439,8 @@ export const FiltersPanel = () => {
         <Box sx={{ 
           display: { xs: 'flex', sm: 'none' }, 
           flexDirection: 'column',
-          gap: 1.5
+          gap: 0.5,
+          pt: 0.5
         }}>
           <Box>
             <Typography 
@@ -423,7 +448,8 @@ export const FiltersPanel = () => {
               sx={{ 
                 mb: 1,
                 fontWeight: 600,
-                color: 'text.primary'
+                color: 'text.primary',
+                display: { xs: 'none', sm: 'block' }
               }}
             >
               Soccer Team
@@ -441,7 +467,8 @@ export const FiltersPanel = () => {
               sx={{ 
                 mb: 1,
                 fontWeight: 600,
-                color: 'text.primary'
+                color: 'text.primary',
+                display: { xs: 'none', sm: 'block' }
               }}
             >
               Region
@@ -461,7 +488,8 @@ export const FiltersPanel = () => {
               sx={{ 
                 mb: 1,
                 fontWeight: 600,
-                color: 'text.primary'
+                color: 'text.primary',
+                display: { xs: 'none', sm: 'block' }
               }}
             >
               State

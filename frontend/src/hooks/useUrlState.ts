@@ -166,22 +166,35 @@ export const useUrlState = (options: UseUrlStateOptions = {}) => {
 
         const updateFn = () => {
             const params = new URLSearchParams(searchParams);
+            let hasChanges = false;
             
             Object.entries(newState).forEach(([key, value]) => {
                 const config = URL_PARAMS[key as UrlStateKey];
                 const stringValue = stringifyUrlValue(value);
+                const currentValue = params.get(config.key);
                 
-                if (stringValue) {
-                    params.set(config.key, stringValue);
-                } else {
-                    params.delete(config.key);
+                if (stringValue !== currentValue) {
+                    hasChanges = true;
+                    if (stringValue) {
+                        params.set(config.key, stringValue);
+                    } else {
+                        params.delete(config.key);
+                    }
                 }
             });
 
-            setSearchParams(params, { replace: true });
+            if (hasChanges) {
+                setSearchParams(params, { replace: true });
+            }
         };
 
-        if (immediate || !options.debounceMs) {
+        // For input changes, we want to update immediately to prevent typing lag
+        const isInputChange = Object.keys(newState).some(key => 
+            ['languageId', 'teamId', 'stateId', 'selectedRegionId', 'selectedCityId'].includes(key) && 
+            newState[key as keyof UrlState] === null
+        );
+
+        if (immediate || isInputChange || !options.debounceMs) {
             updateFn();
         } else {
             debouncedUpdateRef.current = setTimeout(updateFn, options.debounceMs);
