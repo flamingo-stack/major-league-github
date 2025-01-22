@@ -441,7 +441,7 @@ jobs:
           # Wait for ingress controller to be fully ready
           echo "🦩 Waiting for Ingress Controller to be ready..."
           kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
+            --for=condition=ready pod \ 
             --selector=app.kubernetes.io/component=controller \
             --timeout=5m
 
