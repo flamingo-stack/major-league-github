@@ -418,11 +418,30 @@ jobs:
           echo "🦩 Checking for existing NGINX installation..."
           if helm list -n ingress-nginx | grep -q "ingress-nginx"; then
             echo "🦩 Found existing installation, cleaning up..."
+            
+            # Get the load balancer ID
+            LB_NAME="${{ env.DOMAIN_NAME }}-lb"
+            LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+            
             # Remove finalizers to force cleanup
             kubectl get -n ingress-nginx $(kubectl get -n ingress-nginx all -o name) -o name | xargs -I {} kubectl patch -n ingress-nginx {} -p '{"metadata":{"finalizers":null}}' --type=merge || true
+            
             # Delete the release and namespace
             helm uninstall ingress-nginx -n ingress-nginx || true
             kubectl delete namespace ingress-nginx --wait || true
+            
+            # Delete the load balancer if it exists
+            if [ ! -z "$LB_ID" ]; then
+              echo "🦩 Deleting existing load balancer..."
+              doctl compute load-balancer delete --force "${LB_ID}" || true
+              # Wait for load balancer to be fully deleted
+              echo "🦩 Waiting for load balancer to be deleted..."
+              while doctl compute load-balancer get "${LB_ID}" > /dev/null 2>&1; do
+                echo "🦩 Still waiting for load balancer deletion..."
+                sleep 10
+              done
+            fi
+            
             # Wait a bit to ensure cleanup is complete
             sleep 30
           fi
