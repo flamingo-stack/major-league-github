@@ -57,15 +57,25 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors }) =
                         }
                     }}
                 >
-                    <Stack spacing={2}>
-                        <Box>
+                    <Box sx={{ 
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 2
+                    }}>
+                        <Box sx={{ flex: '1 1 auto' }}>
                             <ContributorInfo contributor={contributor} index={index} />
                             <Box sx={{ mt: 1 }}>
                                 <LocationInfo contributor={contributor} />
                             </Box>
                         </Box>
                         
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        <Box sx={{ 
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(2, auto)',
+                            gap: 1,
+                            alignContent: 'start',
+                            justifyContent: 'end'
+                        }}>
                             <StatItem 
                                 icon={<EmojiEventsIcon />} 
                                 value={formatNumber(contributor.score)}
@@ -101,7 +111,7 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors }) =
                                 color="#539bf5"
                             />
                         </Box>
-                    </Stack>
+                    </Box>
                 </Card>
             ))}
         </Stack>
