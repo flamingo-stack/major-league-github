@@ -6,12 +6,20 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: registry.digitalocean.com
-  PROJECT_NAME: Major League Github
-  REGISTRY_NAME: major-league-github
+  PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
   VERSION: v1.0.${{ github.run_number }}
-  DOMAIN_NAME: major-league-github
   ENVIRONMENT: production
+  
+  # DigitalOcean
+  REGISTRY: ${{ secrets.REGISTRY }}
+  REGISTRY_NAME: ${{ secrets.REGISTRY_NAME }}
+  DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+  DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+  DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
+
+  GH_PAT: ${{ secrets.GH_PAT }}
+  GH_API_TOKENS: ${{ secrets.GH_API_TOKENS }}
   
   # Cluster configuration
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
@@ -53,12 +61,28 @@ jobs:
         run: |
           missing_secrets=()
           
-          if [ -z "${{ secrets.CLUSTER_NAME }}" ]; then
-            missing_secrets+=("CLUSTER_NAME")
+          if [ -z "${{ secrets.PROJECT_NAME }}" ]; then
+            missing_secrets+=("PROJECT_NAME")
+          fi
+          
+          if [ -z "${{ secrets.REGISTRY }}" ]; then
+            missing_secrets+=("REGISTRY")
+          fi
+          
+          if [ -z "${{ secrets.REGISTRY_NAME }}" ]; then
+            missing_secrets+=("REGISTRY_NAME")
           fi
           
           if [ -z "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" ]; then
             missing_secrets+=("DIGITALOCEAN_ACCESS_TOKEN")
+          fi
+          
+          if [ -z "${{ secrets.DOMAIN_NAME }}" ]; then
+            missing_secrets+=("DOMAIN_NAME")
+          fi
+          
+          if [ -z "${{ secrets.DOMAIN_SUFFIX }}" ]; then
+            missing_secrets+=("DOMAIN_SUFFIX")
           fi
           
           if [ -z "${{ secrets.GH_PAT }}" ]; then
@@ -69,8 +93,8 @@ jobs:
             missing_secrets+=("GH_API_TOKENS")
           fi
           
-          if [ -z "${{ secrets.DOMAIN_SUFFIX }}" ]; then
-            missing_secrets+=("DOMAIN_SUFFIX")
+          if [ -z "${{ secrets.CLUSTER_NAME }}" ]; then
+            missing_secrets+=("CLUSTER_NAME")
           fi
           
           if [ ${#missing_secrets[@]} -ne 0 ]; then
@@ -83,12 +107,12 @@ jobs:
       - name: Checkout code 📦
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ env.GH_PAT }}
 
       - name: Install doctl 🛠️
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          token: ${{ env.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Setup DigitalOcean Infrastructure 🏗️
         run: |
@@ -390,7 +414,7 @@ jobs:
             if ! doctl compute certificate create \
               --name ${CERT_NAME} \
               --type lets_encrypt \
-              --dns-names ${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}; then
+              --dns-names ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}; then
               echo "❌ Error: Failed to create certificate"
               exit 1
             fi
@@ -459,7 +483,7 @@ jobs:
             --set controller.publishService.enabled=true \
             --set controller.service.type=LoadBalancer \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-name\"=\"${{ env.DOMAIN_NAME }}-lb\" \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}\" \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}\" \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=http \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-http-ports\"=80 \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports\"=443 \
@@ -522,8 +546,8 @@ jobs:
           if ! kubectl create secret docker-registry registry-credentials \
             --namespace=${REGISTRY_NAME} \
             --docker-server=${REGISTRY} \
-            --docker-username=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
-            --docker-password=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --docker-username=${{ env.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --docker-password=${{ env.DIGITALOCEAN_ACCESS_TOKEN }} \
             --dry-run=client -o yaml | kubectl apply -f -; then
             echo "❌ Error: Failed to create registry credentials"
             exit 1
@@ -531,7 +555,7 @@ jobs:
           
           echo "🦩 Creating application secrets..."
           # Create a temporary file for the tokens
-          echo "${{ secrets.GH_API_TOKENS }}" > github_tokens.txt
+          echo "${{ env.GH_API_TOKENS }}" > github_tokens.txt
           
           # Delete existing secret if it exists
           kubectl delete secret app-secrets --namespace=${REGISTRY_NAME} --ignore-not-found=true
@@ -539,7 +563,7 @@ jobs:
           # Create the secret with the correct key
           if ! kubectl create secret generic app-secrets \
             --namespace=${REGISTRY_NAME} \
-            --from-literal=github.tokens="${{ secrets.GH_API_TOKENS }}"; then
+            --from-literal=github.tokens="${{ env.GH_API_TOKENS }}"; then
             echo "❌ Error: Failed to create application secrets"
             exit 1
           fi
@@ -556,7 +580,7 @@ jobs:
       - name: Deploy Kubernetes Configurations 🚀 🦩
         env:
           REGISTRY_URL: ${REGISTRY}/${REGISTRY_NAME}
-          DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
+          DOMAIN_SUFFIX: ${{ env.DOMAIN_SUFFIX }}
         run: |
           echo "🦩 Processing and applying Kubernetes configurations..."
           
@@ -648,11 +672,11 @@ jobs:
           echo "🦩 Checking for existing DNS records..."
           
           # Check for existing CNAME record
-          EXISTING_CNAME=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *${{ env.DOMAIN_NAME }}" || true)
+          EXISTING_CNAME=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *${{ env.DOMAIN_NAME }}" || true)
           if [ ! -z "$EXISTING_CNAME" ]; then
             CNAME_ID=$(echo $EXISTING_CNAME | awk '{print $1}')
             echo "🦩 Found existing CNAME record (ID: $CNAME_ID), removing it..."
-            if ! doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $CNAME_ID --force; then
+            if ! doctl compute domain records delete ${{ env.DOMAIN_SUFFIX }} $CNAME_ID --force; then
               echo "❌ Error: Failed to delete CNAME record"
               exit 1
             fi
@@ -660,12 +684,12 @@ jobs:
           fi
           
           # Check for existing A record
-          EXISTING_RECORD=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_NAME }}" || true)
+          EXISTING_RECORD=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_NAME }}" || true)
           
           if [ ! -z "$EXISTING_RECORD" ]; then
             RECORD_ID=$(echo $EXISTING_RECORD | awk '{print $1}')
             echo "🦩 Updating existing A record (ID: $RECORD_ID)..."
-            if ! doctl compute domain records update ${{ secrets.DOMAIN_SUFFIX }} --record-id $RECORD_ID \
+            if ! doctl compute domain records update ${{ env.DOMAIN_SUFFIX }} --record-id $RECORD_ID \
               --record-type A \
               --record-data "${LB_IP}"; then
               echo "❌ Error: Failed to update DNS record"
@@ -674,7 +698,7 @@ jobs:
             echo "✅ DNS record updated successfully"
           else
             echo "🦩 Creating new A record..."
-            if ! doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
+            if ! doctl compute domain records create ${{ env.DOMAIN_SUFFIX }} \
               --record-type A \
               --record-name "${{ env.DOMAIN_NAME }}" \
               --record-data "${LB_IP}" \
@@ -725,10 +749,10 @@ jobs:
       - name: Create GitHub Deployment 📦 🦩
         uses: chrnorm/deployment-action@v2
         with:
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ env.GH_PAT }}
           environment: production
           initial-status: success
-          environment-url: https://${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}
+          environment-url: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}
 
       - name: Set environment variables
         run: |
