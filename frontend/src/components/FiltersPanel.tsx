@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useTheme, useMediaQuery } from '@mui/material';
 import { useQueryClient } from '@tanstack/react-query';
 import { City, Region, State, SoccerTeam, Language } from '../types/api';
 import { useUrlState } from '../hooks/useUrlState';
@@ -11,6 +11,8 @@ import { useEffect, useState } from 'react';
 import { autocompleteLanguages } from '../services/api';
 
 export const FiltersPanel = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const queryClient = useQueryClient();
   const { urlState, updateUrlState } = useUrlState();
   
@@ -216,15 +218,30 @@ export const FiltersPanel = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Box sx={{ flex: 1 }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: 2, 
+      p: 2,
+      width: '100%'
+    }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: 2,
+        width: '100%'
+      }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: 1 },
+          width: '100%'
+        }}>
           <Typography 
             variant="subtitle2" 
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             Programming Language
@@ -236,13 +253,17 @@ export const FiltersPanel = () => {
             onInputChange={setLanguageInput}
           />
         </Box>
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: 1 },
+          width: '100%'
+        }}>
           <Typography 
             variant="subtitle2" 
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             Soccer Team
@@ -256,14 +277,23 @@ export const FiltersPanel = () => {
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Box sx={{ flex: 1 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: 2,
+        width: '100%'
+      }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: 1 },
+          width: '100%'
+        }}>
           <Typography 
             variant="subtitle2" 
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             Region
@@ -273,17 +303,19 @@ export const FiltersPanel = () => {
             onChange={handleRegionChange}
             inputValue={regionInput}
             onInputChange={setRegionInput}
-            stateId={selectedState?.id}
-            cityIds={selectedCity ? [selectedCity.id] : undefined}
           />
         </Box>
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: 1 },
+          width: '100%'
+        }}>
           <Typography 
             variant="subtitle2" 
             sx={{ 
               mb: 1,
               fontWeight: 600,
-              color: 'text.primary'
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
             }}
           >
             State
@@ -296,26 +328,31 @@ export const FiltersPanel = () => {
             regionId={selectedRegion?.id}
           />
         </Box>
-        <Box sx={{ flex: 1 }}>
-          <Typography 
-            variant="subtitle2" 
-            sx={{ 
-              mb: 1,
-              fontWeight: 600,
-              color: 'text.primary'
-            }}
-          >
-            City
-          </Typography>
-          <CityAutocomplete
-            value={selectedCity}
-            onChange={handleCityChange}
-            inputValue={cityInput}
-            onInputChange={setCityInput}
-            regionId={selectedRegion?.id}
-            stateId={selectedState?.id}
-          />
-        </Box>
+      </Box>
+
+      <Box sx={{ 
+        flex: { xs: '1 1 100%', sm: 1 },
+        width: '100%'
+      }}>
+        <Typography 
+          variant="subtitle2" 
+          sx={{ 
+            mb: 1,
+            fontWeight: 600,
+            color: 'text.primary',
+            display: { xs: 'none', sm: 'block' }
+          }}
+        >
+          City
+        </Typography>
+        <CityAutocomplete
+          value={selectedCity}
+          onChange={handleCityChange}
+          inputValue={cityInput}
+          onInputChange={setCityInput}
+          stateId={selectedState?.id}
+          regionId={selectedRegion?.id}
+        />
       </Box>
     </Box>
   );
