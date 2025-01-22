@@ -84,7 +84,7 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
 
     if (isMobile) {
         return (
-            <Stack spacing={2} sx={{ p: 1 }}>
+            <Stack spacing={1} sx={{ p: 0.5 }}>
                 {contributors.map((contributor, index) => (
                     <Card 
                         key={contributor.login}
@@ -99,11 +99,11 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                             }
                         }}
                     >
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                        <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
                             <Box sx={{ 
                                 display: 'flex', 
-                                gap: { xs: 3, sm: 2 }, 
-                                mb: 2,
+                                gap: { xs: 2, sm: 2 }, 
+                                mb: 1,
                                 alignItems: 'center'
                             }}>
                                 <Box sx={{ 
@@ -214,129 +214,108 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                             {contributor.nearestTeam && (
                                                 <>
                                                     <span style={{ flexShrink: 0 }}>•</span>
-                                                    <Tooltip
-                                                        title={
-                                                            <Box sx={{ p: 1.5 }}>
-                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
-                                                                    <Avatar
-                                                                        variant="square"
-                                                                        src={contributor.nearestTeam.logoUrl}
-                                                                        alt={contributor.nearestTeam.name}
-                                                                        sx={{ 
-                                                                            width: 48, 
-                                                                            height: 48,
-                                                                            bgcolor: 'transparent',
-                                                                            borderRadius: 1,
-                                                                            '& img': {
-                                                                                objectFit: 'contain'
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                    <Box>
-                                                                        <Typography 
-                                                                            sx={{ 
-                                                                                fontSize: '1rem',
-                                                                                fontWeight: 600,
-                                                                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                                                                                mb: 0.5
-                                                                            }}
-                                                                        >
-                                                                            {contributor.nearestTeam.name}
-                                                                        </Typography>
-                                                                        <Typography 
-                                                                            sx={{ 
-                                                                                fontSize: '0.875rem',
-                                                                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                                                                                opacity: 0.8
-                                                                            }}
-                                                                        >
-                                                                            {contributor.nearestTeam.city}, {contributor.nearestTeam.state}
-                                                                        </Typography>
+                                                    <Box 
+                                                        component="span" 
+                                                        sx={{ 
+                                                            display: 'inline-flex', 
+                                                            alignItems: 'center', 
+                                                            gap: 0.5,
+                                                            minWidth: 0,
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
+                                                        }}
+                                                    >
+                                                        <Tooltip
+                                                            title={
+                                                                <Box sx={{ p: 2 }}>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                                                        <Avatar
+                                                                            src={contributor.nearestTeam.logoUrl}
+                                                                            alt={contributor.nearestTeam.name}
+                                                                            sx={{ width: 48, height: 48 }}
+                                                                        />
+                                                                        <Box>
+                                                                            <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>
+                                                                                {contributor.nearestTeam.name}
+                                                                            </Typography>
+                                                                            <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                                Fort Lauderdale, Florida
+                                                                            </Typography>
+                                                                        </Box>
+                                                                    </Box>
+                                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                            <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                                🏟️
+                                                                                <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                                    Chase Stadium (21,550 capacity)
+                                                                                </Typography>
+                                                                            </Box>
+                                                                        </Box>
+                                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                            <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                                📅
+                                                                                <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                                    Joined MLS: 2020
+                                                                                </Typography>
+                                                                            </Box>
+                                                                        </Box>
+                                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                            <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                                👨‍💼
+                                                                                <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                                    Head Coach: Gerardo Martino
+                                                                                </Typography>
+                                                                            </Box>
+                                                                        </Box>
+                                                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5 }}>
+                                                                            <Link
+                                                                                href="https://www.intermiamicf.com/"
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                sx={{
+                                                                                    color: '#58a6ff',
+                                                                                    textDecoration: 'none',
+                                                                                    '&:hover': {
+                                                                                        textDecoration: 'underline'
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                Official Website ↗
+                                                                            </Link>
+                                                                            <Link
+                                                                                href="https://en.wikipedia.org/wiki/Inter_Miami_CF"
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                sx={{
+                                                                                    color: '#58a6ff',
+                                                                                    textDecoration: 'none',
+                                                                                    '&:hover': {
+                                                                                        textDecoration: 'underline'
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                Wikipedia ↗
+                                                                            </Link>
+                                                                        </Box>
                                                                     </Box>
                                                                 </Box>
-                                                                <Box sx={{ 
-                                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                                                                    opacity: 0.8,
-                                                                    fontSize: '0.875rem',
-                                                                    lineHeight: 1.75
-                                                                }}>
-                                                                    <Box sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
-                                                                        <span>🏟️</span>
-                                                                        <span>{contributor.nearestTeam.stadium} ({contributor.nearestTeam.stadiumCapacity.toLocaleString()} capacity)</span>
-                                                                    </Box>
-                                                                    <Box sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
-                                                                        <span>📅</span>
-                                                                        <span>Joined {contributor.nearestTeam.league}: {contributor.nearestTeam.joinedYear}</span>
-                                                                    </Box>
-                                                                    <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
-                                                                        <span>🏆</span>
-                                                                        <span>Head Coach: {contributor.nearestTeam.headCoach}</span>
-                                                                    </Box>
-                                                                    <Stack spacing={0.5}>
-                                                                        <Link
-                                                                            href={contributor.nearestTeam.teamUrl}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            sx={{ 
-                                                                                color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da',
-                                                                                textDecoration: 'none',
-                                                                                '&:hover': { textDecoration: 'underline' }
-                                                                            }}
-                                                                        >
-                                                                            Official Website
-                                                                        </Link>
-                                                                        <Link
-                                                                            href={contributor.nearestTeam.wikipediaUrl}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            sx={{ 
-                                                                                color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da',
-                                                                                textDecoration: 'none',
-                                                                                '&:hover': { textDecoration: 'underline' }
-                                                                            }}
-                                                                        >
-                                                                            Wikipedia
-                                                                        </Link>
-                                                                    </Stack>
-                                                                </Box>
-                                                            </Box>
-                                                        }
-                                                        arrow
-                                                        componentsProps={{
-                                                            tooltip: {
-                                                                sx: {
-                                                                    bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
-                                                                    border: '1px solid',
-                                                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                                    boxShadow: theme => theme.palette.mode === 'dark' 
-                                                                        ? '0 4px 12px rgba(1, 4, 9, 0.75)'
-                                                                        : '0 1px 6px rgba(27, 31, 36, 0.15)',
-                                                                    borderRadius: '6px',
-                                                                    '& .MuiTooltip-arrow': {
-                                                                        color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                                        '&::before': {
-                                                                            backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
-                                                                            border: '1px solid',
-                                                                            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                            }
+                                                            arrow
+                                                            placement="top"
+                                                            componentsProps={{
+                                                                tooltip: {
+                                                                    sx: {
+                                                                        bgcolor: '#1e1e1e',
+                                                                        '& .MuiTooltip-arrow': {
+                                                                            color: '#1e1e1e'
                                                                         }
                                                                     }
                                                                 }
-                                                            }
-                                                        }}
-                                                    >
-                                                        <Box 
-                                                            sx={{ 
-                                                                display: 'flex', 
-                                                                alignItems: 'center'
                                                             }}
                                                         >
-                                                            <Box sx={{ 
-                                                                width: 20, 
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                flexShrink: 0
-                                                            }}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
                                                                 <Avatar
                                                                     variant="square"
                                                                     src={contributor.nearestTeam.logoUrl}
@@ -350,27 +329,28 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                                                         }
                                                                     }}
                                                                 />
+                                                                <Typography 
+                                                                    variant="body2" 
+                                                                    color="text.secondary"
+                                                                    sx={{
+                                                                        fontSize: '0.875rem',
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap'
+                                                                    }}
+                                                                >
+                                                                    {contributor.nearestTeam.name}
+                                                                </Typography>
                                                             </Box>
-                                                            <Typography 
-                                                                variant="body2" 
-                                                                color="text.secondary"
-                                                                sx={{
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap'
-                                                                }}
-                                                            >
-                                                                {contributor.nearestTeam.name}
-                                                            </Typography>
-                                                        </Box>
-                                                    </Tooltip>
+                                                        </Tooltip>
+                                                    </Box>
                                                 </>
                                             )}
                                         </Typography>
                                     </Box>
                                 </Box>
                             </Box>
-                            <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+                            <Stack direction="row" spacing={1} sx={{ mb: 0.5 }}>
                                 <Box
                                     sx={{
                                         display: 'inline-flex',
@@ -610,16 +590,33 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                         <Tooltip
                                             title={
                                                 <Box sx={{ p: 1.5 }}>
-                                                    <Typography 
-                                                        sx={{ 
-                                                            fontSize: '0.875rem',
-                                                            fontWeight: 600,
-                                                            color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                                                            mb: 1
-                                                        }}
-                                                    >
-                                                        {contributor.name || contributor.login}
-                                                    </Typography>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                                        <Avatar
+                                                            src={contributor.avatarUrl}
+                                                            alt={contributor.login}
+                                                            sx={{ width: 48, height: 48, borderRadius: 1 }}
+                                                        />
+                                                        <Box>
+                                                            <Typography 
+                                                                sx={{ 
+                                                                    fontSize: '0.875rem',
+                                                                    fontWeight: 600,
+                                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f'
+                                                                }}
+                                                            >
+                                                                {contributor.name || contributor.login}
+                                                            </Typography>
+                                                            <Typography 
+                                                                sx={{ 
+                                                                    fontSize: '0.8125rem',
+                                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                                    opacity: 0.8
+                                                                }}
+                                                            >
+                                                                {contributor.login}
+                                                            </Typography>
+                                                        </Box>
+                                                    </Box>
                                                     <Box sx={{ 
                                                         color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                                                         opacity: 0.8,
@@ -805,16 +802,8 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                             </TableCell>
                             <TableCell>
                                 <Stack spacing={0.5}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Box sx={{ 
-                                            width: 20, 
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            flexShrink: 0
-                                        }}>
-                                            <LocationOnIcon fontSize="small" sx={{ opacity: 0.7 }} />
-                                        </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <LocationOnIcon fontSize="small" sx={{ opacity: 0.7, width: 20, flexShrink: 0 }} />
                                         <Typography 
                                             variant="body2" 
                                             color="text.secondary"
@@ -828,156 +817,136 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                         </Typography>
                                     </Box>
                                     {contributor.nearestTeam && (
-                                        <Tooltip
-                                            title={
-                                                <Box sx={{ p: 1.5 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
-                                                        <Avatar
-                                                            variant="square"
-                                                            src={contributor.nearestTeam.logoUrl}
-                                                            alt={contributor.nearestTeam.name}
-                                                            sx={{ 
-                                                                width: 48, 
-                                                                height: 48,
-                                                                bgcolor: 'transparent',
-                                                                borderRadius: 1,
-                                                                '& img': {
-                                                                    objectFit: 'contain'
+                                        <Box 
+                                            sx={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: 1,
+                                                ml: '20px'
+                                            }}
+                                        >
+                                            <Box sx={{ width: 14, flexShrink: 0 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Tooltip
+                                                        title={
+                                                            <Box sx={{ p: 2 }}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                                                    <Avatar
+                                                                        src={contributor.nearestTeam.logoUrl}
+                                                                        alt={contributor.nearestTeam.name}
+                                                                        sx={{ width: 48, height: 48 }}
+                                                                    />
+                                                                    <Box>
+                                                                        <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>
+                                                                            {contributor.nearestTeam.name}
+                                                                        </Typography>
+                                                                        <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                            Fort Lauderdale, Florida
+                                                                        </Typography>
+                                                                    </Box>
+                                                                </Box>
+                                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                        <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                            🏟️
+                                                                            <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                                Chase Stadium (21,550 capacity)
+                                                                            </Typography>
+                                                                        </Box>
+                                                                    </Box>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                        <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                            📅
+                                                                            <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                                Joined MLS: 2020
+                                                                            </Typography>
+                                                                        </Box>
+                                                                    </Box>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                        <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                            👨‍💼
+                                                                            <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                                Head Coach: Gerardo Martino
+                                                                            </Typography>
+                                                                        </Box>
+                                                                    </Box>
+                                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5 }}>
+                                                                        <Link
+                                                                            href="https://www.intermiamicf.com/"
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            sx={{
+                                                                                color: '#58a6ff',
+                                                                                textDecoration: 'none',
+                                                                                '&:hover': {
+                                                                                    textDecoration: 'underline'
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            Official Website ↗
+                                                                        </Link>
+                                                                        <Link
+                                                                            href="https://en.wikipedia.org/wiki/Inter_Miami_CF"
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            sx={{
+                                                                                color: '#58a6ff',
+                                                                                textDecoration: 'none',
+                                                                                '&:hover': {
+                                                                                    textDecoration: 'underline'
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            Wikipedia ↗
+                                                                        </Link>
+                                                                    </Box>
+                                                                </Box>
+                                                            </Box>
+                                                        }
+                                                        arrow
+                                                        placement="top"
+                                                        componentsProps={{
+                                                            tooltip: {
+                                                                sx: {
+                                                                    bgcolor: '#1e1e1e',
+                                                                    '& .MuiTooltip-arrow': {
+                                                                        color: '#1e1e1e'
+                                                                    }
                                                                 }
-                                                            }}
-                                                        />
-                                                        <Box>
-                                                            <Typography 
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                                                            <Avatar
+                                                                variant="square"
+                                                                src={contributor.nearestTeam.logoUrl}
+                                                                alt={contributor.nearestTeam.name}
                                                                 sx={{ 
-                                                                    fontSize: '1rem',
-                                                                    fontWeight: 600,
-                                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                                                                    mb: 0.5
+                                                                    width: 14, 
+                                                                    height: 14, 
+                                                                    bgcolor: 'transparent',
+                                                                    '& img': {
+                                                                        objectFit: 'contain'
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <Typography 
+                                                                variant="body2" 
+                                                                color="text.secondary"
+                                                                sx={{
+                                                                    fontSize: '0.875rem',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis',
+                                                                    whiteSpace: 'nowrap'
                                                                 }}
                                                             >
                                                                 {contributor.nearestTeam.name}
                                                             </Typography>
-                                                            <Typography 
-                                                                sx={{ 
-                                                                    fontSize: '0.875rem',
-                                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                                                                    opacity: 0.8
-                                                                }}
-                                                            >
-                                                                {contributor.nearestTeam.city}, {contributor.nearestTeam.state}
-                                                            </Typography>
                                                         </Box>
-                                                    </Box>
-                                                    <Box sx={{ 
-                                                        color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                                                        opacity: 0.8,
-                                                        fontSize: '0.875rem',
-                                                        lineHeight: 1.75
-                                                    }}>
-                                                        <Box sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
-                                                            <span>🏟️</span>
-                                                            <span>{contributor.nearestTeam.stadium} ({contributor.nearestTeam.stadiumCapacity.toLocaleString()} capacity)</span>
-                                                        </Box>
-                                                        <Box sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
-                                                            <span>📅</span>
-                                                            <span>Joined {contributor.nearestTeam.league}: {contributor.nearestTeam.joinedYear}</span>
-                                                        </Box>
-                                                        <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
-                                                            <span>🏆</span>
-                                                            <span>Head Coach: {contributor.nearestTeam.headCoach}</span>
-                                                        </Box>
-                                                        <Stack spacing={0.5}>
-                                                            <Link
-                                                                href={contributor.nearestTeam.teamUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                sx={{ 
-                                                                    color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da',
-                                                                    textDecoration: 'none',
-                                                                    '&:hover': { textDecoration: 'underline' }
-                                                                }}
-                                                            >
-                                                                Official Website
-                                                            </Link>
-                                                            <Link
-                                                                href={contributor.nearestTeam.wikipediaUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                sx={{ 
-                                                                    color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da',
-                                                                    textDecoration: 'none',
-                                                                    '&:hover': { textDecoration: 'underline' }
-                                                                }}
-                                                            >
-                                                                Wikipedia
-                                                            </Link>
-                                                        </Stack>
-                                                    </Box>
+                                                    </Tooltip>
                                                 </Box>
-                                            }
-                                            arrow
-                                            componentsProps={{
-                                                tooltip: {
-                                                    sx: {
-                                                        bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
-                                                        border: '1px solid',
-                                                        borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                        boxShadow: theme => theme.palette.mode === 'dark' 
-                                                            ? '0 4px 12px rgba(1, 4, 9, 0.75)'
-                                                            : '0 1px 6px rgba(27, 31, 36, 0.15)',
-                                                        borderRadius: '6px',
-                                                        '& .MuiTooltip-arrow': {
-                                                            color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                            '&::before': {
-                                                                backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
-                                                                border: '1px solid',
-                                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }}
-                                        >
-                                            <Box 
-                                                sx={{ 
-                                                    display: 'flex', 
-                                                    alignItems: 'center'
-                                                }}
-                                            >
-                                                <Box sx={{ 
-                                                    width: 20, 
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    flexShrink: 0
-                                                }}>
-                                                    <Avatar
-                                                        variant="square"
-                                                        src={contributor.nearestTeam.logoUrl}
-                                                        alt={contributor.nearestTeam.name}
-                                                        sx={{ 
-                                                            width: 14, 
-                                                            height: 14, 
-                                                            bgcolor: 'transparent',
-                                                            '& img': {
-                                                                objectFit: 'contain'
-                                                            }
-                                                        }}
-                                                    />
-                                                </Box>
-                                                <Typography 
-                                                    variant="body2" 
-                                                    color="text.secondary"
-                                                    sx={{
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap'
-                                                    }}
-                                                >
-                                                    {contributor.nearestTeam.name}
-                                                </Typography>
                                             </Box>
-                                        </Tooltip>
+                                        </Box>
                                     )}
                                 </Stack>
                             </TableCell>
