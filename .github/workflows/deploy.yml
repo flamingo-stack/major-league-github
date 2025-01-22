@@ -418,13 +418,13 @@ jobs:
             --create-namespace \
             --set controller.publishService.enabled=true \
             --set controller.service.type=LoadBalancer \
-            --set controller.service.annotations."service\\.beta\\.kubernetes\\.io/do-loadbalancer-name"="${{ env.DOMAIN_NAME }}-lb" \
-            --set controller.service.annotations."service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}" \
-            --set controller.service.annotations."service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol"=http \
-            --set controller.service.annotations."service\\.beta\\.kubernetes\\.io/do-loadbalancer-http-ports"=80 \
-            --set controller.service.annotations."service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports"=443 \
-            --set controller.service.annotations."service\\.beta\\.kubernetes\\.io/do-loadbalancer-certificate-id"="${CERT_NAME}" \
-            --set controller.service.annotations."service\\.beta\\.kubernetes\\.io/do-loadbalancer-redirect-http-to-https"=true \
+            --set controller.service.annotations.'service\.beta\.kubernetes\.io/do-loadbalancer-name'='${{ env.DOMAIN_NAME }}-lb' \
+            --set controller.service.annotations.'service\.beta\.kubernetes\.io/do-loadbalancer-hostname'='${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}' \
+            --set controller.service.annotations.'service\.beta\.kubernetes\.io/do-loadbalancer-protocol'=http \
+            --set controller.service.annotations.'service\.beta\.kubernetes\.io/do-loadbalancer-http-ports'=80 \
+            --set controller.service.annotations.'service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports'=443 \
+            --set controller.service.annotations.'service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id'='${CERT_NAME}' \
+            --set controller.service.annotations.'service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https'=true \
             --set controller.service.ports.http=80 \
             --set controller.service.ports.https=443 \
             --set controller.service.targetPorts.http=80 \
