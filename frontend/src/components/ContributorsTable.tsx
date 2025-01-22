@@ -814,11 +814,17 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                             <TableCell>
                                 <Stack spacing={0.5}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <LocationOnIcon fontSize="small" sx={{ opacity: 0.7, width: 20, flexShrink: 0 }} />
+                                        <LocationOnIcon 
+                                            sx={{ 
+                                                width: 16,
+                                                height: 16,
+                                                color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+                                            }} 
+                                        />
                                         <Typography 
                                             variant="body2" 
-                                            color="text.secondary"
                                             sx={{ 
+                                                color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',
                                                 whiteSpace: 'nowrap'
@@ -828,146 +834,139 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                         </Typography>
                                     </Box>
                                     {contributor.nearestTeam && (
-                                        <Box 
-                                            sx={{ 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
-                                                gap: 1,
-                                                ml: '20px'
-                                            }}
-                                        >
-                                            <Box sx={{ width: 14, flexShrink: 0 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <Tooltip
-                                                        title={
-                                                            <Box sx={{ p: 2 }}>
-                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                                                                    <Avatar
-                                                                        src={contributor.nearestTeam.logoUrl}
-                                                                        alt={contributor.nearestTeam.name}
-                                                                        sx={{ width: 48, height: 48 }}
-                                                                    />
-                                                                    <Box>
-                                                                        <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>
-                                                                            {contributor.nearestTeam.name}
-                                                                        </Typography>
-                                                                        <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                                            Fort Lauderdale, Florida
-                                                                        </Typography>
-                                                                    </Box>
-                                                                </Box>
-                                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                        <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                                            🏟️
-                                                                            <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                                                Chase Stadium (21,550 capacity)
-                                                                            </Typography>
-                                                                        </Box>
-                                                                    </Box>
-                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                        <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                                            📅
-                                                                            <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                                                Joined MLS: 2020
-                                                                            </Typography>
-                                                                        </Box>
-                                                                    </Box>
-                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                        <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                                            👨‍💼
-                                                                            <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                                                Head Coach: Gerardo Martino
-                                                                            </Typography>
-                                                                        </Box>
-                                                                    </Box>
-                                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5 }}>
-                                                                        <Link
-                                                                            href="https://www.intermiamicf.com/"
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            sx={{
-                                                                                color: '#58a6ff',
-                                                                                textDecoration: 'none',
-                                                                                '&:hover': {
-                                                                                    textDecoration: 'underline'
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            Official Website ↗
-                                                                        </Link>
-                                                                        <Link
-                                                                            href="https://en.wikipedia.org/wiki/Inter_Miami_CF"
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            sx={{
-                                                                                color: '#58a6ff',
-                                                                                textDecoration: 'none',
-                                                                                '&:hover': {
-                                                                                    textDecoration: 'underline'
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            Wikipedia ↗
-                                                                        </Link>
-                                                                    </Box>
-                                                                </Box>
-                                                            </Box>
-                                                        }
-                                                        arrow
-                                                        placement="top"
-                                                        componentsProps={{
-                                                            tooltip: {
-                                                                sx: {
-                                                                    bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
-                                                                    border: '1px solid',
-                                                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                                    boxShadow: theme => theme.palette.mode === 'dark' 
-                                                                        ? '0 4px 12px rgba(1, 4, 9, 0.75)'
-                                                                        : '0 1px 6px rgba(27, 31, 36, 0.15)',
-                                                                    borderRadius: '6px',
-                                                                    '& .MuiTooltip-arrow': {
-                                                                        color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                                        '&::before': {
-                                                                            backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
-                                                                            border: '1px solid',
-                                                                            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }}
-                                                    >
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                                        <Box sx={{ 
+                                            display: 'flex', 
+                                            alignItems: 'center',
+                                            ml: '20px'
+                                        }}>
+                                            <Tooltip
+                                                title={
+                                                    <Box sx={{ p: 2 }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                                                             <Avatar
-                                                                variant="square"
                                                                 src={contributor.nearestTeam.logoUrl}
                                                                 alt={contributor.nearestTeam.name}
-                                                                sx={{ 
-                                                                    width: 14, 
-                                                                    height: 14, 
-                                                                    bgcolor: 'transparent',
-                                                                    '& img': {
-                                                                        objectFit: 'contain'
-                                                                    }
-                                                                }}
+                                                                sx={{ width: 48, height: 48 }}
                                                             />
-                                                            <Typography 
-                                                                variant="body2" 
-                                                                color="text.secondary"
-                                                                sx={{
-                                                                    fontSize: '0.875rem',
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap'
-                                                                }}
-                                                            >
-                                                                {contributor.nearestTeam.name}
-                                                            </Typography>
+                                                            <Box>
+                                                                <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>
+                                                                    {contributor.nearestTeam.name}
+                                                                </Typography>
+                                                                <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                    Fort Lauderdale, Florida
+                                                                </Typography>
+                                                            </Box>
                                                         </Box>
-                                                    </Tooltip>
+                                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                    🏟️
+                                                                    <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                        Chase Stadium (21,550 capacity)
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                    📅
+                                                                    <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                        Joined MLS: 2020
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                    👨‍💼
+                                                                    <Typography sx={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                                        Head Coach: Gerardo Martino
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5 }}>
+                                                                <Link
+                                                                    href="https://www.intermiamicf.com/"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    sx={{
+                                                                        color: '#58a6ff',
+                                                                        textDecoration: 'none',
+                                                                        '&:hover': {
+                                                                            textDecoration: 'underline'
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    Official Website ↗
+                                                                </Link>
+                                                                <Link
+                                                                    href="https://en.wikipedia.org/wiki/Inter_Miami_CF"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    sx={{
+                                                                        color: '#58a6ff',
+                                                                        textDecoration: 'none',
+                                                                        '&:hover': {
+                                                                            textDecoration: 'underline'
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    Wikipedia ↗
+                                                                </Link>
+                                                            </Box>
+                                                        </Box>
+                                                    </Box>
+                                                }
+                                                arrow
+                                                placement="top"
+                                                componentsProps={{
+                                                    tooltip: {
+                                                        sx: {
+                                                            bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                            border: '1px solid',
+                                                            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                            boxShadow: theme => theme.palette.mode === 'dark' 
+                                                                ? '0 4px 12px rgba(1, 4, 9, 0.75)'
+                                                                : '0 1px 6px rgba(27, 31, 36, 0.15)',
+                                                            borderRadius: '6px',
+                                                            '& .MuiTooltip-arrow': {
+                                                                color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                                '&::before': {
+                                                                    backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                                    border: '1px solid',
+                                                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                                                    <Avatar
+                                                        variant="square"
+                                                        src={contributor.nearestTeam.logoUrl}
+                                                        alt={contributor.nearestTeam.name}
+                                                        sx={{ 
+                                                            width: 14, 
+                                                            height: 14, 
+                                                            bgcolor: 'transparent',
+                                                            '& img': {
+                                                                objectFit: 'contain'
+                                                            }
+                                                        }}
+                                                    />
+                                                    <Typography 
+                                                        variant="body2" 
+                                                        sx={{
+                                                            color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                                                            fontSize: '0.875rem',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
+                                                        }}
+                                                    >
+                                                        {contributor.nearestTeam.name}
+                                                    </Typography>
                                                 </Box>
-                                            </Box>
+                                            </Tooltip>
                                         </Box>
                                     )}
                                 </Stack>
