@@ -572,6 +572,9 @@ jobs:
           
           echo "✅ Found load balancer ID: ${LB_ID}"
           
+          # Construct the load balancer hostname with trailing dot
+          LB_HOSTNAME="lb-${LB_ID}.${CLUSTER_REGION}.digitaloceanspaces.com."
+          
           echo "🦩 Checking for existing DNS record..."
           EXISTING_RECORD=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_NAME }}" || true)
           
@@ -580,7 +583,7 @@ jobs:
             echo "🦩 Updating existing DNS record (ID: $RECORD_ID)..."
             if ! doctl compute domain records update ${{ secrets.DOMAIN_SUFFIX }} --record-id $RECORD_ID \
               --record-type CNAME \
-              --record-data "lb-${LB_ID}.${CLUSTER_REGION}.digitaloceanspaces.com"; then
+              --record-data "${LB_HOSTNAME}"; then
               echo "❌ Error: Failed to update DNS record"
               exit 1
             fi
@@ -590,7 +593,7 @@ jobs:
             if ! doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
               --record-type CNAME \
               --record-name "${{ env.DOMAIN_NAME }}" \
-              --record-data "lb-${LB_ID}.${CLUSTER_REGION}.digitaloceanspaces.com" \
+              --record-data "${LB_HOSTNAME}" \
               --record-ttl 300; then
               echo "❌ Error: Failed to create DNS record"
               exit 1
