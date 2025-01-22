@@ -706,8 +706,16 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                             </TableCell>
                             <TableCell>
                                 <Stack spacing={0.5}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <LocationOnIcon fontSize="small" sx={{ opacity: 0.7, width: 20, flexShrink: 0 }} />
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Box sx={{ 
+                                            width: 20, 
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexShrink: 0
+                                        }}>
+                                            <LocationOnIcon fontSize="small" sx={{ opacity: 0.7 }} />
+                                        </Box>
                                         <Typography 
                                             variant="body2" 
                                             color="text.secondary"
@@ -724,12 +732,16 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                         <Box 
                                             sx={{ 
                                                 display: 'flex', 
-                                                alignItems: 'center', 
-                                                gap: 1,
-                                                ml: '20px'
+                                                alignItems: 'center'
                                             }}
                                         >
-                                            <Box sx={{ width: 14, flexShrink: 0 }}>
+                                            <Box sx={{ 
+                                                width: 20, 
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                flexShrink: 0
+                                            }}>
                                                 <Avatar
                                                     variant="square"
                                                     src={contributor.nearestTeam.logoUrl}
