@@ -1,7 +1,8 @@
-import { Box, Typography, Autocomplete, TextField, TextFieldProps, InputAdornment } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { City } from '../types/api';
 import { autocompleteCities } from '../services/api';
+import { BaseAutocomplete } from './BaseAutocomplete';
 
 interface CityAutocompleteProps {
   value: City | null;
@@ -33,32 +34,27 @@ export const CityAutocomplete = ({
   });
 
   return (
-    <Autocomplete<City>
+    <BaseAutocomplete<City>
       value={value}
-      onChange={(_, newValue) => onChange(newValue)}
+      onChange={onChange}
       inputValue={inputValue}
-      onInputChange={(_, value, reason) => {
-        // Always update input value for typing
-        onInputChange(value);
-      }}
+      onInputChange={onInputChange}
       options={cities}
+      placeholder="Search cities..."
       getOptionLabel={(option) => option.name}
-      renderInput={(params) => (
-        <TextField 
-          {...(params as TextFieldProps)}
-          placeholder="Search cities..."
-          fullWidth
-          variant="outlined"
-          onFocus={(e) => e.target.select()}
-          onSelect={(e) => (e.target as HTMLInputElement).select()}
-          InputProps={{
-            ...params.InputProps,
-            startAdornment: value?.state?.iconUrl ? (
-              <InputAdornment position="start">
+      renderIcon={(city) => city.state?.iconUrl}
+      renderOptionContent={(city) => (
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography variant="body1">
+            {city.name}
+          </Typography>
+          {city.state && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+              {city.state.iconUrl && (
                 <Box
                   component="img"
-                  src={value.state.iconUrl}
-                  alt={value.state.name}
+                  src={city.state.iconUrl}
+                  alt={city.state.name}
                   sx={{ 
                     width: 24, 
                     height: 16,
@@ -66,48 +62,14 @@ export const CityAutocomplete = ({
                     borderRadius: 0.5
                   }}
                 />
-              </InputAdornment>
-            ) : null
-          }}
-        />
-      )}
-      renderOption={(props, city) => {
-        const { key, ...otherProps } = props;
-        return (
-          <Box component="li" key={city.id} {...otherProps} sx={{ py: 1.5 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="body1">
-                {city.name}
-              </Typography>
-              {city.state && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                  {city.state.iconUrl && (
-                    <Box
-                      component="img"
-                      src={city.state.iconUrl}
-                      alt={city.state.name}
-                      sx={{ 
-                        width: 24, 
-                        height: 16,
-                        objectFit: 'cover',
-                        borderRadius: 0.5
-                      }}
-                    />
-                  )}
-                  <Typography variant="caption" color="text.secondary">
-                    {city.state.name}
-                  </Typography>
-                </Box>
               )}
+              <Typography variant="caption" color="text.secondary">
+                {city.state.name}
+              </Typography>
             </Box>
-          </Box>
-        );
-      }}
-      fullWidth
-      autoComplete
-      handleHomeEndKeys
-      selectOnFocus
-      clearOnBlur={false}
+          )}
+        </Box>
+      )}
     />
   );
 }; 

@@ -27,7 +27,7 @@ export const FiltersPanel = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Local state for selected entities
-  const [selectedLanguage, setSelectedLanguage] = useState<Language | undefined>(undefined);
+  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<SoccerTeam | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
   const [selectedState, setSelectedState] = useState<State | null>(null);
@@ -151,7 +151,7 @@ export const FiltersPanel = () => {
       return;
     }
 
-    setSelectedLanguage(language || undefined);
+    setSelectedLanguage(language);
     updateUrlState({
       ...urlState,
       languageId: language?.id || null
