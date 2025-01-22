@@ -45,15 +45,12 @@ export const BaseAutocomplete = <T extends BaseEntity>({
       fullWidth
       autoComplete
       handleHomeEndKeys
-      selectOnFocus
       clearOnBlur={false}
       renderInput={(params) => (
         <TextField 
           {...(params as TextFieldProps)}
           placeholder={placeholder}
           variant="outlined"
-          onFocus={(e) => e.target.select()}
-          onSelect={(e) => (e.target as HTMLInputElement).select()}
           InputProps={{
             ...params.InputProps,
             startAdornment: value && renderIcon(value) ? (
