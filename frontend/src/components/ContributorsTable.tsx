@@ -111,7 +111,10 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                         <Avatar
                                             src={contributor.avatarUrl}
                                             alt={contributor.name}
-                                            sx={{ width: 48, height: 48 }}
+                                            sx={{ 
+                                                width: { xs: 56, sm: 48 }, 
+                                                height: { xs: 56, sm: 48 }
+                                            }}
                                         />
                                     </Link>
                                     {index < 3 && (
@@ -143,6 +146,28 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                             {contributor.name || contributor.login}
                                         </Typography>
                                     </Link>
+                                    {contributor.name && (
+                                        <Link 
+                                            href={contributor.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            sx={{ 
+                                                textDecoration: 'none',
+                                                '&:hover': { textDecoration: 'underline' }
+                                            }}
+                                        >
+                                            <Typography 
+                                                variant="body2" 
+                                                sx={{ 
+                                                    mb: 0.5,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da',
+                                                    fontWeight: 600
+                                                }}
+                                            >
+                                                {contributor.login}
+                                            </Typography>
+                                        </Link>
+                                    )}
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <LocationOnIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
                                         <Typography variant="body2" color="text.secondary" component="div" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
