@@ -485,9 +485,14 @@ jobs:
           LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
           if [ ! -z "$LB_ID" ]; then
             LB_URN="do:loadbalancer:${LB_ID}"
-            echo "🦩 Attaching load balancer (${LB_URN}) to project..."
-            if ! doctl projects resources assign ${PROJECT_ID} --resource="${LB_URN}"; then
-              echo "⚠️ Warning: Failed to attach load balancer to project"
+            PROJECT_ID=$(doctl projects list --format ID,Name --no-header | grep -i "${{ env.PROJECT_NAME }}" | awk '{print $1}')
+            if [ ! -z "$PROJECT_ID" ]; then
+              echo "🦩 Attaching load balancer (${LB_URN}) to project (${PROJECT_ID})..."
+              if ! doctl projects resources assign "${PROJECT_ID}" --resource="${LB_URN}"; then
+                echo "⚠️ Warning: Failed to attach load balancer to project"
+              fi
+            else
+              echo "⚠️ Warning: Could not find project ID"
             fi
           else
             echo "⚠️ Warning: Could not find load balancer to attach to project"
