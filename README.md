@@ -12,6 +12,77 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 - **Activity and Engagement Metrics**: Explore contributors ranked by their GitHub activity, including commits, stars, and follower engagement.
 - **Dynamic Updates**: Stay up to date with real-time GitHub data.
 
+## Tech Stack 🛠️
+
+### Backend
+- Java 21
+- Spring Boot 3.4
+- Spring WebFlux for reactive programming
+- Maven for dependency management
+
+### Frontend
+- React 18
+- TypeScript
+- Material-UI (MUI)
+- React Query for data fetching
+- Webpack 5 for bundling
+
+### Infrastructure
+- Docker for containerization
+- Kubernetes for orchestration
+- Nginx for frontend serving
+
+## Prerequisites
+- Java Development Kit (JDK) 21
+- Node.js 18+ and npm
+- Docker and Docker Compose
+- Kubernetes cluster (for deployment)
+- GitHub API tokens
+
+## Getting Started
+
+### Backend Setup
+```bash
+cd backend
+./mvnw clean install
+./mvnw spring-boot:run
+```
+
+### Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev    # For development
+npm run build  # For production build
+```
+
+### Environment Configuration
+1. Create a `.env` file in the backend directory:
+```env
+GITHUB_TOKENS=token_1,token_2
+```
+
+### Docker Build
+```bash
+# Build backend
+cd backend
+docker build -t major-league-github-backend .
+
+# Build frontend
+cd frontend
+docker build -t major-league-github-frontend .
+```
+
+### Kubernetes Deployment
+```bash
+cd kubernetes/base
+kubectl apply -k .
+```
+
+## Development
+- Backend runs on `http://localhost:8450` (configurable via PORT environment variable)
+- Frontend development server runs on `http://localhost:3000`
+
 ## Why Major League GitHub?
 1. **Attract Talent**: Showcase top open-source contributors and connect with experienced engineers.
 2. **Highlight Flamingo.cx**: Establish Flamingo.cx as a leader in open-source development based in Miami Beach.
@@ -21,35 +92,6 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 1. **Data Collection**: Leveraging the GitHub API to fetch contributor activity.
 2. **Mapping with Teams**: Contributors are matched to nearby MLS teams based on location.
 3. **Interactive UI**: A sleek interface allows filtering by language, region, city, and team.
-
-## Getting Started
-
-### Prerequisites
-- Node.js and npm
-- A GitHub API token
-
-### Installation
-```bash
-# Clone the repository
-git clone https://github.com/Flamingo-CX/major-league-github.git
-
-# Navigate to the project directory
-cd major-league-github
-
-# Install dependencies
-npm install
-```
-
-### Usage
-1. Set up your GitHub API token in a `.env` file:
-```env
-GITHUB_TOKENS=token_1, token_2
-```
-2. Run the development server:
-```bash
-npm start
-```
-3. Access the app at `http://localhost:3000`.
 
 ## Contributing 🤝
 We welcome contributions from the community! To contribute:
@@ -66,4 +108,4 @@ This project is licensed under the [Apache 2.0 License](LICENSE).
 - Website: [flamingo.cx](https://flamingo.cx)
 - LinkedIn: [Michael Assraf](https://linkedin.com/in/michaelassraf)
 
-Let’s bring the open-source community closer with Major League GitHub! 🌟
+Let's bring the open-source community closer with Major League GitHub! 🌟
