@@ -1,7 +1,8 @@
-import { Box, Typography, Autocomplete, TextField, TextFieldProps, InputAdornment } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { Region, State } from '../types/api';
 import { autocompleteRegions } from '../services/api';
+import { BaseAutocomplete } from './BaseAutocomplete';
 
 interface RegionAutocompleteProps {
   value: Region | null;
@@ -33,86 +34,41 @@ export const RegionAutocomplete = ({
   });
 
   return (
-    <Autocomplete<Region>
+    <BaseAutocomplete<Region>
       value={value}
-      onChange={(_, newValue) => onChange(newValue)}
+      onChange={onChange}
       inputValue={inputValue}
-      onInputChange={(_, value, reason) => {
-        // Always update input value for typing
-        onInputChange(value);
-      }}
+      onInputChange={onInputChange}
       options={regions}
+      placeholder="Search regions..."
       getOptionLabel={(option) => option.displayName}
-      fullWidth
-      autoComplete
-      handleHomeEndKeys
-      selectOnFocus
-      clearOnBlur={false}
-      renderInput={(params) => (
-        <TextField 
-          {...(params as TextFieldProps)}
-          placeholder="Search regions..."
-          variant="outlined"
-          onFocus={(e) => e.target.select()}
-          onSelect={(e) => (e.target as HTMLInputElement).select()}
-          InputProps={{
-            ...params.InputProps,
-            startAdornment: value?.states && value.states.length > 0 ? (
-              <InputAdornment position="start">
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                  {value.states.slice(0, 3).map((state) => (
-                    state.iconUrl && (
-                      <Box
-                        key={state.id}
-                        component="img"
-                        src={state.iconUrl}
-                        alt={state.name}
-                        sx={{ 
-                          width: 24, 
-                          height: 16,
-                          objectFit: 'cover',
-                          borderRadius: 0.5
-                        }}
-                      />
-                    )
-                  ))}
+      renderIcon={(region) => region.states?.[0]?.iconUrl}
+      renderOptionContent={(region) => (
+        <Box sx={{ py: 1.5 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+            {region.displayName}
+          </Typography>
+          {region.states && region.states.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+              {region.states.map((state: State) => (
+                <Box key={state.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {state.iconUrl && (
+                    <Box
+                      component="img"
+                      src={state.iconUrl}
+                      alt={state.name}
+                      sx={{ width: 20, height: 20, objectFit: 'contain' }}
+                    />
+                  )}
+                  <Typography variant="body2" color="text.secondary">
+                    {state.name}
+                  </Typography>
                 </Box>
-              </InputAdornment>
-            ) : null
-          }}
-        />
-      )}
-      renderOption={(props, region) => {
-        const { key, ...otherProps } = props;
-        return (
-          <Box component="li" key={region.id} {...otherProps}>
-            <Box sx={{ py: 1.5 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                {region.displayName}
-              </Typography>
-              {region.states && region.states.length > 0 && (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                  {region.states.map((state: State) => (
-                    <Box key={state.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      {state.iconUrl && (
-                        <Box
-                          component="img"
-                          src={state.iconUrl}
-                          alt={state.name}
-                          sx={{ width: 20, height: 20, objectFit: 'contain' }}
-                        />
-                      )}
-                      <Typography variant="body2" color="text.secondary">
-                        {state.name}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              )}
+              ))}
             </Box>
-          </Box>
-        );
-      }}
+          )}
+        </Box>
+      )}
     />
   );
 }; 
