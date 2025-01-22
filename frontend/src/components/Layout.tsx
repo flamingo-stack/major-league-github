@@ -29,9 +29,9 @@ export const Layout = ({ children, onToggleTheme }: LayoutProps) => {
               px: { xs: 2, sm: 3 }
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexGrow: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flexGrow: 1 }}>
               <GitHub sx={{ 
-                fontSize: 32,
+                fontSize: { xs: 24, sm: 32 },
                 color: theme.palette.mode === 'dark' ? 'white' : 'black'
               }} />
               <Typography 
@@ -39,7 +39,8 @@ export const Layout = ({ children, onToggleTheme }: LayoutProps) => {
                 sx={{ 
                   fontWeight: 600,
                   letterSpacing: '-0.025em',
-                  color: theme.palette.mode === 'dark' ? 'white' : 'black'
+                  color: theme.palette.mode === 'dark' ? 'white' : 'black',
+                  fontSize: { xs: '1rem', sm: '1.25rem' }
                 }}
               >
                 Major League Github
@@ -55,7 +56,9 @@ export const Layout = ({ children, onToggleTheme }: LayoutProps) => {
                 color: 'text.secondary',
                 '&:hover': {
                   color: 'text.primary'
-                }
+                },
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+                px: { xs: 1, sm: 2 }
               }}
             >
               View on GitHub
