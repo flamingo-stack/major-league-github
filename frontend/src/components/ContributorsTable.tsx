@@ -100,13 +100,24 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                         }}
                     >
                         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                                <Box sx={{ position: 'relative' }}>
+                            <Box sx={{ 
+                                display: 'flex', 
+                                gap: { xs: 3, sm: 2 }, 
+                                mb: 2,
+                                alignItems: 'center'
+                            }}>
+                                <Box sx={{ 
+                                    position: 'relative', 
+                                    flexShrink: 0
+                                }}>
                                     <Link 
                                         href={contributor.url} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        sx={{ display: 'flex' }}
+                                        sx={{ 
+                                            display: 'flex',
+                                            lineHeight: 0
+                                        }}
                                     >
                                         <Avatar
                                             src={contributor.avatarUrl}
@@ -131,7 +142,7 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                         </Typography>
                                     )}
                                 </Box>
-                                <Box sx={{ flex: 1 }}>
+                                <Box sx={{ flex: 1, maxWidth: 'calc(100% - 80px)' }}>
                                     <Link 
                                         href={contributor.url}
                                         target="_blank"
@@ -139,10 +150,20 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                         sx={{ 
                                             color: 'text.primary',
                                             textDecoration: 'none',
-                                            '&:hover': { textDecoration: 'underline' }
+                                            '&:hover': { textDecoration: 'underline' },
+                                            display: 'block'
                                         }}
                                     >
-                                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                        <Typography 
+                                            variant="subtitle1" 
+                                            sx={{ 
+                                                fontWeight: 600, 
+                                                mb: 0.5,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
                                             {contributor.name || contributor.login}
                                         </Typography>
                                     </Link>
@@ -169,18 +190,40 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                         </Link>
                                     )}
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <LocationOnIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                                        <Typography variant="body2" color="text.secondary" component="div" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {contributor.city.name}, {contributor.city.stateId}
+                                        <LocationOnIcon sx={{ fontSize: '1rem', color: 'text.secondary', flexShrink: 0 }} />
+                                        <Typography 
+                                            variant="body2" 
+                                            color="text.secondary" 
+                                            component="div" 
+                                            sx={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: 0.5,
+                                                minWidth: 0,
+                                                width: '100%'
+                                            }}
+                                        >
+                                            <Box component="span" sx={{ 
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                minWidth: 0
+                                            }}>
+                                                {contributor.city.name}, {contributor.city.stateId}
+                                            </Box>
                                             {contributor.nearestTeam && (
                                                 <>
-                                                    <span>•</span>
+                                                    <span style={{ flexShrink: 0 }}>•</span>
                                                     <Box 
                                                         component="span" 
                                                         sx={{ 
                                                             display: 'inline-flex', 
                                                             alignItems: 'center', 
-                                                            gap: 0.5
+                                                            gap: 0.5,
+                                                            minWidth: 0,
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
                                                         }}
                                                     >
                                                         <Avatar
@@ -191,12 +234,19 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                                                 width: 14, 
                                                                 height: 14, 
                                                                 bgcolor: 'transparent',
+                                                                flexShrink: 0,
                                                                 '& img': {
                                                                     objectFit: 'contain'
                                                                 }
                                                             }}
                                                         />
-                                                        {contributor.nearestTeam.name}
+                                                        <span style={{ 
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
+                                                        }}>
+                                                            {contributor.nearestTeam.name}
+                                                        </span>
                                                     </Box>
                                                 </>
                                             )}
@@ -655,157 +705,59 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                 </Box>
                             </TableCell>
                             <TableCell>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <LocationOnIcon fontSize="small" sx={{ opacity: 0.7 }} />
-                                    <Typography>{contributor.city.name}, {contributor.city.stateId}</Typography>
-                                </Box>
-                                {contributor.nearestTeam && (
-                                    <Tooltip
-                                        title={
-                                            <Box sx={{ p: 1.5, width: 250 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                                                    <Avatar
-                                                        variant="square"
-                                                        src={contributor.nearestTeam.logoUrl}
-                                                        alt={contributor.nearestTeam.name}
-                                                        sx={{ 
-                                                            width: 48, 
-                                                            height: 48, 
-                                                            borderRadius: 1,
-                                                            bgcolor: 'transparent',
-                                                            '& img': {
-                                                                objectFit: 'contain'
-                                                            }
-                                                        }}
-                                                    />
-                                                    <Box>
-                                                        <Typography 
-                                                            sx={{ 
-                                                                fontSize: '0.875rem',
-                                                                fontWeight: 600,
-                                                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f'
-                                                            }}
-                                                        >
-                                                            {contributor.nearestTeam.name}
-                                                        </Typography>
-                                                        <Typography 
-                                                            sx={{ 
-                                                                fontSize: '0.8125rem',
-                                                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                                                                opacity: 0.8
-                                                            }}
-                                                        >
-                                                            {contributor.nearestTeam.city}, {contributor.nearestTeam.state}
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-                                                <Box sx={{ 
-                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                                                    opacity: 0.8,
-                                                    fontSize: '0.8125rem',
-                                                    lineHeight: 1.5
-                                                }}>
-                                                    <Box sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
-                                                        <span>🏟️</span>
-                                                        <span>{contributor.nearestTeam.stadium} ({contributor.nearestTeam.stadiumCapacity.toLocaleString()} capacity)</span>
-                                                    </Box>
-                                                    <Box sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
-                                                        <span>📅</span>
-                                                        <span>Joined MLS: {contributor.nearestTeam.joinedYear}</span>
-                                                    </Box>
-                                                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                                                        <span>👨‍💼</span>
-                                                        <span>Head Coach: {contributor.nearestTeam.headCoach}</span>
-                                                    </Box>
-                                                    <Box sx={{ mt: 1.5 }}>
-                                                        <Link 
-                                                            href={contributor.nearestTeam.teamUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            sx={{ 
-                                                                color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da',
-                                                                display: 'flex', 
-                                                                alignItems: 'center', 
-                                                                gap: 0.5, 
-                                                                mb: 0.5,
-                                                                textDecoration: 'none',
-                                                                fontSize: 'inherit',
-                                                                '&:hover': {
-                                                                    textDecoration: 'underline'
-                                                                }
-                                                            }}
-                                                        >
-                                                            Official Website <OpenInNewIcon sx={{ fontSize: 14 }} />
-                                                        </Link>
-                                                        <Link 
-                                                            href={contributor.nearestTeam.wikipediaUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            sx={{ 
-                                                                color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da',
-                                                                display: 'flex', 
-                                                                alignItems: 'center', 
-                                                                gap: 0.5,
-                                                                textDecoration: 'none',
-                                                                fontSize: 'inherit',
-                                                                '&:hover': {
-                                                                    textDecoration: 'underline'
-                                                                }
-                                                            }}
-                                                        >
-                                                            Wikipedia <OpenInNewIcon sx={{ fontSize: 14 }} />
-                                                        </Link>
-                                                    </Box>
-                                                </Box>
-                                            </Box>
-                                        }
-                                        arrow
-                                        componentsProps={{
-                                            tooltip: {
-                                                sx: {
-                                                    bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
-                                                    border: '1px solid',
-                                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                    boxShadow: theme => theme.palette.mode === 'dark' 
-                                                        ? '0 4px 12px rgba(1, 4, 9, 0.75)'
-                                                        : '0 1px 6px rgba(27, 31, 36, 0.15)',
-                                                    borderRadius: '6px',
-                                                    '& .MuiTooltip-arrow': {
-                                                        color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                                        '&::before': {
-                                                            backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
-                                                            border: '1px solid',
-                                                            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                <Stack spacing={0.5}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <LocationOnIcon fontSize="small" sx={{ opacity: 0.7, width: 20, flexShrink: 0 }} />
+                                        <Typography 
+                                            variant="body2" 
+                                            color="text.secondary"
+                                            sx={{ 
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            {contributor.city.name}, {contributor.city.stateId}
+                                        </Typography>
+                                    </Box>
+                                    {contributor.nearestTeam && (
+                                        <Box 
+                                            sx={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: 1,
+                                                ml: '20px'
+                                            }}
+                                        >
+                                            <Box sx={{ width: 14, flexShrink: 0 }}>
+                                                <Avatar
+                                                    variant="square"
+                                                    src={contributor.nearestTeam.logoUrl}
+                                                    alt={contributor.nearestTeam.name}
+                                                    sx={{ 
+                                                        width: 14, 
+                                                        height: 14, 
+                                                        bgcolor: 'transparent',
+                                                        '& img': {
+                                                            objectFit: 'contain'
                                                         }
-                                                    }
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                                            <Avatar
-                                                variant="square"
-                                                src={contributor.nearestTeam.logoUrl}
-                                                alt={contributor.nearestTeam.name}
-                                                sx={{ 
-                                                    width: 20, 
-                                                    height: 20, 
-                                                    bgcolor: 'transparent',
-                                                    borderRadius: 0.5,
-                                                    '& img': {
-                                                        objectFit: 'contain'
-                                                    }
+                                                    }}
+                                                />
+                                            </Box>
+                                            <Typography 
+                                                variant="body2" 
+                                                color="text.secondary"
+                                                sx={{
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap'
                                                 }}
-                                                onError={(e: any) => {
-                                                    e.target.src = '';
-                                                }}
-                                            />
-                                            <Typography variant="body2" color="text.secondary">
+                                            >
                                                 {contributor.nearestTeam.name}
                                             </Typography>
                                         </Box>
-                                    </Tooltip>
-                                )}
+                                    )}
+                                </Stack>
                             </TableCell>
                             <TableCell align="right">
                                 <Tooltip
