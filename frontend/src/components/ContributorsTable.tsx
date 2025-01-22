@@ -145,7 +145,7 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                     </Link>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <LocationOnIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                                        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
+                                        <Typography variant="body2" color="text.secondary" component="div" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
                                             {contributor.city.name}, {contributor.city.stateId}
                                             {contributor.nearestTeam && (
                                                 <>

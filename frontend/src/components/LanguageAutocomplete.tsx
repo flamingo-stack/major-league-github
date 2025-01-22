@@ -22,8 +22,7 @@ export const LanguageAutocomplete = ({
   const { data: languages = [] } = useQuery({
     queryKey: ['languages', inputValue],
     queryFn: ({ signal }) => autocompleteLanguages(inputValue, signal),
-    staleTime: 0,
-    refetchOnMount: 'always'
+    staleTime: 0
   });
 
   return (
@@ -31,12 +30,22 @@ export const LanguageAutocomplete = ({
       value={value || null}
       onChange={(_, newValue) => onChange(newValue)}
       inputValue={inputValue}
-      onInputChange={(_, value, reason) => {
+      onInputChange={(_, newInputValue, reason) => {
+        // Only trigger onChange for explicit clear button clicks
+        if (reason === 'clear') {
+          onChange(null);
+          return;
+        }
+        // Don't update input value when selecting an option
+        if (reason === 'reset' && !newInputValue) {
+          return;
+        }
         // Always update input value for typing
-        onInputChange(value);
+        onInputChange(newInputValue);
       }}
       options={languages}
       getOptionLabel={(option) => option.displayName}
+      isOptionEqualToValue={(option, value) => option.id === value.id}
       fullWidth
       disablePortal={isMobile}
       autoComplete
@@ -48,7 +57,7 @@ export const LanguageAutocomplete = ({
           maxHeight: isMobile ? '60vh' : '400px',
         },
         '& .MuiInputBase-root': {
-          height: '56px', // Standard Material-UI height
+          height: '56px'
         }
       }}
       renderInput={(params) => {
@@ -77,6 +86,8 @@ export const LanguageAutocomplete = ({
             fullWidth
             variant="outlined"
             InputProps={customInputProps}
+            onFocus={(e) => e.target.select()}
+            onSelect={(e) => (e.target as HTMLInputElement).select()}
           />
         );
       }}

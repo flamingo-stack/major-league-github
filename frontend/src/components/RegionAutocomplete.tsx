@@ -53,6 +53,8 @@ export const RegionAutocomplete = ({
           {...(params as TextFieldProps)}
           placeholder="Search regions..."
           variant="outlined"
+          onFocus={(e) => e.target.select()}
+          onSelect={(e) => (e.target as HTMLInputElement).select()}
           InputProps={{
             ...params.InputProps,
             startAdornment: value?.states && value.states.length > 0 ? (

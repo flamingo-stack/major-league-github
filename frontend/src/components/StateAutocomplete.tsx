@@ -42,6 +42,8 @@ export const StateAutocomplete = ({
           placeholder="Search states..."
           fullWidth
           variant="outlined"
+          onFocus={(e) => e.target.select()}
+          onSelect={(e) => (e.target as HTMLInputElement).select()}
           InputProps={{
             ...params.InputProps,
             startAdornment: value?.iconUrl ? (
