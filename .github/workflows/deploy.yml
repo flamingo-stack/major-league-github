@@ -418,13 +418,16 @@ jobs:
             --set controller.publishService.enabled=true \
             --set controller.service.type=LoadBalancer \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-name\"=\"${{ env.DOMAIN_NAME }}-lb\" \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-enable-proxy-protocol\"=true \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${{ env.DOMAIN_NAME }}.${{ secrets.DOMAIN_SUFFIX }}\" \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-redirect-http-to-https\"=true \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=https \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-http-ports\"=80 \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports\"=443 \
             --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-certificate-name\"=\"${CERT_NAME}\" \
+            --set controller.config.use-proxy-protocol=false \
+            --set controller.config.use-forwarded-headers=true \
+            --set controller.config.compute-full-forwarded-for=true \
+            --set controller.config.use-http2=true \
             --wait --timeout 5m"
           
           if ! eval "$NGINX_CMD"; then
