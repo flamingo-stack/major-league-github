@@ -438,12 +438,18 @@ jobs:
               echo "🦩 Waiting for load balancer to be deleted..."
               while doctl compute load-balancer get "${LB_ID}" > /dev/null 2>&1; do
                 echo "🦩 Still waiting for load balancer deletion..."
-                sleep 10
+                sleep 5
               done
             fi
             
-            # Wait a bit to ensure cleanup is complete
-            sleep 30
+            # Wait for namespace deletion to complete
+            echo "🦩 Waiting for namespace cleanup..."
+            while kubectl get namespace ingress-nginx > /dev/null 2>&1; do
+              echo "🦩 Still waiting for namespace cleanup..."
+              sleep 5
+            done
+            
+            echo "✅ Cleanup completed"
           fi
           
           echo "🦩 Installing NGINX Ingress Controller..."
