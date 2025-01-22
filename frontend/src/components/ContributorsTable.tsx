@@ -84,7 +84,7 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
 
     if (isMobile) {
         return (
-            <Stack spacing={1} sx={{ p: 0.5 }}>
+            <Stack spacing={2} sx={{ p: { xs: 1.5, sm: 0.5 } }}>
                 {contributors.map((contributor, index) => (
                     <Card 
                         key={contributor.login}
@@ -99,11 +99,11 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                             }
                         }}
                     >
-                        <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                        <CardContent sx={{ p: { xs: 2.5, sm: 2 }, '&:last-child': { pb: { xs: 2.5, sm: 2 } } }}>
                             <Box sx={{ 
                                 display: 'flex', 
-                                gap: { xs: 2, sm: 2 }, 
-                                mb: 1,
+                                gap: { xs: 3, sm: 2.5 }, 
+                                mb: { xs: 2.5, sm: 2 },
                                 alignItems: 'center'
                             }}>
                                 <Box sx={{ 
@@ -361,7 +361,7 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                     </Box>
                                 </Box>
                             </Box>
-                            <Stack direction="row" spacing={1} sx={{ mb: 0.5 }}>
+                            <Stack direction="row" spacing={{ xs: 2, sm: 1.5 }} sx={{ mb: { xs: 2, sm: 1.5 } }}>
                                 <Box
                                     sx={{
                                         display: 'inline-flex',
@@ -429,7 +429,7 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                     {formatNumber(contributor.javaRepos)}
                                 </Box>
                             </Stack>
-                            <Stack direction="row" spacing={1}>
+                            <Stack direction="row" spacing={{ xs: 2, sm: 1.5 }}>
                                 <Box
                                     sx={{
                                         display: 'inline-flex',
