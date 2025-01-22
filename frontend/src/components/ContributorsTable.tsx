@@ -12,7 +12,13 @@ import {
     Typography,
     CircularProgress,
     Tooltip,
-    Avatar
+    Avatar,
+    Stack,
+    Card,
+    CardContent,
+    Chip,
+    useTheme,
+    useMediaQuery
 } from '@mui/material';
 import { Contributor } from '../services/api';
 import StarIcon from '@mui/icons-material/Star';
@@ -45,6 +51,9 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
     isLoading,
     error
 }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     if (isLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -70,6 +79,246 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                     No contributors found. Try selecting different cities or region.
                 </Typography>
             </Box>
+        );
+    }
+
+    if (isMobile) {
+        return (
+            <Stack spacing={2} sx={{ p: 1 }}>
+                {contributors.map((contributor, index) => (
+                    <Card 
+                        key={contributor.login}
+                        sx={{ 
+                            border: 1,
+                            borderColor: 'divider',
+                            boxShadow: 'none',
+                            '&:hover': {
+                                bgcolor: theme => theme.palette.mode === 'dark' 
+                                    ? 'rgba(255, 255, 255, 0.04)'
+                                    : 'rgba(0, 0, 0, 0.04)'
+                            }
+                        }}
+                    >
+                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                                <Box sx={{ position: 'relative' }}>
+                                    <Link 
+                                        href={contributor.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        sx={{ display: 'flex' }}
+                                    >
+                                        <Avatar
+                                            src={contributor.avatarUrl}
+                                            alt={contributor.name}
+                                            sx={{ width: 48, height: 48 }}
+                                        />
+                                    </Link>
+                                    {index < 3 && (
+                                        <Typography 
+                                            sx={{ 
+                                                fontSize: '1.2rem',
+                                                lineHeight: 1,
+                                                position: 'absolute',
+                                                right: -12,
+                                                bottom: -6
+                                            }}
+                                        >
+                                            {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                                        </Typography>
+                                    )}
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                    <Link 
+                                        href={contributor.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        sx={{ 
+                                            color: 'text.primary',
+                                            textDecoration: 'none',
+                                            '&:hover': { textDecoration: 'underline' }
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                            {contributor.name || contributor.login}
+                                        </Typography>
+                                    </Link>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <LocationOnIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
+                                        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {contributor.city.name}, {contributor.city.stateId}
+                                            {contributor.nearestTeam && (
+                                                <>
+                                                    <span>•</span>
+                                                    <Box 
+                                                        component="span" 
+                                                        sx={{ 
+                                                            display: 'inline-flex', 
+                                                            alignItems: 'center', 
+                                                            gap: 0.5
+                                                        }}
+                                                    >
+                                                        <Avatar
+                                                            variant="square"
+                                                            src={contributor.nearestTeam.logoUrl}
+                                                            alt={contributor.nearestTeam.name}
+                                                            sx={{ 
+                                                                width: 14, 
+                                                                height: 14, 
+                                                                bgcolor: 'transparent',
+                                                                '& img': {
+                                                                    objectFit: 'contain'
+                                                                }
+                                                            }}
+                                                        />
+                                                        {contributor.nearestTeam.name}
+                                                    </Box>
+                                                </>
+                                            )}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </Box>
+                            <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+                                <Box
+                                    sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.75,
+                                        px: 1.25,
+                                        height: '20px',
+                                        borderRadius: 1,
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.1)' : '#f6f8fa',
+                                        color: theme => theme.palette.mode === 'dark' ? '#adbac7' : '#24292f',
+                                        border: '1px solid',
+                                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)'
+                                    }}
+                                >
+                                    <EmojiEventsIcon sx={{ 
+                                        fontSize: '0.875rem',
+                                        color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'
+                                    }} />
+                                    {formatNumber(contributor.score)}
+                                </Box>
+                                <Box
+                                    sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.75,
+                                        px: 1.25,
+                                        height: '20px',
+                                        borderRadius: 1,
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.1)' : '#f6f8fa',
+                                        color: theme => theme.palette.mode === 'dark' ? '#adbac7' : '#24292f',
+                                        border: '1px solid',
+                                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)'
+                                    }}
+                                >
+                                    <CodeIcon sx={{ 
+                                        fontSize: '0.875rem',
+                                        color: theme => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37'
+                                    }} />
+                                    {formatNumber(contributor.totalCommits)}
+                                </Box>
+                                <Box
+                                    sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.75,
+                                        px: 1.25,
+                                        height: '20px',
+                                        borderRadius: 1,
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.1)' : '#f6f8fa',
+                                        color: theme => theme.palette.mode === 'dark' ? '#adbac7' : '#24292f',
+                                        border: '1px solid',
+                                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)'
+                                    }}
+                                >
+                                    <StorageIcon sx={{ 
+                                        fontSize: '0.875rem',
+                                        color: theme => theme.palette.mode === 'dark' ? '#986ee2' : '#8250df'
+                                    }} />
+                                    {formatNumber(contributor.javaRepos)}
+                                </Box>
+                            </Stack>
+                            <Stack direction="row" spacing={1}>
+                                <Box
+                                    sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.75,
+                                        px: 1.25,
+                                        height: '20px',
+                                        borderRadius: 1,
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.1)' : '#f6f8fa',
+                                        color: theme => theme.palette.mode === 'dark' ? '#adbac7' : '#24292f',
+                                        border: '1px solid',
+                                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)'
+                                    }}
+                                >
+                                    <StarIcon sx={{ 
+                                        fontSize: '0.875rem',
+                                        color: theme => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700'
+                                    }} />
+                                    {formatNumber(contributor.starsReceived)}
+                                </Box>
+                                <Box
+                                    sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.75,
+                                        px: 1.25,
+                                        height: '20px',
+                                        borderRadius: 1,
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.1)' : '#f6f8fa',
+                                        color: theme => theme.palette.mode === 'dark' ? '#adbac7' : '#24292f',
+                                        border: '1px solid',
+                                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)'
+                                    }}
+                                >
+                                    <ForkRightIcon sx={{ 
+                                        fontSize: '0.875rem',
+                                        color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'
+                                    }} />
+                                    {formatNumber(contributor.forksReceived)}
+                                </Box>
+                                <Box
+                                    sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.75,
+                                        px: 1.25,
+                                        height: '20px',
+                                        borderRadius: 1,
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.1)' : '#f6f8fa',
+                                        color: theme => theme.palette.mode === 'dark' ? '#adbac7' : '#24292f',
+                                        border: '1px solid',
+                                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)'
+                                    }}
+                                >
+                                    <UpdateIcon sx={{ 
+                                        fontSize: '0.875rem',
+                                        color: theme => theme.palette.mode === 'dark' ? '#ec775c' : '#cf222e'
+                                    }} />
+                                    {new Date(contributor.latestCommitDate).toLocaleDateString()}
+                                </Box>
+                            </Stack>
+                        </CardContent>
+                    </Card>
+                ))}
+            </Stack>
         );
     }
 
