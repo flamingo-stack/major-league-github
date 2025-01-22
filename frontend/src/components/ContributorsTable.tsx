@@ -307,9 +307,20 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                                             componentsProps={{
                                                                 tooltip: {
                                                                     sx: {
-                                                                        bgcolor: '#1e1e1e',
+                                                                        bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                                        border: '1px solid',
+                                                                        borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                                        boxShadow: theme => theme.palette.mode === 'dark' 
+                                                                            ? '0 4px 12px rgba(1, 4, 9, 0.75)'
+                                                                            : '0 1px 6px rgba(27, 31, 36, 0.15)',
+                                                                        borderRadius: '6px',
                                                                         '& .MuiTooltip-arrow': {
-                                                                            color: '#1e1e1e'
+                                                                            color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                                            '&::before': {
+                                                                                backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                                                border: '1px solid',
+                                                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
@@ -908,9 +919,20 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                                         componentsProps={{
                                                             tooltip: {
                                                                 sx: {
-                                                                    bgcolor: '#1e1e1e',
+                                                                    bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                                    border: '1px solid',
+                                                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                                    boxShadow: theme => theme.palette.mode === 'dark' 
+                                                                        ? '0 4px 12px rgba(1, 4, 9, 0.75)'
+                                                                        : '0 1px 6px rgba(27, 31, 36, 0.15)',
+                                                                    borderRadius: '6px',
                                                                     '& .MuiTooltip-arrow': {
-                                                                        color: '#1e1e1e'
+                                                                        color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                                        '&::before': {
+                                                                            backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                                            border: '1px solid',
+                                                                            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                                        }
                                                                     }
                                                                 }
                                                             }
