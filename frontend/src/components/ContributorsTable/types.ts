@@ -17,18 +17,7 @@ export interface SoccerTeam {
     logoUrl: string;
 }
 
-export interface City {
-    id: string;
-    name: string;
-    stateId: string;
-    population: number;
-    latitude: number;
-    longitude: number;
-    regionIds: string[];
-    nearestTeamId: string | null;
-    state?: State;
-    nearestTeam?: SoccerTeam;
-}
+
 
 export interface State {
     id: string;
