@@ -582,12 +582,26 @@ jobs:
           
           echo "✅ Got load balancer IP: ${LB_IP}"
           
-          echo "🦩 Checking for existing DNS record..."
+          echo "🦩 Checking for existing DNS records..."
+          
+          # Check for existing CNAME record
+          EXISTING_CNAME=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *${{ env.DOMAIN_NAME }}" || true)
+          if [ ! -z "$EXISTING_CNAME" ]; then
+            CNAME_ID=$(echo $EXISTING_CNAME | awk '{print $1}')
+            echo "🦩 Found existing CNAME record (ID: $CNAME_ID), removing it..."
+            if ! doctl compute domain records delete ${{ secrets.DOMAIN_SUFFIX }} $CNAME_ID --force; then
+              echo "❌ Error: Failed to delete CNAME record"
+              exit 1
+            fi
+            echo "✅ CNAME record removed successfully"
+          fi
+          
+          # Check for existing A record
           EXISTING_RECORD=$(doctl compute domain records list ${{ secrets.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_NAME }}" || true)
           
           if [ ! -z "$EXISTING_RECORD" ]; then
             RECORD_ID=$(echo $EXISTING_RECORD | awk '{print $1}')
-            echo "🦩 Updating existing DNS record (ID: $RECORD_ID)..."
+            echo "🦩 Updating existing A record (ID: $RECORD_ID)..."
             if ! doctl compute domain records update ${{ secrets.DOMAIN_SUFFIX }} --record-id $RECORD_ID \
               --record-type A \
               --record-data "${LB_IP}"; then
@@ -596,7 +610,7 @@ jobs:
             fi
             echo "✅ DNS record updated successfully"
           else
-            echo "🦩 Creating new DNS record..."
+            echo "🦩 Creating new A record..."
             if ! doctl compute domain records create ${{ secrets.DOMAIN_SUFFIX }} \
               --record-type A \
               --record-name "${{ env.DOMAIN_NAME }}" \
