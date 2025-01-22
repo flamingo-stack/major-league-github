@@ -37,7 +37,10 @@ export const CityAutocomplete = ({
       value={value}
       onChange={(_, newValue) => onChange(newValue)}
       inputValue={inputValue}
-      onInputChange={(_, value) => onInputChange(value)}
+      onInputChange={(_, value, reason) => {
+        // Always update input value for typing
+        onInputChange(value);
+      }}
       options={cities}
       getOptionLabel={(option) => option.name}
       renderInput={(params) => (
@@ -98,6 +101,11 @@ export const CityAutocomplete = ({
           </Box>
         );
       }}
+      fullWidth
+      autoComplete
+      handleHomeEndKeys
+      selectOnFocus
+      clearOnBlur={false}
     />
   );
 }; 

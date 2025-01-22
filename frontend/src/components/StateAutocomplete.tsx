@@ -30,7 +30,10 @@ export const StateAutocomplete = ({
       value={value}
       onChange={(_, newValue) => onChange(newValue)}
       inputValue={inputValue}
-      onInputChange={(_, value) => onInputChange(value)}
+      onInputChange={(_, value, reason) => {
+        // Always update input value for typing
+        onInputChange(value);
+      }}
       options={states}
       getOptionLabel={(option) => option.name}
       renderInput={(params) => (
@@ -84,6 +87,11 @@ export const StateAutocomplete = ({
           </Box>
         );
       }}
+      fullWidth
+      autoComplete
+      handleHomeEndKeys
+      selectOnFocus
+      clearOnBlur={false}
     />
   );
 }; 

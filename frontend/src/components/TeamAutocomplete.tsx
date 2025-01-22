@@ -31,11 +31,18 @@ export const TeamAutocomplete = ({
       value={value}
       onChange={(_, newValue) => onChange(newValue)}
       inputValue={inputValue}
-      onInputChange={(_, value) => onInputChange(value)}
+      onInputChange={(_, value, reason) => {
+        // Always update input value for typing
+        onInputChange(value);
+      }}
       options={teams}
       getOptionLabel={(option) => option.name}
       fullWidth
       disablePortal={isMobile}
+      autoComplete
+      handleHomeEndKeys
+      selectOnFocus
+      clearOnBlur={false}
       sx={{
         '& .MuiAutocomplete-paper': {
           maxHeight: isMobile ? '60vh' : '400px',
