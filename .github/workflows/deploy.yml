@@ -417,9 +417,14 @@ jobs:
           # First, check if there's an existing installation
           echo "🦩 Checking for existing NGINX installation..."
           if helm list -n ingress-nginx | grep -q "ingress-nginx"; then
-            echo "🦩 Found existing installation, uninstalling..."
-            helm uninstall ingress-nginx -n ingress-nginx
-            kubectl delete namespace ingress-nginx --wait
+            echo "🦩 Found existing installation, cleaning up..."
+            # Remove finalizers to force cleanup
+            kubectl get -n ingress-nginx $(kubectl get -n ingress-nginx all -o name) -o name | xargs -I {} kubectl patch -n ingress-nginx {} -p '{"metadata":{"finalizers":null}}' --type=merge || true
+            # Delete the release and namespace
+            helm uninstall ingress-nginx -n ingress-nginx || true
+            kubectl delete namespace ingress-nginx --wait || true
+            # Wait a bit to ensure cleanup is complete
+            sleep 30
           fi
           
           echo "🦩 Installing NGINX Ingress Controller..."
