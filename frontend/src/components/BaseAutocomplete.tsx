@@ -1,4 +1,4 @@
-import { Box, Typography, Autocomplete, TextField, TextFieldProps, InputAdornment } from '@mui/material';
+import { Box, Typography, Autocomplete, TextField, TextFieldProps, InputAdornment, ChipTypeMap } from '@mui/material';
 
 export interface BaseEntity {
   id: string;
@@ -32,20 +32,15 @@ export const BaseAutocomplete = <T extends BaseEntity>({
   renderOptionContent
 }: BaseAutocompleteProps<T>) => {
   return (
-    <Autocomplete<T>
+    <Autocomplete<T, false, false, true, ChipTypeMap['defaultComponent']>
       value={value}
-      onChange={(_, newValue) => onChange(newValue)}
+      onChange={(_, newValue: any) => onChange(newValue as T | null)}
       inputValue={inputValue}
-      onInputChange={(_, value, reason) => {
-        // Always update input value for typing
-        onInputChange(value);
-      }}
+      onInputChange={(_, value) => onInputChange(value)}
       options={options}
-      getOptionLabel={getOptionLabel}
+      getOptionLabel={(option: any) => typeof option === 'string' ? option : getOptionLabel(option)}
       fullWidth
-      autoComplete
-      handleHomeEndKeys
-      clearOnBlur={false}
+      freeSolo
       renderInput={(params) => (
         <TextField 
           {...(params as TextFieldProps)}
