@@ -38,7 +38,7 @@ export const ContributorTooltipContent: React.FC<ContributorTooltipProps> = ({ c
 
             <Box sx={{ 
                 color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                opacity: 0.8,
+                opacity: theme => theme.palette.mode === 'dark' ? 0.8 : 1,
                 fontSize: '0.8125rem',
                 lineHeight: 1.5
             }}>

@@ -55,10 +55,11 @@ export const ContributorInfo: React.FC<ContributorInfoProps> = ({ contributor, i
                                 border: '1px solid',
                                 borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                                 boxShadow: theme => theme.palette.mode === 'dark' 
-                                    ? '0 4px 12px rgba(1, 4, 9, 0.75)'
-                                    : '0 1px 6px rgba(27, 31, 36, 0.15)',
+                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
+                                    : '0 8px 24px rgba(140, 149, 159, 0.2)',
                                 borderRadius: '6px',
                                 p: 0,
+                                maxWidth: 'none',
                                 '& .MuiTooltip-arrow': {
                                     color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                                     '&::before': {

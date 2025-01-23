@@ -26,14 +26,14 @@ export const TeamTooltipContent: React.FC<TeamTooltipContentProps> = ({ team }) 
                 <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
                     {team.name}
                 </Typography>
-                <Typography sx={{ fontSize: '0.875rem', color: theme => theme.palette.mode === 'dark' ? 'rgba(230, 237, 243, 0.7)' : 'rgba(36, 41, 47, 0.7)' }}>
+                <Typography sx={{ fontSize: '0.875rem', color: theme => theme.palette.mode === 'dark' ? 'rgba(230, 237, 243, 0.7)' : '#57606a' }}>
                     {team.city}, {team.state}
                 </Typography>
             </Box>
         </Box>
         <Box sx={{ 
             color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-            opacity: 0.8,
+            opacity: theme => theme.palette.mode === 'dark' ? 0.8 : 1,
             fontSize: '0.8125rem',
             lineHeight: 1.5
         }}>
@@ -60,7 +60,10 @@ export const TeamTooltipContent: React.FC<TeamTooltipContentProps> = ({ team }) 
                         display: 'flex',
                         alignItems: 'center',
                         gap: 0.5,
-                        '&:hover': { textDecoration: 'underline' }
+                        '&:hover': { 
+                            textDecoration: 'underline',
+                            color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0550ae'
+                        }
                     }}
                 >
                     Official Website
@@ -76,7 +79,10 @@ export const TeamTooltipContent: React.FC<TeamTooltipContentProps> = ({ team }) 
                         display: 'flex',
                         alignItems: 'center',
                         gap: 0.5,
-                        '&:hover': { textDecoration: 'underline' }
+                        '&:hover': { 
+                            textDecoration: 'underline',
+                            color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0550ae'
+                        }
                     }}
                 >
                     Wikipedia

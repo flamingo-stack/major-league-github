@@ -1,5 +1,9 @@
 # Major League GitHub ⚽💻
 
+<div align="center">
+  <img src="https://raw.githubusercontent.com/flamingo-cx/major-league-github/main/frontend/src/assets/logo.svg" alt="Major League GitHub Logo" width="150" height="150"/>
+</div>
+
 [![Build and Deploy](https://github.com/flamingo-cx/major-league-github/actions/workflows/deploy.yml/badge.svg)](https://github.com/flamingo-cx/major-league-github/actions/workflows/deploy.yml)
 
 **An open-source leaderboard for top GitHub contributors, inspired by Major League Soccer (MLS).**

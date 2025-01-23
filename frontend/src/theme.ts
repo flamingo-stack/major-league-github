@@ -14,14 +14,14 @@ const githubColors = {
         8: '#ffffff'  // White
     },
     blue: {
-        main: '#2f81f7', // Brighter primary blue for dark mode
-        light: '#58a6ff',
-        dark: '#1f6feb'
+        main: '#0969da', // GitHub blue for light mode
+        light: '#58a6ff', // Light mode hover
+        dark: '#0550ae'  // Light mode active
     },
     green: {
-        main: '#238636',
+        main: '#1a7f37',
         light: '#2ea043',
-        dark: '#1f7a31'
+        dark: '#116329'
     }
 };
 
@@ -60,12 +60,12 @@ export const getTheme = (mode: PaletteMode) => createTheme({
                 dark: githubColors.green.dark
             },
             background: {
-                default: githubColors.neutral[8],
+                default: '#f6f8fa',
                 paper: githubColors.neutral[8]
             },
             text: {
-                primary: githubColors.neutral[1],
-                secondary: githubColors.neutral[5]
+                primary: '#24292f',
+                secondary: '#57606a'
             },
             divider: 'rgba(27, 31, 36, 0.15)'
         })
@@ -81,38 +81,38 @@ export const getTheme = (mode: PaletteMode) => createTheme({
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: mode === 'dark' ? githubColors.neutral[8] : githubColors.neutral[1]
+            color: mode === 'dark' ? githubColors.neutral[8] : '#24292f'
         },
         h2: {
             fontSize: '1.5rem',
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: mode === 'dark' ? githubColors.neutral[8] : githubColors.neutral[1]
+            color: mode === 'dark' ? githubColors.neutral[8] : '#24292f'
         },
         h3: {
             fontSize: '1.25rem',
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: mode === 'dark' ? githubColors.neutral[8] : githubColors.neutral[1]
+            color: mode === 'dark' ? githubColors.neutral[8] : '#24292f'
         },
         h4: {
             fontSize: '1rem',
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: mode === 'dark' ? githubColors.neutral[8] : githubColors.neutral[1]
+            color: mode === 'dark' ? githubColors.neutral[8] : '#24292f'
         },
         body1: {
             fontSize: '1rem',
             lineHeight: 1.5,
-            color: mode === 'dark' ? githubColors.neutral[6] : githubColors.neutral[1]
+            color: mode === 'dark' ? githubColors.neutral[6] : '#24292f'
         },
         body2: {
             fontSize: '0.875rem',
             lineHeight: 1.5,
-            color: mode === 'dark' ? githubColors.neutral[5] : githubColors.neutral[4]
+            color: mode === 'dark' ? githubColors.neutral[5] : '#57606a'
         },
         button: {
             textTransform: 'none',
@@ -143,8 +143,8 @@ export const getTheme = (mode: PaletteMode) => createTheme({
                     }
                 },
                 contained: {
-                    backgroundColor: mode === 'dark' ? githubColors.neutral[2] : githubColors.neutral[8],
-                    color: mode === 'dark' ? githubColors.neutral[6] : githubColors.neutral[1],
+                    backgroundColor: mode === 'dark' ? githubColors.neutral[2] : '#f6f8fa',
+                    color: mode === 'dark' ? githubColors.neutral[6] : '#24292f',
                     boxShadow: 'none',
                     '&:hover': {
                         backgroundColor: mode === 'dark' ? githubColors.neutral[3] : '#f3f4f6',
@@ -156,7 +156,7 @@ export const getTheme = (mode: PaletteMode) => createTheme({
                     color: githubColors.neutral[8],
                     border: 'none',
                     '&:hover': {
-                        backgroundColor: githubColors.blue.dark
+                        backgroundColor: mode === 'dark' ? githubColors.blue.light : githubColors.blue.dark
                     }
                 }
             }
@@ -168,12 +168,12 @@ export const getTheme = (mode: PaletteMode) => createTheme({
                     borderColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.15)',
                     padding: '16px',
                     fontSize: '0.875rem',
-                    color: mode === 'dark' ? githubColors.neutral[6] : githubColors.neutral[1]
+                    color: mode === 'dark' ? githubColors.neutral[6] : '#24292f'
                 },
                 head: {
                     fontWeight: 600,
                     backgroundColor: mode === 'dark' ? githubColors.neutral[1] : '#f6f8fa',
-                    color: mode === 'dark' ? githubColors.neutral[6] : githubColors.neutral[4]
+                    color: mode === 'dark' ? githubColors.neutral[6] : '#24292f'
                 }
             }
         },
@@ -184,7 +184,10 @@ export const getTheme = (mode: PaletteMode) => createTheme({
                     backgroundColor: mode === 'dark' ? githubColors.neutral[1] : githubColors.neutral[8],
                     border: '1px solid',
                     borderColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.15)',
-                    borderRadius: '6px'
+                    borderRadius: '6px',
+                    boxShadow: mode === 'dark' 
+                        ? '0 8px 24px rgba(1, 4, 9, 0.75)'
+                        : '0 8px 24px rgba(140, 149, 159, 0.2)'
                 }
             }
         },
@@ -194,7 +197,7 @@ export const getTheme = (mode: PaletteMode) => createTheme({
                     backgroundColor: mode === 'dark' ? githubColors.neutral[1] : githubColors.neutral[8],
                     borderBottom: '1px solid',
                     borderColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.15)',
-                    color: mode === 'dark' ? githubColors.neutral[6] : githubColors.neutral[1],
+                    color: mode === 'dark' ? githubColors.neutral[6] : '#24292f',
                     boxShadow: 'none'
                 }
             }
@@ -241,6 +244,9 @@ export const getTheme = (mode: PaletteMode) => createTheme({
                 option: {
                     '&:hover': {
                         backgroundColor: mode === 'dark' ? githubColors.neutral[2] : '#f3f4f6'
+                    },
+                    '&[aria-selected="true"]': {
+                        backgroundColor: mode === 'dark' ? githubColors.neutral[3] : '#f3f4f6'
                     }
                 }
             }
