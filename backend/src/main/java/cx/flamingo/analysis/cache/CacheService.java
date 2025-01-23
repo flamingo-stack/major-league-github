@@ -51,7 +51,6 @@ public class CacheService {
 
     private final ObjectMapper objectMapper;
 
-    // private final ConcurrentHashMap<String, CachedResponse<List<Contributor>>> cache = new ConcurrentHashMap<>();
     @Value("${cache.expiration.ms:3600000}")
     private long cacheExpirationMs;
 

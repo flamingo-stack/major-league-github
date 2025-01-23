@@ -20,6 +20,7 @@ import org.mockito.MockitoAnnotations;
 
 import com.google.gson.JsonObject;
 
+import cx.flamingo.analysis.cache.CacheService;
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Contributor;
 import cx.flamingo.analysis.model.Language;
