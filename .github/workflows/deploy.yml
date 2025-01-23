@@ -1,0 +1,775 @@
+name: Build and Deploy Major League Github 🚀 🦩
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+  VERSION: v1.0.${{ github.run_number }}
+  ENVIRONMENT: production
+  
+  # DigitalOcean
+  REGISTRY: ${{ secrets.REGISTRY }}
+  REGISTRY_NAME: ${{ secrets.REGISTRY_NAME }}
+  DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+  DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+  DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
+
+  GH_PAT: ${{ secrets.GH_PAT }}
+  GH_API_TOKENS: ${{ secrets.GH_API_TOKENS }}
+  
+  # Cluster configuration
+  CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+  CLUSTER_REGION: sfo3
+  CLUSTER_SIZE: s-2vcpu-4gb
+  CLUSTER_NODE_COUNT: "2"
+  CLUSTER_VERSION: latest
+  
+  # Replica counts
+  BACKEND_REPLICAS: 1
+  FRONTEND_REPLICAS: 1
+  
+  # Backend resources
+  BACKEND_REQUEST_MEMORY: 512Mi
+  BACKEND_REQUEST_CPU: 200m
+  BACKEND_LIMIT_MEMORY: 1Gi
+  BACKEND_LIMIT_CPU: 500m
+  
+  # Frontend resources
+  FRONTEND_REQUEST_MEMORY: 128Mi
+  FRONTEND_REQUEST_CPU: 100m
+  FRONTEND_LIMIT_MEMORY: 256Mi
+  FRONTEND_LIMIT_CPU: 200m
+  
+  # Java settings
+  JAVA_MAX_HEAP: 768m
+  JAVA_MIN_HEAP: 512m
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+      deployments: write
+
+    steps:
+      - name: Verify Required Secrets 🔒
+        run: |
+          missing_secrets=()
+          
+          if [ -z "${{ secrets.PROJECT_NAME }}" ]; then
+            missing_secrets+=("PROJECT_NAME")
+          fi
+          
+          if [ -z "${{ secrets.REGISTRY }}" ]; then
+            missing_secrets+=("REGISTRY")
+          fi
+          
+          if [ -z "${{ secrets.REGISTRY_NAME }}" ]; then
+            missing_secrets+=("REGISTRY_NAME")
+          fi
+          
+          if [ -z "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" ]; then
+            missing_secrets+=("DIGITALOCEAN_ACCESS_TOKEN")
+          fi
+          
+          if [ -z "${{ secrets.DOMAIN_NAME }}" ]; then
+            missing_secrets+=("DOMAIN_NAME")
+          fi
+          
+          if [ -z "${{ secrets.DOMAIN_SUFFIX }}" ]; then
+            missing_secrets+=("DOMAIN_SUFFIX")
+          fi
+          
+          if [ -z "${{ secrets.GH_PAT }}" ]; then
+            missing_secrets+=("GH_PAT")
+          fi
+          
+          if [ -z "${{ secrets.GH_API_TOKENS }}" ]; then
+            missing_secrets+=("GH_API_TOKENS")
+          fi
+          
+          if [ -z "${{ secrets.CLUSTER_NAME }}" ]; then
+            missing_secrets+=("CLUSTER_NAME")
+          fi
+          
+          if [ ${#missing_secrets[@]} -ne 0 ]; then
+            echo "❌ Error: Missing required secrets: ${missing_secrets[*]}"
+            exit 1
+          fi
+          
+          echo "✅ All required secrets are set"
+
+      - name: Checkout code 📦
+        uses: actions/checkout@v4
+        with:
+          token: ${{ env.GH_PAT }}
+
+      - name: Install doctl 🛠️
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ env.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Setup DigitalOcean Infrastructure 🏗️
+        run: |
+          echo "🦩 Validating DigitalOcean credentials..."
+          if ! doctl account get > /dev/null 2>&1; then
+            echo "❌ Error: Invalid DigitalOcean credentials"
+            exit 1
+          fi
+          
+          echo "🦩 Creating DigitalOcean Project..."
+          PROJECT_ID=""
+          
+          # First try to list all projects and find ours
+          echo "🦩 Checking for existing project..."
+          if PROJECT_ID=$(doctl projects list --format ID,Name --no-header | grep -i "${PROJECT_NAME}" | awk '{print $1}') && [ ! -z "$PROJECT_ID" ]; then
+            echo "✅ Found existing project with ID: ${PROJECT_ID}"
+          else
+            echo "🦩 Creating new project: ${PROJECT_NAME}..."
+            if PROJECT_ID=$(doctl projects create \
+              --name "${PROJECT_NAME}" \
+              --purpose "Production" \
+              --environment "Production" \
+              --description "Major League GitHub Infrastructure" \
+              --format ID --no-header); then
+              echo "✅ Project created successfully with ID: ${PROJECT_ID}"
+            else
+              echo "❌ Error: Failed to create project"
+              exit 1
+            fi
+          fi
+          
+          # Double check we have a valid project ID
+          if [ -z "$PROJECT_ID" ] || ! doctl projects get "$PROJECT_ID" > /dev/null 2>&1; then
+            echo "❌ Error: Invalid project ID: ${PROJECT_ID}"
+            exit 1
+          fi
+          
+          echo "🦩 Project ID confirmed: ${PROJECT_ID}"
+          
+          echo "🦩 Checking DigitalOcean Registry..."
+          if ! doctl registry get > /dev/null 2>&1; then
+            echo "🦩 Creating DigitalOcean Registry..."
+            if ! doctl registry create \
+              --subscription-tier basic \
+              --region ${CLUSTER_REGION} \
+              --wait; then
+              echo "❌ Error: Failed to create registry"
+              exit 1
+            fi
+            
+            echo "🦩 Configuring registry garbage collection..."
+            if ! doctl registry garbage-collection configure \
+              --include-untagged-manifests \
+              --exclude-tags latest \
+              --keep-tags 5 \
+              --schedule "0 0 * * 6" \
+              --include-all-repositories \
+              --wait; then
+              echo "⚠️ Warning: Failed to configure garbage collection"
+              # Don't exit on garbage collection failure, it's not critical
+            fi
+            
+            echo "✅ Registry created and configured successfully"
+          else
+            echo "✅ Registry already exists"
+          fi
+          
+          # Verify registry is accessible
+          echo "🦩 Verifying registry access..."
+          if ! doctl registry get > /dev/null 2>&1; then
+            echo "❌ Error: Registry verification failed"
+            exit 1
+          fi
+          
+          echo "🦩 Checking Kubernetes cluster..."
+          if ! doctl kubernetes cluster get "${CLUSTER_NAME}" > /dev/null 2>&1; then
+            echo "🦩 Creating Kubernetes cluster: ${CLUSTER_NAME}..."
+            if ! doctl kubernetes cluster create "${CLUSTER_NAME}" \
+              --region "${CLUSTER_REGION}" \
+              --size "${CLUSTER_SIZE}" \
+              --count "${CLUSTER_NODE_COUNT}" \
+              --tag "${CLUSTER_NAME}" \
+              --wait; then
+              echo "❌ Error: Failed to create cluster ${CLUSTER_NAME}"
+              exit 1
+            fi
+            
+            echo "🦩 Configuring cluster auto-scaling..."
+            if ! doctl kubernetes cluster node-pool update "${CLUSTER_NAME}" default \
+              --auto-scale \
+              --min-nodes 2 \
+              --max-nodes 4; then
+              echo "⚠️ Warning: Failed to configure auto-scaling"
+            fi
+            
+            echo "✅ Cluster created and configured successfully"
+          else
+            echo "✅ Cluster ${CLUSTER_NAME} already exists"
+          fi
+          
+          echo "🦩 Attaching resources to project..."
+          
+          # Get the Kubernetes cluster ID
+          CLUSTER_ID=$(doctl kubernetes cluster get "${CLUSTER_NAME}" --format ID --no-header)
+          if [ ! -z "$CLUSTER_ID" ]; then
+            CLUSTER_URN="do:kubernetes:${CLUSTER_ID}"
+            echo "Found cluster URN: ${CLUSTER_URN}"
+          else
+            echo "⚠️ Warning: Could not get cluster ID"
+          fi
+          
+          # Get registry ID - note that we need to extract just the ID from the registry info
+          REGISTRY_INFO=$(doctl registry get --format ID --no-header)
+          if [ ! -z "$REGISTRY_INFO" ]; then
+            # The registry ID is the last part of the registry info
+            REGISTRY_ID=$(echo "$REGISTRY_INFO" | tr -d '\r')
+            REGISTRY_URN="do:registry:${REGISTRY_ID}"
+            echo "Found registry URN: ${REGISTRY_URN}"
+          else
+            echo "⚠️ Warning: Could not get registry ID"
+          fi
+          
+          # Build resources array with error checking
+          RESOURCES=()
+          
+          # Add resources if they exist and are properly formatted
+          if [ ! -z "$CLUSTER_URN" ] && [[ "$CLUSTER_URN" =~ ^do:kubernetes:[a-zA-Z0-9-]+$ ]]; then
+            RESOURCES+=("${CLUSTER_URN}")
+            echo "Adding cluster to resources: ${CLUSTER_URN}"
+          else
+            echo "⚠️ Warning: Invalid cluster URN format: ${CLUSTER_URN}"
+          fi
+          
+          if [ ! -z "$REGISTRY_URN" ] && [[ "$REGISTRY_URN" =~ ^do:registry:[a-zA-Z0-9-]+$ ]]; then
+            RESOURCES+=("${REGISTRY_URN}")
+            echo "Adding registry to resources: ${REGISTRY_URN}"
+          else
+            echo "⚠️ Warning: Invalid registry URN format: ${REGISTRY_URN}"
+          fi
+          
+          # Debug output
+          echo "Number of resources to attach: ${#RESOURCES[@]}"
+          echo "Resources array contents:"
+          printf '%s\n' "${RESOURCES[@]}"
+          
+          # Only try to attach if we have resources
+          if [ ${#RESOURCES[@]} -gt 0 ]; then
+            echo "🦩 Attaching resources to project ${PROJECT_NAME} (ID: ${PROJECT_ID})..."
+            
+            # Build the resources string with proper quoting
+            RESOURCES_STRING=""
+            for resource in "${RESOURCES[@]}"; do
+              RESOURCES_STRING+="--resource='${resource}' "
+            done
+            
+            echo "Resource string for doctl: ${RESOURCES_STRING}"
+            
+            # Try to attach resources with full error output
+            if ! eval "doctl projects resources assign '${PROJECT_ID}' ${RESOURCES_STRING}"; then
+              echo "⚠️ Warning: Failed to attach resources to project"
+              echo "🦩 Current project resources:"
+              doctl projects resources list "${PROJECT_ID}" --format "Resource Type,Resource ID" --no-header || true
+            else
+              echo "✅ Resources attached to project successfully"
+              echo "🦩 Current project resources:"
+              doctl projects resources list "${PROJECT_ID}" --format "Resource Type,Resource ID" --no-header || true
+            fi
+          else
+            echo "⚠️ Warning: No valid resources to attach"
+          fi
+          
+          # Verify project resources
+          echo "🦩 Verifying project resources..."
+          if ! doctl projects resources list "${PROJECT_ID}" --format "Resource Type,Resource ID" --no-header; then
+            echo "⚠️ Warning: Could not verify project resources"
+          fi
+          
+          echo "🦩 Verifying infrastructure..."
+          if ! doctl registry get > /dev/null 2>&1; then
+            echo "❌ Error: Registry verification failed"
+            exit 1
+          fi
+          
+          if ! doctl kubernetes cluster get "${CLUSTER_NAME}" > /dev/null 2>&1; then
+            echo "❌ Error: Cluster verification failed"
+            exit 1
+          fi
+          
+          if ! doctl projects get "${PROJECT_ID}" > /dev/null 2>&1; then
+            echo "❌ Error: Project verification failed"
+            exit 1
+          fi
+          
+          echo "✅ Infrastructure setup completed successfully"
+
+      - name: Configure Docker and Kubernetes 🔑
+        run: |
+          echo "🦩 Setting up Docker..."
+          if ! doctl registry login --expiry-seconds 1800; then
+            echo "❌ Error: Failed to log in to Docker registry"
+            exit 1
+          fi
+          
+          echo "🦩 Setting up Kubernetes..."
+          if ! doctl kubernetes cluster kubeconfig save "$CLUSTER_NAME" --expiry-seconds 1800; then
+            echo "❌ Error: Failed to save Kubernetes config"
+            exit 1
+          fi
+          
+          echo "🦩 Verifying Kubernetes connection..."
+          if ! kubectl cluster-info; then
+            echo "❌ Error: Failed to connect to Kubernetes cluster"
+            exit 1
+          fi
+          
+          echo "🦩 Creating registry credentials..."
+          if ! doctl registry docker-config > docker-config.json; then
+            echo "❌ Error: Failed to get Docker config"
+            exit 1
+          fi
+          
+          DOCKER_CONFIG_BASE64=$(base64 -w 0 docker-config.json)
+          echo "DOCKER_CONFIG_BASE64=${DOCKER_CONFIG_BASE64}" >> $GITHUB_ENV
+          
+          echo "✅ Configuration completed successfully"
+
+      - name: Build and push backend image 🏗️ 🦩
+        run: |
+          echo "🦩 Building backend image..."
+          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ./backend; then
+            echo "❌ Error: Failed to build backend image"
+            exit 1
+          fi
+          
+          echo "🦩 Pushing versioned backend image..."
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}; then
+            echo "❌ Error: Failed to push backend versioned image"
+            exit 1
+          fi
+          
+          echo "🦩 Tagging and pushing latest..."
+          docker tag ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/backend:latest
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/backend:latest; then
+            echo "❌ Error: Failed to push backend latest image"
+            exit 1
+          fi
+          
+          echo "✅ Backend image build and push completed"
+
+      - name: Build and push frontend image 🎨 🦩
+        run: |
+          echo "🦩 Building frontend image..."
+          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend; then
+            echo "❌ Error: Failed to build frontend image"
+            exit 1
+          fi
+          
+          echo "🦩 Pushing versioned frontend image..."
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}; then
+            echo "❌ Error: Failed to push frontend versioned image"
+            exit 1
+          fi
+          
+          echo "🦩 Tagging and pushing latest..."
+          docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
+            echo "❌ Error: Failed to push frontend latest image"
+            exit 1
+          fi
+          
+          echo "✅ Frontend image build and push completed"
+
+      - name: Cleanup old images 🧹 🦩
+        run: |
+          echo "🦩 Cleaning up old images..."
+          if ! ./.github/scripts/cleanup-registry.sh; then
+            echo "⚠️ Warning: Image cleanup had some issues"
+          fi
+          echo "✅ Image cleanup completed"
+
+      - name: Setup Kubernetes Dependencies 🎯 🦩
+        run: |
+          echo "🦩 Installing Helm..."
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+          
+          echo "🦩 Adding Helm repositories..."
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo update
+          
+          echo "🦩 Setting up SSL certificate..."
+          CERT_NAME="${{ env.DOMAIN_NAME }}-cert"
+          
+          # Check if certificate already exists and is valid  
+          echo "🦩 Checking for existing certificate..."
+          EXISTING_CERT_ID=$(doctl compute certificate list --format ID,Name,State --no-header | grep "${CERT_NAME}" | grep "verified" | awk '{print $1}')
+          
+          if [ -z "$EXISTING_CERT_ID" ]; then
+            echo "🦩 No valid certificate found. Creating new one..."
+            if ! doctl compute certificate create \
+              --name ${CERT_NAME} \
+              --type lets_encrypt \
+              --dns-names ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}; then
+              echo "❌ Error: Failed to create certificate"
+              exit 1
+            fi
+            
+            echo "🦩 Waiting for certificate to be ready..."
+            for i in {1..30}; do
+              if doctl compute certificate list | grep -q "${CERT_NAME}.*verified"; then
+                echo "✅ Certificate is ready"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "❌ Error: Certificate creation timed out"
+                exit 1
+              fi
+              echo "🦩 Waiting for certificate... (attempt $i/30)"
+              sleep 10
+            done
+          else
+            echo "✅ Using existing verified certificate with ID: $EXISTING_CERT_ID"
+          fi
+          
+          echo "🦩 Installing NGINX Ingress Controller..."
+          
+          # First, check if there's an existing installation
+          echo "🦩 Checking for existing NGINX installation..."
+          if helm list -n ingress-nginx | grep -q "ingress-nginx"; then
+            echo "🦩 Found existing installation, cleaning up..."
+            
+            # Get the load balancer ID
+            LB_NAME="${{ env.DOMAIN_NAME }}-lb"
+            LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+            
+            # Remove finalizers to force cleanup
+            kubectl get -n ingress-nginx $(kubectl get -n ingress-nginx all -o name) -o name | xargs -I {} kubectl patch -n ingress-nginx {} -p '{"metadata":{"finalizers":null}}' --type=merge || true
+            
+            # Delete the release and namespace
+            helm uninstall ingress-nginx -n ingress-nginx || true
+            kubectl delete namespace ingress-nginx --wait || true
+            
+            # Delete the load balancer if it exists
+            if [ ! -z "$LB_ID" ]; then
+              echo "🦩 Deleting existing load balancer..."
+              doctl compute load-balancer delete --force "${LB_ID}" || true
+              # Wait for load balancer to be fully deleted
+              echo "🦩 Waiting for load balancer to be deleted..."
+              while doctl compute load-balancer get "${LB_ID}" > /dev/null 2>&1; do
+                echo "🦩 Still waiting for load balancer deletion..."
+                sleep 5
+              done
+            fi
+            
+            # Wait for namespace deletion to complete
+            echo "🦩 Waiting for namespace cleanup..."
+            while kubectl get namespace ingress-nginx > /dev/null 2>&1; do
+              echo "🦩 Still waiting for namespace cleanup..."
+              sleep 5
+            done
+            
+            echo "✅ Cleanup completed"
+          fi
+          
+          echo "🦩 Installing NGINX Ingress Controller..."
+          NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+            --namespace ingress-nginx \
+            --create-namespace \
+            --set controller.publishService.enabled=true \
+            --set controller.service.type=LoadBalancer \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-name\"=\"${{ env.DOMAIN_NAME }}-lb\" \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}\" \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=http \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-http-ports\"=80 \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports\"=443 \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-certificate-id\"=\"${EXISTING_CERT_ID}\" \
+            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-redirect-http-to-https\"=true \
+            --set controller.service.ports.http=80 \
+            --set controller.service.ports.https=443 \
+            --set controller.service.targetPorts.http=80 \
+            --set controller.service.targetPorts.https=80 \
+            --wait --timeout 5m"
+          
+          if ! eval "$NGINX_CMD"; then
+            echo "❌ Error: Failed to install NGINX Ingress"
+            kubectl get pods -n ingress-nginx
+            kubectl describe pods -n ingress-nginx
+            exit 1
+          fi
+
+          # Wait for ingress controller to be fully ready
+          echo "🦩 Waiting for Ingress Controller to be ready..."
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=5m
+
+          # Attach load balancer to project
+          echo "🦩 Attaching load balancer to project..."
+          LB_NAME="${{ env.DOMAIN_NAME }}-lb"
+          LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+          if [ ! -z "$LB_ID" ]; then
+            LB_URN="do:loadbalancer:${LB_ID}"
+            PROJECT_ID=$(doctl projects list --format ID,Name --no-header | grep -i "${{ env.PROJECT_NAME }}" | awk '{print $1}')
+            if [ ! -z "$PROJECT_ID" ]; then
+              echo "🦩 Attaching load balancer (${LB_URN}) to project (${PROJECT_ID})..."
+              if ! doctl projects resources assign "${PROJECT_ID}" --resource="${LB_URN}"; then
+                echo "⚠️ Warning: Failed to attach load balancer to project"
+              fi
+            else
+              echo "⚠️ Warning: Could not find project ID"
+            fi
+          else
+            echo "⚠️ Warning: Could not find load balancer to attach to project"
+          fi
+
+          echo "🦩 Creating namespace if not exists..."
+          if ! kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -; then
+            echo "❌ Error: Failed to create namespace"
+            exit 1
+          fi
+
+      - name: Create Kubernetes Secrets 🦩
+        run: |
+          echo "🦩 Creating namespace if not exists..."
+          if ! kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -; then
+            echo "❌ Error: Failed to create namespace"
+            exit 1
+          fi
+          
+          echo "🦩 Creating registry credentials..."
+          if ! kubectl create secret docker-registry registry-credentials \
+            --namespace=${REGISTRY_NAME} \
+            --docker-server=${REGISTRY} \
+            --docker-username=${{ env.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --docker-password=${{ env.DIGITALOCEAN_ACCESS_TOKEN }} \
+            --dry-run=client -o yaml | kubectl apply -f -; then
+            echo "❌ Error: Failed to create registry credentials"
+            exit 1
+          fi
+          
+          echo "🦩 Creating application secrets..."
+          # Create a temporary file for the tokens
+          echo "${{ env.GH_API_TOKENS }}" > github_tokens.txt
+          
+          # Delete existing secret if it exists
+          kubectl delete secret app-secrets --namespace=${REGISTRY_NAME} --ignore-not-found=true
+          
+          # Create the secret with the correct key
+          if ! kubectl create secret generic app-secrets \
+            --namespace=${REGISTRY_NAME} \
+            --from-literal=github.tokens="${{ env.GH_API_TOKENS }}"; then
+            echo "❌ Error: Failed to create application secrets"
+            exit 1
+          fi
+          
+          # Verify secret was created correctly
+          echo "🦩 Verifying secret creation..."
+          if ! kubectl get secret app-secrets --namespace=${REGISTRY_NAME} -o jsonpath='{.data}' | grep 'github\.tokens'; then
+            echo "❌ Error: Secret verification failed"
+            exit 1
+          fi
+          
+          echo "✅ Kubernetes secrets created successfully"
+
+      - name: Deploy Kubernetes Configurations 🚀 🦩
+        env:
+          REGISTRY_URL: ${REGISTRY}/${REGISTRY_NAME}
+          DOMAIN_SUFFIX: ${{ env.DOMAIN_SUFFIX }}
+        run: |
+          echo "🦩 Processing and applying Kubernetes configurations..."
+          
+          for file in kubernetes/base/*.yaml; do
+            echo "🦩 Processing $file..."
+            # Use envsubst to replace environment variables
+            envsubst < $file > processed.yaml
+            if ! kubectl apply -n ${REGISTRY_NAME} -f processed.yaml; then
+              echo "❌ Error: Failed to apply $file"
+              exit 1
+            fi
+            rm processed.yaml
+          done
+          
+          echo "🦩 Waiting for deployments to be ready..."
+          
+          # Function to check pod status and logs
+          check_deployment() {
+            local deployment=$1
+            echo "🦩 Checking status for deployment: $deployment"
+            
+            # Get pod status
+            echo "🦩 Pod status:"
+            kubectl -n ${REGISTRY_NAME} get pods -l app=$deployment -o wide
+            
+            # Get failed pods if any
+            failed_pods=$(kubectl -n ${REGISTRY_NAME} get pods -l app=$deployment -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}')
+            
+            if [ ! -z "$failed_pods" ]; then
+              echo "🦩 Found failed pods: $failed_pods"
+              for pod in $failed_pods; do
+                echo "🦩 Logs for failed pod $pod:"
+                kubectl -n ${REGISTRY_NAME} logs $pod --all-containers --tail=50
+                
+                echo "🦩 Events for failed pod $pod:"
+                kubectl -n ${REGISTRY_NAME} get events --field-selector involvedObject.name=$pod
+                
+                echo "🦩 Describing failed pod $pod:"
+                kubectl -n ${REGISTRY_NAME} describe pod $pod
+              done
+            fi
+          }
+          
+          # Wait for backend deployment
+          echo "🦩 Waiting for backend deployment..."
+          if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/backend --timeout=5m; then
+            echo "❌ Error: Backend deployment failed to roll out"
+            check_deployment "backend"
+            exit 1
+          fi
+          
+          # Wait for frontend deployment
+          echo "🦩 Waiting for frontend deployment..."
+          if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/frontend --timeout=5m; then
+            echo "❌ Error: Frontend deployment failed to roll out"
+            check_deployment "frontend"
+            exit 1
+          fi
+          
+          echo "✅ Kubernetes configurations deployed successfully"
+
+      - name: Create DNS Record 🌍 🦩
+        run: |
+          echo "🦩 Getting LoadBalancer information..."
+          
+          # Get the load balancer ID
+          LB_NAME="${{ env.DOMAIN_NAME }}-lb"
+          LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+          
+          if [ -z "$LB_ID" ]; then
+            echo "❌ Error: Could not find load balancer with name ${LB_NAME}"
+            echo "🦩 Available load balancers:"
+            doctl compute load-balancer list
+            exit 1
+          fi
+          
+          echo "✅ Found load balancer ID: ${LB_ID}"
+          
+          # Get the load balancer IP
+          LB_IP=$(doctl compute load-balancer get ${LB_ID} --format IP --no-header)
+          
+          if [ -z "$LB_IP" ]; then
+            echo "❌ Error: Could not get load balancer IP"
+            exit 1
+          fi
+          
+          echo "✅ Got load balancer IP: ${LB_IP}"
+          
+          echo "🦩 Checking for existing DNS records..."
+          
+          # Check for existing CNAME record
+          EXISTING_CNAME=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *${{ env.DOMAIN_NAME }}" || true)
+          if [ ! -z "$EXISTING_CNAME" ]; then
+            CNAME_ID=$(echo $EXISTING_CNAME | awk '{print $1}')
+            echo "🦩 Found existing CNAME record (ID: $CNAME_ID), removing it..."
+            if ! doctl compute domain records delete ${{ env.DOMAIN_SUFFIX }} $CNAME_ID --force; then
+              echo "❌ Error: Failed to delete CNAME record"
+              exit 1
+            fi
+            echo "✅ CNAME record removed successfully"
+          fi
+          
+          # Check for existing A record
+          EXISTING_RECORD=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_NAME }}" || true)
+          
+          if [ ! -z "$EXISTING_RECORD" ]; then
+            RECORD_ID=$(echo $EXISTING_RECORD | awk '{print $1}')
+            echo "🦩 Updating existing A record (ID: $RECORD_ID)..."
+            if ! doctl compute domain records update ${{ env.DOMAIN_SUFFIX }} --record-id $RECORD_ID \
+              --record-type A \
+              --record-data "${LB_IP}"; then
+              echo "❌ Error: Failed to update DNS record"
+              exit 1
+            fi
+            echo "✅ DNS record updated successfully"
+          else
+            echo "🦩 Creating new A record..."
+            if ! doctl compute domain records create ${{ env.DOMAIN_SUFFIX }} \
+              --record-type A \
+              --record-name "${{ env.DOMAIN_NAME }}" \
+              --record-data "${LB_IP}" \
+              --record-ttl 300; then
+              echo "❌ Error: Failed to create DNS record"
+              exit 1
+            fi
+            echo "✅ DNS record created successfully"
+          fi
+
+      - name: Verify Deployment 🔍 🦩
+        run: |
+          echo "🦩 Checking deployment status..."
+          
+          echo "🦩 Pod Status:"
+          kubectl -n ${REGISTRY_NAME} get pods -o wide
+          
+          echo "🦩 Service Status:"
+          kubectl -n ${REGISTRY_NAME} get services
+          
+          echo "🦩 Ingress Status:"
+          kubectl -n ${REGISTRY_NAME} get ingress
+          
+          echo "🦩 Load Balancer Status:"
+          kubectl -n ingress-nginx get service ingress-nginx-controller
+          
+          echo "🦩 Events:"
+          kubectl -n ${REGISTRY_NAME} get events --sort-by='.lastTimestamp'
+          
+          # Verify all pods are running
+          failed_pods=$(kubectl -n ${REGISTRY_NAME} get pods -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}')
+          if [ ! -z "$failed_pods" ]; then
+            echo "❌ Error: The following pods are not running:"
+            echo "$failed_pods"
+            
+            for pod in $failed_pods; do
+              echo "🦩 Describing failed pod $pod:"
+              kubectl -n ${REGISTRY_NAME} describe pod $pod
+              
+              echo "🦩 Logs for failed pod $pod:"
+              kubectl -n ${REGISTRY_NAME} logs $pod --all-containers --tail=50 || true
+            done
+            exit 1
+          fi
+          
+          echo "✅ Deployment verification completed"
+
+      - name: Create GitHub Deployment 📦 🦩
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: ${{ env.GH_PAT }}
+          environment: production
+          initial-status: success
+          environment-url: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}
+
+      - name: Set environment variables
+        run: |
+          echo "DOMAIN_NAME=major-league-github" >> $GITHUB_ENV
+          echo "ENVIRONMENT=production" >> $GITHUB_ENV
+          echo "BACKEND_REPLICAS=2" >> $GITHUB_ENV
+          echo "FRONTEND_REPLICAS=2" >> $GITHUB_ENV
+          # Reduced resource requests and limits
+          echo "BACKEND_REQUEST_MEMORY=512Mi" >> $GITHUB_ENV
+          echo "BACKEND_REQUEST_CPU=200m" >> $GITHUB_ENV
+          echo "BACKEND_LIMIT_MEMORY=1Gi" >> $GITHUB_ENV
+          echo "BACKEND_LIMIT_CPU=500m" >> $GITHUB_ENV
+          echo "FRONTEND_REQUEST_MEMORY=128Mi" >> $GITHUB_ENV
+          echo "FRONTEND_REQUEST_CPU=100m" >> $GITHUB_ENV
+          echo "FRONTEND_LIMIT_MEMORY=256Mi" >> $GITHUB_ENV
+          echo "FRONTEND_LIMIT_CPU=200m" >> $GITHUB_ENV
+          echo "JAVA_MAX_HEAP=768m" >> $GITHUB_ENV
+          echo "JAVA_MIN_HEAP=512m" >> $GITHUB_ENV
+
+

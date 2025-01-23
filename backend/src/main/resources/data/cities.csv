@@ -1,0 +1,192 @@
+id,name,state,population,latitude,longitude,regions
+fort-lauderdale-fl,Fort Lauderdale,FL,182760,26.1224,-80.1373,south-florida
+boca-raton-fl,Boca Raton,FL,97422,26.3683,-80.1289,south-florida
+west-palm-beach-fl,West Palm Beach,FL,117415,26.7153,-80.0534,south-florida
+pompano-beach-fl,Pompano Beach,FL,112046,26.2379,-80.1248,south-florida
+coral-springs-fl,Coral Springs,FL,133759,26.2712,-80.2706,south-florida
+deerfield-beach-fl,Deerfield Beach,FL,86859,26.3184,-80.0997,south-florida
+boynton-beach-fl,Boynton Beach,FL,78679,26.5253,-80.0664,south-florida
+delray-beach-fl,Delray Beach,FL,68749,26.4615,-80.0728,south-florida
+miami-fl,Miami,FL,442241,25.7617,-80.1918,greater-miami|south-florida
+miami-beach-fl,Miami Beach,FL,82890,25.7907,-80.1300,greater-miami|south-florida
+hialeah-fl,Hialeah,FL,233339,25.8576,-80.2781,greater-miami|south-florida
+coral-gables-fl,Coral Gables,FL,49248,25.7215,-80.2684,greater-miami|south-florida
+orlando-fl,Orlando,FL,307573,28.5383,-81.3792,central-florida|greater-orlando
+kissimmee-fl,Kissimmee,FL,79226,28.2919,-81.4078,central-florida|greater-orlando
+sanford-fl,Sanford,FL,61051,28.8028,-81.2731,central-florida|greater-orlando
+tampa-fl,Tampa,FL,399700,27.9506,-82.4572,tampa-bay|central-florida
+st-petersburg-fl,St. Petersburg,FL,258308,27.7676,-82.6403,tampa-bay|central-florida
+clearwater-fl,Clearwater,FL,117292,27.9659,-82.8001,tampa-bay|central-florida
+jacksonville-fl,Jacksonville,FL,949611,30.3322,-81.6557,north-florida
+tallahassee-fl,Tallahassee,FL,196169,30.4383,-84.2807,north-florida
+gainesville-fl,Gainesville,FL,141085,29.6516,-82.3248,north-florida
+dallas-tx,Dallas,TX,1331000,32.7767,-96.7970,north-texas|greater-dallas
+fort-worth-tx,Fort Worth,TX,909585,32.7555,-97.3308,north-texas|greater-dallas
+plano-tx,Plano,TX,285494,33.0198,-96.6989,north-texas|greater-dallas
+denton-tx,Denton,TX,139869,33.2148,-97.1331,north-texas|greater-dallas
+round-rock-tx,Round Rock,TX,119468,30.5083,-97.6789,central-texas
+georgetown-tx,Georgetown,TX,67176,30.6333,-97.6789,central-texas
+temple-tx,Temple,TX,78439,31.0982,-97.3428,central-texas
+corpus-christi-tx,Corpus Christi,TX,317863,27.8006,-97.3964,south-texas
+laredo-tx,Laredo,TX,255205,27.5306,-99.4803,south-texas
+mcallen-tx,McAllen,TX,142210,26.2034,-98.2300,south-texas
+tyler-tx,Tyler,TX,105995,32.3513,-95.3011,east-texas
+el-paso-tx,El Paso,TX,678815,31.7619,-106.4850,west-texas
+midland-tx,Midland,TX,132524,31.9973,-102.0779,west-texas
+odessa-tx,Odessa,TX,123334,31.8457,-102.3676,west-texas
+amarillo-tx,Amarillo,TX,199924,35.2220,-101.8313,west-texas
+los-angeles-ca,Los Angeles,CA,3898747,34.0522,-118.2437,southern-california|greater-los-angeles
+long-beach-ca,Long Beach,CA,466742,33.7701,-118.1937,southern-california|greater-los-angeles
+santa-ana-ca,Santa Ana,CA,310227,33.7455,-117.8677,southern-california|greater-los-angeles
+anaheim-ca,Anaheim,CA,346824,33.8366,-117.9143,southern-california|greater-los-angeles
+san-diego-ca,San Diego,CA,1423851,32.7157,-117.1611,southern-california|greater-san-diego
+san-francisco-ca,San Francisco,CA,873965,37.7749,-122.4194,bay-area|northern-california
+san-jose-ca,San Jose,CA,1013240,37.3382,-121.8863,bay-area|northern-california
+oakland-ca,Oakland,CA,440646,37.8044,-122.2712,bay-area|northern-california
+berkeley-ca,Berkeley,CA,124321,37.8716,-122.2727,bay-area|northern-california
+sacramento-ca,Sacramento,CA,524943,38.5816,-121.4944,northern-california
+redding-ca,Redding,CA,92839,40.5865,-122.3917,northern-california
+chico-ca,Chico,CA,101475,39.7285,-121.8375,northern-california
+fresno-ca,Fresno,CA,542107,36.7378,-119.7871,central-california
+bakersfield-ca,Bakersfield,CA,407615,35.3733,-119.0187,central-california
+modesto-ca,Modesto,CA,218464,37.6391,-120.9969,central-california
+riverside-ca,Riverside,CA,314998,33.9534,-117.3962,inland-empire|southern-california
+san-bernardino-ca,San Bernardino,CA,222101,34.1083,-117.2898,inland-empire|southern-california
+ontario-ca,Ontario,CA,175265,34.0633,-117.6509,inland-empire|southern-california
+rancho-cucamonga-ca,Rancho Cucamonga,CA,174453,34.1064,-117.5931,inland-empire|southern-california
+santa-barbara-ca,Santa Barbara,CA,88665,34.4208,-119.6982,central-coast
+san-luis-obispo-ca,San Luis Obispo,CA,47063,35.2828,-120.6596,central-coast
+monterey-ca,Monterey,CA,28352,36.6002,-121.8947,central-coast
+new-york-city-ny,New York City,NY,8804190,40.7128,-74.0060,nyc-metro
+jersey-city-nj,Jersey City,NJ,292449,40.7178,-74.0431,nyc-metro
+newark-nj,Newark,NJ,311549,40.7357,-74.1724,nyc-metro
+albany-ny,Albany,NY,99224,42.6526,-73.7562,upstate-ny
+schenectady-ny,Schenectady,NY,67047,42.8142,-73.9396,upstate-ny
+troy-ny,Troy,NY,50129,42.7284,-73.6918,upstate-ny
+buffalo-ny,Buffalo,NY,278349,42.8864,-78.8784,western-ny
+rochester-ny,Rochester,NY,211328,43.1566,-77.6088,western-ny
+syracuse-ny,Syracuse,NY,148620,43.0481,-76.1474,western-ny
+hempstead-ny,Hempstead,NY,768103,40.7062,-73.6187,long-island
+brookhaven-ny,Brookhaven,NY,485773,40.7795,-72.9214,long-island
+islip-ny,Islip,NY,335543,40.7295,-73.2115,long-island
+yonkers-ny,Yonkers,NY,211569,40.9312,-73.8987,hudson-valley
+new-rochelle-ny,New Rochelle,NY,79726,40.9115,-73.7826,hudson-valley
+white-plains-ny,White Plains,NY,58109,41.0340,-73.7629,hudson-valley
+chicago-il,Chicago,IL,2746388,41.8781,-87.6298,greater-chicago|northern-illinois
+aurora-il,Aurora,IL,180542,41.7606,-88.3201,greater-chicago|northern-illinois
+naperville-il,Naperville,IL,149540,41.7508,-88.1535,greater-chicago|northern-illinois
+evanston-il,Evanston,IL,78110,42.0451,-87.6877,greater-chicago|northern-illinois
+springfield-il,Springfield,IL,114394,39.7817,-89.6501,central-illinois
+peoria-il,Peoria,IL,113150,40.6936,-89.5890,central-illinois
+bloomington-il,Bloomington,IL,78680,40.4842,-88.9937,central-illinois
+carbondale-il,Carbondale,IL,25343,37.7273,-89.2169,southern-illinois|greater-st-louis
+mount-vernon-il,Mount Vernon,IL,14600,38.3173,-88.9031,southern-illinois|greater-st-louis
+marion-il,Marion,IL,17193,37.7306,-88.9331,southern-illinois|greater-st-louis
+minneapolis-mn,Minneapolis,MN,429954,44.9778,-93.2650,twin-cities
+st-paul-mn,St. Paul,MN,311527,44.9537,-93.0900,twin-cities
+bloomington-mn,Bloomington,MN,89987,44.8408,-93.2983,twin-cities
+detroit-mi,Detroit,MI,674841,42.3314,-83.0458,greater-detroit
+warren-mi,Warren,MI,139387,42.4775,-83.0277,greater-detroit
+ann-arbor-mi,Ann Arbor,MI,123851,42.2808,-83.7430,greater-detroit
+boston-ma,Boston,MA,675647,42.3601,-71.0589,greater-boston
+cambridge-ma,Cambridge,MA,118403,42.3736,-71.1097,greater-boston
+somerville-ma,Somerville,MA,81045,42.3876,-71.0995,greater-boston
+brookline-ma,Brookline,MA,63191,42.3318,-71.1212,greater-boston
+philadelphia-pa,Philadelphia,PA,1603797,39.9526,-75.1652,greater-philadelphia
+camden-nj,Camden,NJ,73562,39.9259,-75.1196,greater-philadelphia
+wilmington-de,Wilmington,DE,70898,39.7459,-75.5466,greater-philadelphia
+baltimore-md,Baltimore,MD,585708,39.2904,-76.6122,greater-baltimore
+towson-md,Towson,MD,55197,39.4015,-76.6019,greater-baltimore
+columbia-md,Columbia,MD,105135,39.2037,-76.8610,greater-baltimore
+washington-dc,Washington,DC,689545,38.9072,-77.0369,greater-dc
+arlington-va,Arlington,VA,238643,38.8799,-77.1067,greater-dc
+alexandria-va,Alexandria,VA,159467,38.8048,-77.0469,greater-dc
+bethesda-md,Bethesda,MD,63374,38.9847,-77.0947,greater-dc
+pittsburgh-pa,Pittsburgh,PA,305843,40.4406,-79.9959,greater-pittsburgh
+beaver-pa,Beaver,PA,124565,40.0379,-79.8397,greater-pittsburgh
+johnstown-pa,Johnstown,PA,71770,40.3267,-79.5455,greater-pittsburgh
+birmingham-al,Birmingham,AL,209403,33.5207,-86.8025,alabama
+montgomery-al,Montgomery,AL,200603,32.3792,-86.3077,alabama
+mobile-al,Mobile,AL,187041,30.6944,-88.0431,alabama
+little-rock-ar,Little Rock,AR,197312,34.7465,-92.2896,arkansas
+fayetteville-ar,Fayetteville,AR,93949,36.0822,-94.1719,arkansas
+hartford-ct,Hartford,CT,122105,41.7658,-72.6734,connecticut
+new-haven-ct,New Haven,CT,130250,41.3083,-72.9279,connecticut
+stamford-ct,Stamford,CT,135470,41.0534,-73.5387,connecticut
+dover-de,Dover,DE,39403,39.1582,-75.5244,delaware
+boise-id,Boise,ID,235684,43.6150,-116.2023,idaho
+meridian-id,Meridian,ID,117635,43.6121,-116.3915,idaho
+des-moines-ia,Des Moines,IA,214133,41.5868,-93.6250,iowa
+cedar-rapids-ia,Cedar Rapids,IA,137710,41.9779,-91.6656,iowa
+portland-me,Portland,ME,66417,43.6591,-70.2568,maine
+bangor-me,Bangor,ME,31753,44.8016,-68.7712,maine
+biloxi-ms,Biloxi,MS,45908,30.3944,-88.8853,mississippi
+jackson-ms,Jackson,MS,153701,32.2988,-90.1848,mississippi
+helena-mt,Helena,MT,32091,46.5891,-112.0391,montana
+billings-mt,Billings,MT,120697,45.7833,-108.5007,montana
+omaha-ne,Omaha,NE,486051,41.2565,-95.9345,nebraska
+lincoln-ne,Lincoln,NE,289102,40.8136,-96.7026,nebraska
+manchester-nh,Manchester,NH,112673,42.9956,-71.4548,new-hampshire
+concord-nh,Concord,NH,43627,43.2081,-71.5376,new-hampshire
+albuquerque-nm,Albuquerque,NM,564559,35.0844,-106.6504,new-mexico
+santa-fe-nm,Santa Fe,NM,84683,35.6870,-105.9378,new-mexico
+raleigh-nc,Raleigh,NC,467665,35.7796,-78.6382,north-carolina
+durham-nc,Durham,NC,283506,35.9940,-78.8986,north-carolina
+fargo-nd,Fargo,ND,125990,46.8772,-96.7898,north-dakota
+bismarck-nd,Bismarck,ND,73529,46.8083,-100.7837,north-dakota
+oklahoma-city-ok,Oklahoma City,OK,681054,35.4676,-97.5164,oklahoma
+tulsa-ok,Tulsa,OK,413066,36.1540,-95.9928,oklahoma
+providence-ri,Providence,RI,190934,41.8240,-71.4128,rhode-island
+warwick-ri,Warwick,RI,82823,41.7001,-71.4162,rhode-island
+charleston-sc,Charleston,SC,150227,32.7765,-79.9311,south-carolina
+columbia-sc,Columbia,SC,137300,34.0007,-81.0348,south-carolina
+sioux-falls-sd,Sioux Falls,SD,192517,43.5460,-96.7313,south-dakota
+rapid-city-sd,Rapid City,SD,74703,44.0805,-103.2310,south-dakota
+burlington-vt,Burlington,VT,44743,44.4759,-73.2121,vermont
+richmond-va,Richmond,VA,226622,37.5407,-77.4360,virginia
+virginia-beach-va,Virginia Beach,VA,449974,36.8529,-75.9780,virginia
+charleston-wv,Charleston,WV,48864,38.3498,-81.6326,west-virginia
+huntington-wv,Huntington,WV,46842,38.4192,-82.4452,west-virginia
+madison-wi,Madison,WI,258366,43.0731,-89.4012,wisconsin
+green-bay-wi,Green Bay,WI,104578,44.5133,-88.0133,wisconsin
+cheyenne-wy,Cheyenne,WY,65132,41.1399,-104.8202,wyoming
+casper-wy,Casper,WY,57461,42.8666,-106.3131,wyoming
+honolulu-hi,Honolulu,HI,347397,21.3069,-157.8583,hawaii
+hilo-hi,Hilo,HI,45248,19.7297,-155.0900,hawaii
+wichita-ks,Wichita,KS,397532,37.6872,-97.3301,kansas
+topeka-ks,Topeka,KS,126587,39.0473,-95.6752,kansas
+louisville-ky,Louisville,KY,633045,38.2527,-85.7585,kentucky
+lexington-ky,Lexington,KY,322570,38.0406,-84.5037,kentucky
+new-orleans-la,New Orleans,LA,383997,29.9511,-90.0715,greater-new-orleans
+baton-rouge-la,Baton Rouge,LA,227470,30.4515,-91.1871,louisiana
+indianapolis-in,Indianapolis,IN,867125,39.7684,-86.1581,greater-indianapolis
+fort-wayne-in,Fort Wayne,IN,270402,41.0793,-85.1394,indiana
+kansas-city-mo,Kansas City,MO,508090,39.0997,-94.5786,greater-kansas-city
+st-louis-mo,St. Louis,MO,301578,38.6270,-90.1994,greater-st-louis
+cleveland-oh,Cleveland,OH,381009,41.4993,-81.6944,greater-cleveland
+columbus-oh,Columbus,OH,898553,39.9612,-82.9988,greater-columbus
+cincinnati-oh,Cincinnati,OH,309317,39.1031,-84.5120,greater-cincinnati
+anchorage-ak,Anchorage,AK,291247,61.2181,-149.9003,alaska
+fairbanks-ak,Fairbanks,AK,31068,64.8378,-147.7164,alaska
+juneau-ak,Juneau,AK,32255,58.3019,-134.4197,alaska
+phoenix-az,Phoenix,AZ,1608139,33.4484,-112.0740,greater-phoenix
+tucson-az,Tucson,AZ,542629,32.2226,-110.9747,greater-phoenix
+mesa-az,Mesa,AZ,504258,33.4152,-111.8315,greater-phoenix
+denver-co,Denver,CO,727211,39.7392,-104.9903,greater-denver
+colorado-springs-co,Colorado Springs,CO,478961,38.8339,-104.8214,greater-denver
+boulder-co,Boulder,CO,105673,40.0150,-105.2705,greater-denver
+atlanta-ga,Atlanta,GA,498715,33.7490,-84.3880,greater-atlanta
+savannah-ga,Savannah,GA,147780,32.0809,-81.0912,greater-atlanta
+augusta-ga,Augusta,GA,202081,33.4735,-82.0105,greater-atlanta
+portland-or,Portland,OR,652503,45.5155,-122.6789,greater-portland
+salem-or,Salem,OR,174365,44.9429,-123.0351,greater-portland
+eugene-or,Eugene,OR,176654,44.0521,-123.0868,greater-portland
+nashville-tn,Nashville,TN,689447,36.1627,-86.7816,greater-nashville
+memphis-tn,Memphis,TN,651073,35.1495,-90.0490,greater-nashville
+knoxville-tn,Knoxville,TN,190740,35.9606,-83.9207,greater-nashville
+salt-lake-city-ut,Salt Lake City,UT,199723,40.7608,-111.8910,greater-salt-lake
+west-valley-city-ut,West Valley City,UT,135248,40.6916,-112.0011,greater-salt-lake
+provo-ut,Provo,UT,116618,40.2338,-111.6585,greater-salt-lake
+seattle-wa,Seattle,WA,737015,47.6062,-122.3321,greater-seattle
+spokane-wa,Spokane,WA,217108,47.6587,-117.4260,greater-seattle
+tacoma-wa,Tacoma,WA,217827,47.2529,-122.4443,greater-seattle

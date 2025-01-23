@@ -1,0 +1,16 @@
+id,name,display_name,icon_url
+java,Java,Java,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg
+python,Python,Python,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg
+javascript,JavaScript,JavaScript,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg
+typescript,TypeScript,TypeScript,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg
+cpp,C++,C++,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg
+csharp,C#,C#,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg
+go,Go,Go,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg
+ruby,Ruby,Ruby,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ruby/ruby-original.svg
+php,PHP,PHP,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg
+swift,Swift,Swift,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/swift/swift-original.svg
+kotlin,Kotlin,Kotlin,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kotlin/kotlin-original.svg
+rust,Rust,Rust,https://raw.githubusercontent.com/devicons/devicon/refs/heads/master/icons/rust/rust-original.svg
+scala,Scala,Scala,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/scala/scala-original.svg
+dart,Dart,Dart,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dart/dart-original.svg
+elixir,Elixir,Elixir,https://cdn.jsdelivr.net/gh/devicons/devicon/icons/elixir/elixir-original.svg 

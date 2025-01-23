@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: ${FRONTEND_REPLICAS}
+  selector:
+    matchLabels:
+      app: frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      imagePullSecrets:
+        - name: registry-credentials
+      containers:
+        - name: frontend
+          image: ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              memory: ${FRONTEND_REQUEST_MEMORY}
+              cpu: ${FRONTEND_REQUEST_CPU}
+            limits:
+              memory: ${FRONTEND_LIMIT_MEMORY}
+              cpu: ${FRONTEND_LIMIT_CPU}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+            periodSeconds: 10
+          envFrom:
+            - configMapRef:
+                name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  type: ClusterIP 
