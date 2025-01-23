@@ -3,11 +3,12 @@ import { useMemo, useState, useEffect } from 'react';
 import { getTheme } from './theme';
 import { Layout } from './components/Layout';
 import { FiltersPanel } from './components/FiltersPanel';
-import { ContributorsTable } from './components/ContributorsTable';
+import { ContributorsTable } from './components/ContributorsTable/index';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { useUrlState } from './hooks/useUrlState';
 import { getContributors } from './services/api';
+import { Contributor } from './types/contributor';
 
 const queryClient = new QueryClient({
   defaultOptions: {

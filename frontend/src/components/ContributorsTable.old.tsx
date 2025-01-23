@@ -233,7 +233,14 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                                                     <Avatar
                                                                         src={contributor.nearestTeam.logoUrl}
                                                                         alt={contributor.nearestTeam.name}
-                                                                        sx={{ width: 48, height: 48 }}
+                                                                        sx={{ 
+                                                                            width: 48, 
+                                                                            height: 48,
+                                                                            bgcolor: 'transparent',
+                                                                            '& img': {
+                                                                                objectFit: 'contain'
+                                                                            }
+                                                                        }}
                                                                     />
                                                                     <Box>
                                                                         <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
@@ -848,7 +855,14 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
                                                             <Avatar
                                                                 src={contributor.nearestTeam.logoUrl}
                                                                 alt={contributor.nearestTeam.name}
-                                                                sx={{ width: 48, height: 48 }}
+                                                                sx={{ 
+                                                                    width: 48, 
+                                                                    height: 48,
+                                                                    bgcolor: 'transparent',
+                                                                    '& img': {
+                                                                        objectFit: 'contain'
+                                                                    }
+                                                                }}
                                                             />
                                                             <Box>
                                                                 <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>

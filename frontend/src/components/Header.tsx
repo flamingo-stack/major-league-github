@@ -2,8 +2,8 @@ import React from 'react';
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 import { Box, Typography, Link, IconButton, Container } from '@mui/material';
-import GitHubIcon from '@mui/icons-material/GitHub';
 import { LightMode, DarkMode } from '@mui/icons-material';
+import { Logo } from './Logo';
 
 interface HeaderProps {
     onToggleTheme: () => void;
@@ -36,11 +36,13 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                         minWidth: 0,
                         flex: 1
                     }}>
-                        <GitHubIcon sx={{ 
-                            fontSize: { xs: 20, sm: 32 },
-                            color: theme => theme.palette.mode === 'dark' ? 'white' : 'black',
-                            flexShrink: 0
-                        }} />
+                        <Logo 
+                            sx={{ 
+                                fontSize: { xs: 20, sm: 32 },
+                                color: theme => theme.palette.mode === 'dark' ? 'white' : 'black',
+                                flexShrink: 0
+                            }}
+                        />
                         <Typography 
                             variant="h6" 
                             sx={{ 
