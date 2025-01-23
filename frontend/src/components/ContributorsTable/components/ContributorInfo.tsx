@@ -11,7 +11,7 @@ import { ContributorTooltipContent } from './tooltips/ContributorTooltip';
 
 export const ContributorInfo: React.FC<ContributorInfoProps> = ({ contributor, index }) => {
     return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2.5, sm: 2 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                 <Link 
                     href={contributor.url} 
@@ -23,8 +23,8 @@ export const ContributorInfo: React.FC<ContributorInfoProps> = ({ contributor, i
                         src={contributor.avatarUrl}
                         alt={contributor.name || contributor.login}
                         sx={{ 
-                            width: 40, 
-                            height: 40,
+                            width: { xs: 48, sm: 40 }, 
+                            height: { xs: 48, sm: 40 },
                             borderRadius: '50%'
                         }}
                     />
@@ -32,7 +32,7 @@ export const ContributorInfo: React.FC<ContributorInfoProps> = ({ contributor, i
                 {index < 3 && (
                     <Typography 
                         sx={{ 
-                            fontSize: '1.2rem',
+                            fontSize: { xs: '1.4rem', sm: '1.2rem' },
                             lineHeight: 1,
                             position: 'absolute',
                             right: -12,
@@ -43,7 +43,7 @@ export const ContributorInfo: React.FC<ContributorInfoProps> = ({ contributor, i
                     </Typography>
                 )}
             </Box>
-            <Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Tooltip
                     title={<ContributorTooltipContent contributor={contributor} />}
                     arrow
@@ -72,13 +72,13 @@ export const ContributorInfo: React.FC<ContributorInfoProps> = ({ contributor, i
                         }
                     }}
                 >
-                    <Box>
+                    <Box sx={{ minWidth: 0 }}>
                         <Link 
                             href={contributor.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             sx={{ 
-                                color: '#e6edf3',
+                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                                 textDecoration: 'none',
                                 '&:hover': { textDecoration: 'underline' },
                                 display: 'block'
@@ -89,7 +89,8 @@ export const ContributorInfo: React.FC<ContributorInfoProps> = ({ contributor, i
                                 sx={{ 
                                     fontWeight: 600, 
                                     mb: 0.5,
-                                    color: 'inherit'
+                                    color: 'inherit',
+                                    fontSize: { xs: '1.1rem', sm: '1rem' }
                                 }}
                             >
                                 {contributor.name || contributor.login}
@@ -108,8 +109,9 @@ export const ContributorInfo: React.FC<ContributorInfoProps> = ({ contributor, i
                                 <Typography 
                                     variant="body2" 
                                     sx={{ 
-                                        color: '#2f81f7',
-                                        fontWeight: 600
+                                        color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0969da',
+                                        fontWeight: 600,
+                                        fontSize: { xs: '0.9375rem', sm: '0.875rem' }
                                     }}
                                 >
                                     {contributor.login}

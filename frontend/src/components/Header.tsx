@@ -18,7 +18,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
         <Box sx={{ 
             borderBottom: 1,
             borderColor: 'divider',
-            minHeight: { xs: 48, sm: 64 }
+            minHeight: { xs: 70, sm: 80 }
         }}>
             <Container maxWidth="lg">
                 <Box sx={{ 
@@ -26,7 +26,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: { xs: 1, sm: 2 },
-                    minHeight: { xs: 48, sm: 64 },
+                    minHeight: { xs: 70, sm: 80 },
                     px: { xs: 2, sm: 3 }
                 }}>
                     <Box sx={{ 
@@ -65,7 +65,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                         flexShrink: 0 
                     }}>
                         <Link
-                            href="https://github.com/michaelassraf/major-league-github"
+                            href="https://github.com/flamingo-cx/major-league-github"
                             target="_blank"
                             rel="noopener noreferrer"
                             sx={{

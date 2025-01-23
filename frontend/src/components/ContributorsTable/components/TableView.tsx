@@ -72,7 +72,9 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
         <Box sx={{ 
             display: 'inline-flex', 
             alignItems: 'center',
-            bgcolor: 'rgba(13, 17, 23, 0.6)',
+            bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(13, 17, 23, 0.6)' : '#f6f8fa',
+            border: '1px solid',
+            borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)',
             borderRadius: '6px',
             py: 0.25,
             px: 0.75,
@@ -85,29 +87,59 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
 
     const ScoreTooltip = ({ contributor }: { contributor: Contributor }) => (
         <Box sx={{ p: 1.5, maxWidth: 300 }}>
-            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', mb: 1 }}>
+            <Typography sx={{ 
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                mb: 1 
+            }}>
                 Score Components
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#7d8590', mb: 0.5 }}>Activity Score</Typography>
+                    <Typography sx={{ 
+                        fontSize: '0.75rem',
+                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                        mb: 0.5 
+                    }}>
+                        Activity Score
+                    </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <CodeIcon sx={{ fontSize: 14, color: '#57ab5a' }} />
-                            <Typography sx={{ fontSize: '0.75rem', color: '#7d8590' }}>{contributor.totalCommits} commits</Typography>
+                            <CodeIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37' }} />
+                            <Typography sx={{ 
+                                fontSize: '0.75rem',
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                            }}>
+                                {contributor.totalCommits} commits
+                            </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <StarIcon sx={{ fontSize: 14, color: '#daaa3f' }} />
-                            <Typography sx={{ fontSize: '0.75rem', color: '#7d8590' }}>{contributor.starsReceived} stars received</Typography>
+                            <StarIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700' }} />
+                            <Typography sx={{ 
+                                fontSize: '0.75rem',
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                            }}>
+                                {contributor.starsReceived} stars received
+                            </Typography>
                         </Box>
                     </Box>
                 </Box>
                 <Box>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#7d8590', mb: 0.5 }}>Recency Multiplier</Typography>
+                    <Typography sx={{ 
+                        fontSize: '0.75rem',
+                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                        mb: 0.5 
+                    }}>
+                        Recency Multiplier
+                    </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <UpdateIcon sx={{ fontSize: 14, color: '#539bf5' }} />
-                            <Typography sx={{ fontSize: '0.75rem', color: '#7d8590' }}>
+                            <UpdateIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da' }} />
+                            <Typography sx={{ 
+                                fontSize: '0.75rem',
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                            }}>
                                 Last commit: {new Date(contributor.latestCommitDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </Typography>
                         </Box>
@@ -119,17 +151,32 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
 
     const ActivityTooltip = ({ contributor }: { contributor: Contributor }) => (
         <Box sx={{ p: 1.5, maxWidth: 300 }}>
-            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', mb: 1 }}>
+            <Typography sx={{ 
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                mb: 1 
+            }}>
                 Activity Details
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CodeIcon sx={{ fontSize: 14, color: '#57ab5a' }} />
-                    <Typography sx={{ fontSize: '0.75rem', color: '#7d8590' }}>{contributor.totalCommits} commits</Typography>
+                    <CodeIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37' }} />
+                    <Typography sx={{ 
+                        fontSize: '0.75rem',
+                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                    }}>
+                        {contributor.totalCommits} commits
+                    </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ListAltIcon sx={{ fontSize: 14, color: '#57ab5a' }} />
-                    <Typography sx={{ fontSize: '0.75rem', color: '#7d8590' }}>{contributor.javaRepos} Java repositories</Typography>
+                    <ListAltIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37' }} />
+                    <Typography sx={{ 
+                        fontSize: '0.75rem',
+                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                    }}>
+                        {contributor.javaRepos} Java repositories
+                    </Typography>
                 </Box>
             </Box>
         </Box>
@@ -137,19 +184,30 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
 
     const EngagementTooltip = ({ contributor }: { contributor: Contributor }) => (
         <Box sx={{ p: 1.5, maxWidth: 300 }}>
-            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', mb: 1 }}>
+            <Typography sx={{ 
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                mb: 1 
+            }}>
                 Engagement Stats
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <StarIcon sx={{ fontSize: 14, color: '#daaa3f' }} />
-                    <Typography sx={{ fontSize: '0.75rem', color: '#7d8590' }}>
+                    <StarIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700' }} />
+                    <Typography sx={{ 
+                        fontSize: '0.75rem',
+                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                    }}>
                         {contributor.starsReceived} stars received / {contributor.starsGiven || 0} given
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ForkRightIcon sx={{ fontSize: 14, color: '#daaa3f' }} />
-                    <Typography sx={{ fontSize: '0.75rem', color: '#7d8590' }}>
+                    <ForkRightIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700' }} />
+                    <Typography sx={{ 
+                        fontSize: '0.75rem',
+                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                    }}>
                         {contributor.forksReceived} forks received / {contributor.forksGiven || 0} given
                     </Typography>
                 </Box>
@@ -159,12 +217,20 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
 
     const LastActivityTooltip = ({ contributor }: { contributor: Contributor }) => (
         <Box sx={{ p: 1.5, maxWidth: 300 }}>
-            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', mb: 1 }}>
+            <Typography sx={{ 
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                mb: 1 
+            }}>
                 Last Activity
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <UpdateIcon sx={{ fontSize: 14, color: '#539bf5' }} />
-                <Typography sx={{ fontSize: '0.75rem', color: '#7d8590' }}>
+                <UpdateIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da' }} />
+                <Typography sx={{ 
+                    fontSize: '0.75rem',
+                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                }}>
                     Last commit: {new Date(contributor.latestCommitDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </Typography>
             </Box>
@@ -174,7 +240,8 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
     return (
         <TableContainer 
             sx={{ 
-                border: '1px solid #30363d',
+                border: '1px solid',
+                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                 borderRadius: '6px',
                 overflow: 'hidden'
             }}
@@ -189,11 +256,12 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                 width={column.width}
                                 sx={{
                                     borderBottom: '1px solid',
-                                    borderColor: '#21262d',
-                                    color: '#e6edf3',
+                                    borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                                     py: 1.5,
                                     fontSize: '0.875rem',
                                     fontWeight: 600,
+                                    bgcolor: theme => theme.palette.mode === 'dark' ? 'transparent' : '#f6f8fa'
                                 }}
                             >
                                 <Box sx={{ 
@@ -220,7 +288,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                             {column.icon}
                                             {column.secondaryIcon && (
                                                 <>
-                                                    <Box component="span" sx={{ color: '#7d8590', mx: 0.25 }}>•</Box>
+                                                    <Box component="span" sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a', mx: 0.25 }}>•</Box>
                                                     {column.secondaryIcon}
                                                 </>
                                             )}
@@ -237,17 +305,33 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                             key={contributor.login}
                             sx={{
                                 '&:hover': {
-                                    bgcolor: 'rgba(177, 186, 196, 0.08)'
+                                    bgcolor: theme => theme.palette.mode === 'dark' 
+                                        ? 'rgba(177, 186, 196, 0.08)' 
+                                        : 'rgba(234, 238, 242, 0.5)'
                                 }
                             }}
                         >
-                            <TableCell sx={{ borderBottom: '1px solid #21262d', py: 1.5 }}>
+                            <TableCell sx={{ 
+                                borderBottom: '1px solid',
+                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                py: 1.5 
+                            }}>
                                 <ContributorInfo contributor={contributor} index={index} />
                             </TableCell>
-                            <TableCell sx={{ borderBottom: '1px solid #21262d', py: 1.5 }}>
+                            <TableCell sx={{ 
+                                borderBottom: '1px solid',
+                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                py: 1.5 
+                            }}>
                                 <LocationInfo contributor={contributor} />
                             </TableCell>
-                            <TableCell align="right" sx={{ borderBottom: '1px solid #21262d', py: 1.5, height: '57px', verticalAlign: 'middle' }}>
+                            <TableCell align="right" sx={{ 
+                                borderBottom: '1px solid',
+                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                py: 1.5,
+                                height: '57px',
+                                verticalAlign: 'middle'
+                            }}>
                                 <Tooltip
                                     title={<ScoreTooltip contributor={contributor} />}
                                     placement="bottom"
@@ -255,13 +339,16 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     componentsProps={{
                                         tooltip: {
                                             sx: {
-                                                bgcolor: '#161b22',
+                                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
                                                 '& .MuiTooltip-arrow': {
-                                                    color: '#161b22'
+                                                    color: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff'
                                                 },
-                                                border: '1px solid #30363d',
+                                                border: '1px solid',
+                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                                                 borderRadius: '6px',
-                                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)'
+                                                boxShadow: theme => theme.palette.mode === 'dark'
+                                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
+                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)'
                                             }
                                         }
                                     }}
@@ -269,8 +356,17 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                                         <StatPill>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <EmojiEventsIcon sx={{ fontSize: 14, color: '#7d8590', flexShrink: 0 }} />
-                                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', lineHeight: 1 }}>
+                                                <EmojiEventsIcon sx={{ 
+                                                    fontSize: 14,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    flexShrink: 0 
+                                                }} />
+                                                <Typography sx={{ 
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 600,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    lineHeight: 1
+                                                }}>
                                                     {formatNumber(contributor.score)}
                                                 </Typography>
                                             </Box>
@@ -278,7 +374,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     </Box>
                                 </Tooltip>
                             </TableCell>
-                            <TableCell align="right" sx={{ borderBottom: '1px solid #21262d', py: 1.5, height: '57px', verticalAlign: 'middle' }}>
+                            <TableCell align="right" sx={{ 
+                                borderBottom: '1px solid',
+                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                py: 1.5,
+                                height: '57px',
+                                verticalAlign: 'middle'
+                            }}>
                                 <Tooltip
                                     title={<ActivityTooltip contributor={contributor} />}
                                     placement="bottom"
@@ -286,13 +388,16 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     componentsProps={{
                                         tooltip: {
                                             sx: {
-                                                bgcolor: '#161b22',
+                                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
                                                 '& .MuiTooltip-arrow': {
-                                                    color: '#161b22'
+                                                    color: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff'
                                                 },
-                                                border: '1px solid #30363d',
+                                                border: '1px solid',
+                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                                                 borderRadius: '6px',
-                                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)'
+                                                boxShadow: theme => theme.palette.mode === 'dark'
+                                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
+                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)'
                                             }
                                         }
                                     }}
@@ -300,16 +405,34 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, alignItems: 'center' }}>
                                         <StatPill>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <CodeIcon sx={{ fontSize: 14, color: '#7d8590', flexShrink: 0 }} />
-                                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', lineHeight: 1 }}>
+                                                <CodeIcon sx={{ 
+                                                    fontSize: 14,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    flexShrink: 0 
+                                                }} />
+                                                <Typography sx={{ 
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 600,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    lineHeight: 1
+                                                }}>
                                                     {formatNumber(contributor.totalCommits)}
                                                 </Typography>
                                             </Box>
                                         </StatPill>
                                         <StatPill>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <ListAltIcon sx={{ fontSize: 14, color: '#7d8590', flexShrink: 0 }} />
-                                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', lineHeight: 1 }}>
+                                                <ListAltIcon sx={{ 
+                                                    fontSize: 14,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    flexShrink: 0 
+                                                }} />
+                                                <Typography sx={{ 
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 600,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    lineHeight: 1
+                                                }}>
                                                     {contributor.javaRepos}
                                                 </Typography>
                                             </Box>
@@ -317,7 +440,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     </Box>
                                 </Tooltip>
                             </TableCell>
-                            <TableCell align="right" sx={{ borderBottom: '1px solid #21262d', py: 1.5, height: '57px', verticalAlign: 'middle' }}>
+                            <TableCell align="right" sx={{ 
+                                borderBottom: '1px solid',
+                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                py: 1.5,
+                                height: '57px',
+                                verticalAlign: 'middle'
+                            }}>
                                 <Tooltip
                                     title={<EngagementTooltip contributor={contributor} />}
                                     placement="bottom"
@@ -325,13 +454,16 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     componentsProps={{
                                         tooltip: {
                                             sx: {
-                                                bgcolor: '#161b22',
+                                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
                                                 '& .MuiTooltip-arrow': {
-                                                    color: '#161b22'
+                                                    color: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff'
                                                 },
-                                                border: '1px solid #30363d',
+                                                border: '1px solid',
+                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                                                 borderRadius: '6px',
-                                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)'
+                                                boxShadow: theme => theme.palette.mode === 'dark'
+                                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
+                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)'
                                             }
                                         }
                                     }}
@@ -339,16 +471,34 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, alignItems: 'center' }}>
                                         <StatPill>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <StarIcon sx={{ fontSize: 14, color: '#7d8590', flexShrink: 0 }} />
-                                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', lineHeight: 1 }}>
+                                                <StarIcon sx={{ 
+                                                    fontSize: 14,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    flexShrink: 0 
+                                                }} />
+                                                <Typography sx={{ 
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 600,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    lineHeight: 1
+                                                }}>
                                                     {formatNumber(contributor.starsReceived)}
                                                 </Typography>
                                             </Box>
                                         </StatPill>
                                         <StatPill>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <ForkRightIcon sx={{ fontSize: 14, color: '#7d8590', flexShrink: 0 }} />
-                                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', lineHeight: 1 }}>
+                                                <ForkRightIcon sx={{ 
+                                                    fontSize: 14,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    flexShrink: 0 
+                                                }} />
+                                                <Typography sx={{ 
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 600,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    lineHeight: 1
+                                                }}>
                                                     {formatNumber(contributor.forksReceived)}
                                                 </Typography>
                                             </Box>
@@ -356,7 +506,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     </Box>
                                 </Tooltip>
                             </TableCell>
-                            <TableCell align="right" sx={{ borderBottom: '1px solid #21262d', py: 1.5, height: '57px', verticalAlign: 'middle' }}>
+                            <TableCell align="right" sx={{ 
+                                borderBottom: '1px solid',
+                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                py: 1.5,
+                                height: '57px',
+                                verticalAlign: 'middle'
+                            }}>
                                 <Tooltip
                                     title={<LastActivityTooltip contributor={contributor} />}
                                     placement="bottom"
@@ -364,13 +520,16 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     componentsProps={{
                                         tooltip: {
                                             sx: {
-                                                bgcolor: '#161b22',
+                                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
                                                 '& .MuiTooltip-arrow': {
-                                                    color: '#161b22'
+                                                    color: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff'
                                                 },
-                                                border: '1px solid #30363d',
+                                                border: '1px solid',
+                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                                                 borderRadius: '6px',
-                                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)'
+                                                boxShadow: theme => theme.palette.mode === 'dark'
+                                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
+                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)'
                                             }
                                         }
                                     }}
@@ -378,8 +537,18 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) =>
                                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                                         <StatPill>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <UpdateIcon sx={{ fontSize: 14, color: '#7d8590', flexShrink: 0 }} />
-                                                <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                                                <UpdateIcon sx={{ 
+                                                    fontSize: 14,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    flexShrink: 0 
+                                                }} />
+                                                <Typography sx={{ 
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 600,
+                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    lineHeight: 1,
+                                                    whiteSpace: 'nowrap'
+                                                }}>
                                                     {new Date(contributor.latestCommitDate).toLocaleDateString('en-US', {
                                                         month: 'short',
                                                         day: 'numeric',
