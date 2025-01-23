@@ -22,7 +22,6 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors }) =
             display: 'flex', 
             alignItems: 'center', 
             gap: 0.5,
-            bgcolor: 'rgba(13, 17, 23, 0.6)',
             borderRadius: '6px',
             py: 0.25,
             px: 0.75,
@@ -72,9 +71,11 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors }) =
                         <Box sx={{ 
                             display: 'grid',
                             gridTemplateColumns: 'repeat(2, auto)',
+                            gridTemplateRows: 'repeat(3, auto)',
                             gap: 1,
-                            alignContent: 'start',
-                            justifyContent: 'end'
+                            alignContent: 'center',
+                            justifyContent: 'flex-end',
+                            alignSelf: 'center'
                         }}>
                             <StatItem 
                                 icon={<EmojiEventsIcon />} 
