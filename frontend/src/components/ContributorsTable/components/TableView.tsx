@@ -21,8 +21,13 @@ import { ContributorsTableProps } from '../types';
 import { ContributorInfo } from './ContributorInfo';
 import { LocationInfo } from './LocationInfo';
 import { formatNumber } from '../utils';
+import { LoadingSpinner } from '../../LoadingSpinner';
 
-export const TableView: React.FC<ContributorsTableProps> = ({ contributors }) => {
+export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLoading }) => {
+    if (isLoading) {
+        return <LoadingSpinner message="Loading contributors..." />;
+    }
+
     const columns = [
         { 
             id: 'contributor',

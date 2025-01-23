@@ -16,8 +16,13 @@ import { ContributorsTableProps } from '../types';
 import { ContributorInfo } from './ContributorInfo';
 import { LocationInfo } from './LocationInfo';
 import { formatNumber } from '../utils';
+import { LoadingSpinner } from '../../LoadingSpinner';
 
-export const MobileView: React.FC<ContributorsTableProps> = ({ contributors }) => {
+export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isLoading }) => {
+    if (isLoading) {
+        return <LoadingSpinner message="Loading contributors..." />;
+    }
+
     const StatItem = ({ icon, value, color }: { icon: React.ReactNode; value: string; color: (theme: Theme) => string }) => (
         <Box sx={{ 
             display: 'flex', 

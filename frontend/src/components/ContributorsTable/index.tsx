@@ -3,6 +3,7 @@ import { useMediaQuery, useTheme } from '@mui/material';
 import { ContributorsTableProps } from './types';
 import { MobileView } from './components/MobileView';
 import { TableView } from './components/TableView';
+import { LoadingSpinner } from '../LoadingSpinner';
 
 export const ContributorsTable: React.FC<ContributorsTableProps> = ({
     contributors,
@@ -13,7 +14,7 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return <LoadingSpinner message="Loading contributors..." />;
     }
 
     if (error) {
