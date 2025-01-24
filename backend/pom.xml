@@ -83,7 +83,6 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
-                    <skip>true</skip>
                 </configuration>
             </plugin>
             <plugin>
@@ -99,10 +98,6 @@
                             <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
-                    <testExcludes>
-                        <testExclude>**/*Test.java</testExclude>
-                    </testExcludes>
-                    <skip>true</skip>
                 </configuration>
             </plugin>
             <plugin>
