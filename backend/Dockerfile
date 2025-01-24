@@ -7,7 +7,7 @@ COPY pom.xml .
 COPY src src
 
 RUN chmod +x mvnw
-RUN ./mvnw package -Dmaven.test.skip=true
+RUN ./mvnw package -Dmaven.test.skip=true -DskipTests -Dmaven.test.skip.exec=true -Dskip.unit.tests=true -Dmaven.test.failure.ignore=true
 
 FROM eclipse-temurin:21-jre-alpine
 VOLUME /tmp
