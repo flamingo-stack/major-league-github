@@ -7,7 +7,7 @@ COPY pom.xml .
 COPY src src
 
 RUN chmod +x mvnw
-RUN ./mvnw clean install
+RUN ./mvnw clean package
 
 FROM eclipse-temurin:21-jre-alpine
 VOLUME /tmp
