@@ -23,6 +23,10 @@ spec:
     spec:
       imagePullSecrets:
         - name: registry-credentials
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nc -z redis 6379; do echo waiting for redis; sleep 2; done;']
       containers:
         - name: backend
           image: ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}
@@ -41,6 +45,12 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: github.tokens
+            - name: SPRING_REDIS_HOST
+              value: redis
+            - name: SPRING_REDIS_PORT
+              value: "6379"
+            - name: CACHE_IMPLEMENTATION
+              value: redis
           resources:
             requests:
               memory: ${BACKEND_REQUEST_MEMORY}

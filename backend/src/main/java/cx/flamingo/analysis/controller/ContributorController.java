@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import cx.flamingo.analysis.cache.CacheServiceAbs;
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Contributor;
 import cx.flamingo.analysis.model.Language;
-import cx.flamingo.analysis.service.CacheService;
 import cx.flamingo.analysis.service.CityService;
 import cx.flamingo.analysis.service.GithubService;
 import cx.flamingo.analysis.service.LanguageService;
@@ -30,7 +30,7 @@ public class ContributorController {
 
     private final GithubService githubService;
     private final CityService cityService;
-    private final CacheService cacheService;
+    private final CacheServiceAbs cacheService;
     private final LanguageService languageService;
 
     @GetMapping
@@ -40,7 +40,8 @@ public class ContributorController {
             @RequestParam(required = false) String stateId,
             @RequestParam(required = false) String teamId,
             @RequestParam(required = false) String languageId,
-            @RequestParam(defaultValue = "15") int maxResults) {
+            @RequestParam(defaultValue = "15") int maxResults,
+            @RequestParam(required = false, defaultValue = "High") GithubService.GithubApiPriority priority) {
 
         return cacheService.getHttpResponse(cityId, regionId, stateId, teamId, languageId, maxResults, () -> {
             Map<String, City> targetCities = new HashMap<>();
@@ -117,7 +118,7 @@ public class ContributorController {
                 selectedLanguage = languageService.getDefaultLanguage();
             }
 
-            return githubService.getTopContributorsIn(new ArrayList<>(targetCities.values()), selectedLanguage, maxResults);
+            return githubService.getTopContributorsIn(new ArrayList<>(targetCities.values()), selectedLanguage, maxResults, priority);
         }).orElseGet(() -> {
             log.warn("Cache miss and failed to fetch contributors. Returning empty list.");
             return new ArrayList<>();

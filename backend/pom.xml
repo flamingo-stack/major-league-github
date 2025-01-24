@@ -68,6 +68,12 @@
             <classifier>osx-aarch_64</classifier>
             <!-- Let Spring Boot manage the version -->
         </dependency>
+
+        <!-- Redis dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

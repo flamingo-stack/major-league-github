@@ -1,5 +1,6 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
     "java.configuration.updateBuildConfiguration": "automatic",
-    "svg.preview.background": "editor"
+    "svg.preview.background": "editor",
+    "java.debug.settings.onBuildFailureProceed": true
 }
