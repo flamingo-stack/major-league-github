@@ -7,7 +7,7 @@ COPY pom.xml .
 COPY src src
 
 RUN chmod +x mvnw
-RUN ./mvnw install -DskipTests
+RUN ./mvnw package -Dmaven.test.skip=true
 
 FROM eclipse-temurin:21-jre-alpine
 VOLUME /tmp
