@@ -164,9 +164,7 @@ jobs:
             
             echo "🦩 Configuring registry garbage collection..."
             if ! doctl registry garbage-collection start \
-              --tag-retention-count 5 \
-              --include-untagged \
-              --exclude-tags latest \
+              --include-untagged-manifests \
               --force; then
               echo "⚠️ Warning: Failed to configure garbage collection"
               # Don't exit on garbage collection failure, it's not critical
