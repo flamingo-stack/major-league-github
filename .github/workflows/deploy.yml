@@ -337,8 +337,11 @@ jobs:
       - name: Build and push web service image 🏗️
         run: |
           echo "🦩 Building web service image..."
+          # Suppress Maven download logs and only show build status
           docker build \
             --build-arg PROFILE=web-service \
+            --build-arg MAVEN_OPTS="-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" \
+            --build-arg MAVEN_CLI_OPTS="--batch-mode --quiet" \
             -t "${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}" \
             -t "${REGISTRY}/${REGISTRY_NAME}/web-service:latest" \
             backend
@@ -350,8 +353,11 @@ jobs:
       - name: Build and push cache updater image 🏗️
         run: |
           echo "🦩 Building cache updater image..."
+          # Suppress Maven download logs and only show build status
           docker build \
             --build-arg PROFILE=cache-updater \
+            --build-arg MAVEN_OPTS="-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" \
+            --build-arg MAVEN_CLI_OPTS="--batch-mode --quiet" \
             -t "${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}" \
             -t "${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest" \
             backend
@@ -363,7 +369,15 @@ jobs:
       - name: Build and push frontend image 🎨 🦩
         run: |
           echo "🦩 Building frontend image..."
-          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend; then
+          # Add .npmrc to suppress npm progress bars and unnecessary logs
+          echo "progress=false" > frontend/.npmrc
+          echo "loglevel=error" >> frontend/.npmrc
+          
+          if ! docker build \
+            --build-arg NPM_CONFIG_LOGLEVEL=error \
+            --build-arg CI=true \
+            -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} \
+            ./frontend; then
             echo "❌ Error: Failed to build frontend image"
             exit 1
           fi
