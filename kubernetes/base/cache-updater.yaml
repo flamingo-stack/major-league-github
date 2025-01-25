@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cache-updater
+  name: ${SERVICE_NAME}
   labels:
-    app: cache-updater
+    app: ${SERVICE_NAME}
 spec:
   replicas: ${BACKEND_REPLICAS}
   selector:

@@ -438,13 +438,18 @@ jobs:
           # First, check if there's an existing installation
           echo "🦩 Checking for existing NGINX installation..."
           if helm list -n ingress-nginx | grep -q "ingress-nginx"; then
-            echo "🦩 Found existing installation, upgrading..."
+            echo "🦩 Found existing installation, cleaning up..."
             
-            # Remove finalizers to allow upgrade
-            kubectl get -n ingress-nginx $(kubectl get -n ingress-nginx all -o name) -o name | xargs -I {} kubectl patch -n ingress-nginx {} -p '{"metadata":{"finalizers":null}}' --type=merge || true
+            # Remove finalizers from all resources
+            kubectl -n ingress-nginx get all -o name | xargs -I {} kubectl -n ingress-nginx patch {} -p '{"metadata":{"finalizers":[]}}' --type=merge || true
             
-            # Keep the existing namespace and load balancer
-            echo "✅ Proceeding with upgrade"
+            # Delete the stuck release secret
+            kubectl -n ingress-nginx get secrets -o name | grep -i helm | xargs -I {} kubectl -n ingress-nginx delete {} || true
+            
+            # Remove the ConfigMap
+            kubectl -n ingress-nginx delete configmap -l app.kubernetes.io/name=ingress-nginx --ignore-not-found=true || true
+            
+            echo "✅ Cleanup completed"
           else
             echo "🦩 No existing installation found, creating new one..."
           fi
