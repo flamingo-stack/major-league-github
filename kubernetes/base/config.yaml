@@ -3,31 +3,32 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  BACKEND_URL: "${BACKEND_URL:-http://web-service:8080}"
+  BACKEND_URL: "http://web-service:8080"
   DOMAIN_NAME: "${DOMAIN_NAME}"
   ENVIRONMENT: "${ENVIRONMENT}"
-  SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-web}"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: backend-config
-data: 
-  SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
-  JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP:-1536m} -Xms${JAVA_MIN_HEAP:-768m} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
-  CACHE_IMPLEMENTATION: "${CACHE_IMPLEMENTATION:-redis}"
-  SPRING_REDIS_HOST: "${SPRING_REDIS_HOST:-redis}"
-  SPRING_REDIS_PORT: "${SPRING_REDIS_PORT:-6379}"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: frontend-config
+  name: web-service-config
 data:
-  NODE_ENV: "${NODE_ENV:-production}"
-  API_TIMEOUT: "${API_TIMEOUT:-30000}"
+  SPRING_PROFILES_ACTIVE: "web"
+  JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
+  CACHE_IMPLEMENTATION: "redis"
+  SPRING_REDIS_HOST: "redis"
+  SPRING_REDIS_PORT: "6379"
 ---
-# Template for required secrets - DO NOT store actual values here
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cache-updater-config
+data:
+  SPRING_PROFILES_ACTIVE: "cache-updater"
+  JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
+  CACHE_IMPLEMENTATION: "redis"
+  SPRING_REDIS_HOST: "redis"
+  SPRING_REDIS_PORT: "6379"
+---
 apiVersion: v1
 kind: Secret
 metadata:
@@ -47,6 +48,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cache-updater-config
+  name: frontend-config
 data:
-  SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-cache-updater}" 
+  NODE_ENV: "${NODE_ENV:-production}"
+  API_TIMEOUT: "${API_TIMEOUT:-30000}" 

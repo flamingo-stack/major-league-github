@@ -24,8 +24,8 @@ env:
   # Cluster configuration
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
   CLUSTER_REGION: nyc3
-  CLUSTER_SIZE: s-2vcpu-4gb
-  CLUSTER_NODE_COUNT: "2"
+  CLUSTER_SIZE: s-4vcpu-8gb
+  CLUSTER_NODE_COUNT: "3"
   CLUSTER_VERSION: latest
   
   # Replica counts
@@ -517,7 +517,7 @@ jobs:
 
       - name: Deploy Kubernetes Configurations 🚀 🦩
         env:
-          REGISTRY_URL: ${REGISTRY}/${REGISTRY_NAME}
+          REGISTRY_URL: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}
           DOMAIN_SUFFIX: ${{ env.DOMAIN_SUFFIX }}
           DOMAIN_NAME: ${{ env.DOMAIN_NAME }}
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
@@ -536,63 +536,31 @@ jobs:
         run: |
           echo "🦩 Processing and applying Kubernetes configurations..."
           
+          # Create a temporary directory for processed files
+          mkdir -p processed_k8s
+          
           for file in kubernetes/base/*.yaml; do
             echo "🦩 Processing $file..."
-            # Use envsubst to replace environment variables
-            envsubst < $file > processed.yaml
-            if ! kubectl apply -n ${REGISTRY_NAME} -f processed.yaml; then
-              echo "❌ Error: Failed to apply $file"
-              exit 1
-            fi
-            rm processed.yaml
+            # First, process environment variables
+            envsubst < "$file" > "processed_k8s/$(basename "$file")"
           done
           
-          echo "🦩 Waiting for deployments to be ready..."
-          
-          # Function to check pod status and logs
-          check_deployment() {
-            local deployment=$1
-            echo "🦩 Checking status for deployment: $deployment"
-            
-            # Get pod status
-            echo "🦩 Pod status:"
-            kubectl -n ${REGISTRY_NAME} get pods -l app=$deployment -o wide
-            
-            # Get failed pods if any
-            failed_pods=$(kubectl -n ${REGISTRY_NAME} get pods -l app=$deployment -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}')
-            
-            if [ ! -z "$failed_pods" ]; then
-              echo "🦩 Found failed pods: $failed_pods"
-              for pod in $failed_pods; do
-                echo "🦩 Logs for failed pod $pod:"
-                kubectl -n ${REGISTRY_NAME} logs $pod --all-containers --tail=50
-                
-                echo "🦩 Events for failed pod $pod:"
-                kubectl -n ${REGISTRY_NAME} get events --field-selector involvedObject.name=$pod
-                
-                echo "🦩 Describing failed pod $pod:"
-                kubectl -n ${REGISTRY_NAME} describe pod $pod
-              done
+          # Apply all processed files in order
+          for file in processed_k8s/config.yaml processed_k8s/*.yaml; do
+            if [ -f "$file" ]; then
+              echo "🦩 Applying $file..."
+              if ! kubectl apply -n ${REGISTRY_NAME} -f "$file"; then
+                echo "❌ Error: Failed to apply $file"
+                cat "$file"  # Print the file content for debugging
+                exit 1
+              fi
             fi
-          }
+          done
           
-          # Wait for backend deployment
-          echo "🦩 Waiting for backend deployment..."
-          if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/backend --timeout=5m; then
-            echo "❌ Error: Backend deployment failed to roll out"
-            check_deployment "backend"
-            exit 1
-          fi
+          # Cleanup
+          rm -rf processed_k8s
           
-          # Wait for frontend deployment
-          echo "🦩 Waiting for frontend deployment..."
-          if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/frontend --timeout=5m; then
-            echo "❌ Error: Frontend deployment failed to roll out"
-            check_deployment "frontend"
-            exit 1
-          fi
-          
-          echo "✅ Kubernetes configurations deployed successfully"
+          echo "✅ Kubernetes configurations applied successfully"
 
       - name: Create DNS Record 🌍 🦩
         run: |

@@ -5,18 +5,19 @@ metadata:
   labels:
     app: cache-updater
 spec:
-  replicas: 1  # Only need one instance for cache updates
+  replicas: 1
   selector:
     matchLabels:
       app: cache-updater
   strategy:
-    type: Recreate  # Since we only have one replica
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: cache-updater
-      annotations:
-        checksum/config: ${CONFIG_CHECKSUM}
     spec:
       imagePullSecrets:
         - name: registry-credentials
@@ -32,11 +33,11 @@ spec:
             - configMapRef:
                 name: app-config
           env:
-            - name: GITHUB_TOKEN
+            - name: GITHUB_TOKENS
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: github.token
+                  key: github.tokens
             - name: SPRING_REDIS_HOST
               value: redis
             - name: SPRING_REDIS_PORT

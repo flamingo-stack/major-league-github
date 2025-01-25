@@ -18,8 +18,6 @@ spec:
     metadata:
       labels:
         app: web-service
-      annotations:
-        checksum/config: ${CONFIG_CHECKSUM}
     spec:
       imagePullSecrets:
         - name: registry-credentials
@@ -37,12 +35,14 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
+            - configMapRef:
+                name: web-service-config
           env:
-            - name: GITHUB_TOKEN
+            - name: GITHUB_TOKENS
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: github.token
+                  key: github.tokens
             - name: SPRING_REDIS_HOST
               value: redis
             - name: SPRING_REDIS_PORT
