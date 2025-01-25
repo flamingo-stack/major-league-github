@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class CacheServiceAbs {
 
-    protected final String DELIMITER = ":";
+    
     protected final String NONE = "NONE";
 
     protected final Gson gson;
@@ -35,6 +35,8 @@ public abstract class CacheServiceAbs {
 
     @Value("${cache.expiration.ms:3600000}")
     protected long cacheExpirationMs;
+
+    public abstract String getDelimiter();
 
     @Data
     private static class CachedResponse<T> {
@@ -161,15 +163,15 @@ public abstract class CacheServiceAbs {
     protected String generateCacheKey(String cityId, String regionId, String stateId, String teamId, String language, int maxResults) {
         StringBuilder key = new StringBuilder();
         key.append(cityId != null ? cityId : NONE)
-                .append(DELIMITER)
+                .append(getDelimiter())
                 .append(regionId != null ? regionId : NONE)
-                .append(DELIMITER)
+                .append(getDelimiter())
                 .append(stateId != null ? stateId : NONE)
-                .append(DELIMITER)
+                .append(getDelimiter())
                 .append(teamId != null ? teamId : NONE)
-                .append(DELIMITER)
+                .append(getDelimiter())
                 .append(language != null ? language : NONE)
-                .append(DELIMITER)
+                .append(getDelimiter())
                 .append(maxResults);
         return key.toString();
     }
@@ -179,9 +181,9 @@ public abstract class CacheServiceAbs {
         key.append('/')
                 .append(city.getId())
                 .append("/Contributors")
-                .append(DELIMITER)
+                .append(getDelimiter())
                 .append(language)
-                .append(DELIMITER)
+                .append(getDelimiter()) 
                 .append("page_")
                 .append(pageNumber);
         return key.toString();

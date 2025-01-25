@@ -33,6 +33,11 @@ public class DiskCacheService extends CacheServiceAbs {
         super(gson);
     }
 
+    @Override
+    public String getDelimiter() {
+        return "/";
+    }
+
     @PostConstruct
     private void init() {
         createCacheDirectory(getGithubCachePath());

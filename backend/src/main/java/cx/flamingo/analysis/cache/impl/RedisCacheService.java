@@ -29,6 +29,11 @@ public class RedisCacheService extends CacheServiceAbs {
     }
 
     @Override
+    public String getDelimiter() {
+        return ":";
+    }
+
+    @Override
     protected String getGithubCachePath() {
         return "github";
     }
@@ -50,7 +55,7 @@ public class RedisCacheService extends CacheServiceAbs {
     }
 
     private String buildRedisKey(String cachePath, String key) {
-        return cachePath + DELIMITER + key;
+        return cachePath + getDelimiter() + key;
     }
 
     @Override
