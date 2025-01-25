@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ${SERVICE_NAME:-web-service}
+  name: ${WEB_SERVICE_NAME:web-service}
   labels:
-    app: ${SERVICE_NAME:-web-service}
+    app: ${WEB_SERVICE_NAME:web-service}
 spec:
   replicas: ${BACKEND_REPLICAS}
   selector:
     matchLabels:
-      app: ${SERVICE_NAME}
+      app: ${WEB_SERVICE_NAME:web-service}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,7 +17,7 @@ spec:
   template:
     metadata:
       labels:
-        app: ${SERVICE_NAME}
+        app: ${WEB_SERVICE_NAME:web-service}
     spec:
       imagePullSecrets:
         - name: registry-credentials
@@ -26,8 +26,8 @@ spec:
           image: busybox:1.28
           command: ['sh', '-c', 'until nc -z redis 6379; do echo waiting for redis; sleep 2; done;']
       containers:
-        - name: ${SERVICE_NAME}
-          image: ${REGISTRY}/${REGISTRY_NAME}/${SERVICE_NAME}:${VERSION}
+        - name: ${WEB_SERVICE_NAME:web-service}
+          image: ${REGISTRY}/${REGISTRY_NAME}/${WEB_SERVICE_NAME:web-service}:${VERSION}
           imagePullPolicy: Always
           envFrom:
             - configMapRef:

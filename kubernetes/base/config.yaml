@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
+  WEB_SERVICE_NAME: "web-service"
+  CACHE_UPDATER_NAME: "cache-updater"
   BACKEND_URL: "http://web-service:${WEB_SERVICE_PORT}"
   DOMAIN_NAME: "${DOMAIN_NAME}"
   ENVIRONMENT: "${ENVIRONMENT}"
@@ -12,7 +14,6 @@ kind: ConfigMap
 metadata:
   name: web-service-config
 data:
-  SERVICE_NAME: "web-service"
   JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
   CACHE_IMPLEMENTATION: "redis"
   SPRING_DATA_REDIS_HOST: "redis"
@@ -24,7 +25,6 @@ kind: ConfigMap
 metadata:
   name: cache-updater-config
 data:
-  SERVICE_NAME: "cache-updater"
   JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
   CACHE_IMPLEMENTATION: "redis"
   SPRING_DATA_REDIS_HOST: "redis"
