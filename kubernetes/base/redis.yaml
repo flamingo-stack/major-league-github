@@ -9,6 +9,7 @@ spec:
     - port: 6379
       targetPort: 6379
       name: redis
+      protocol: TCP
   selector:
     app: redis
 ---
@@ -32,23 +33,18 @@ spec:
           image: redis:7.2-alpine
           ports:
             - containerPort: 6379
-              name: redis
+              protocol: TCP
           resources:
             requests:
-              cpu: 1000m
-              memory: 2Gi
+              cpu: 100m
+              memory: 256Mi
             limits:
-              cpu: 2000m
-              memory: 4Gi
-          volumeMounts:
-            - name: redis-data
-              mountPath: /data
+              cpu: 200m
+              memory: 512Mi
           command:
             - redis-server
-            - --appendonly
-            - "yes"
             - --maxmemory
-            - "3gb"
+            - "400mb"
             - --maxmemory-policy
             - "allkeys-lru"
           livenessProbe:
