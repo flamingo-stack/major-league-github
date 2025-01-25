@@ -33,7 +33,7 @@ spec:
             - configMapRef:
                 name: app-config
             - configMapRef:
-                name: ${SERVICE_NAME}-config
+                name: web-service-config
           env:
             - name: GITHUB_TOKENS
               valueFrom:
@@ -54,7 +54,7 @@ spec:
           startupProbe:
             httpGet:
               path: /actuator/health
-              port: 8081
+              port: ${SERVER_PORT}
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
@@ -62,7 +62,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: 8081
+              port: ${SERVER_PORT}
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 5

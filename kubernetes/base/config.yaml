@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  BACKEND_URL: "http://web-service:8080"
+  BACKEND_URL: "http://web-service:${SERVER_PORT}"
   DOMAIN_NAME: "${DOMAIN_NAME}"
   ENVIRONMENT: "${ENVIRONMENT}"
 ---
@@ -12,11 +12,12 @@ kind: ConfigMap
 metadata:
   name: web-service-config
 data:
-  SERVICE_NAME: "web"
+  SERVICE_NAME: "web-service"
   JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
   CACHE_IMPLEMENTATION: "redis"
   SPRING_DATA_REDIS_HOST: "redis"
   SPRING_DATA_REDIS_PORT: "6379"
+  SERVER_PORT: "8080"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -28,6 +29,7 @@ data:
   CACHE_IMPLEMENTATION: "redis"
   SPRING_DATA_REDIS_HOST: "redis"
   SPRING_DATA_REDIS_PORT: "6379"
+  SERVER_PORT: "8081"
 ---
 apiVersion: v1
 kind: Secret

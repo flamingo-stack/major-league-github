@@ -76,7 +76,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <spring.profiles.active>web</spring.profiles.active>
+                <spring.profiles.active>web-service</spring.profiles.active>
             </properties>
         </profile>
         <profile>

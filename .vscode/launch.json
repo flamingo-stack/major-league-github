@@ -8,7 +8,7 @@
             "mainClass": "cx.flamingo.analysis.MajorLeagueGithubApplication",
             "projectName": "major-league-github",
             "env": {
-                "SPRING_PROFILES_ACTIVE": "web"
+                "SPRING_PROFILES_ACTIVE": "web-service"
             }
         },
         {
