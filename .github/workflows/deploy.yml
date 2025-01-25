@@ -337,65 +337,49 @@ jobs:
       - name: Build and push web service image 🏗️
         run: |
           echo "🦩 Building web service image..."
-          # Suppress Maven download logs and only show build status
           docker build \
+            --quiet \
             --build-arg PROFILE=web-service \
-            --build-arg MAVEN_OPTS="-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" \
-            --build-arg MAVEN_CLI_OPTS="--batch-mode --quiet" \
             -t "${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}" \
             -t "${REGISTRY}/${REGISTRY_NAME}/web-service:latest" \
-            backend
+            backend > /dev/null
           
           echo "🦩 Pushing web service image..."
-          docker push "${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}"
-          docker push "${REGISTRY}/${REGISTRY_NAME}/web-service:latest"
+          docker push "${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}" > /dev/null
+          docker push "${REGISTRY}/${REGISTRY_NAME}/web-service:latest" > /dev/null
+          echo "✅ Web service image built and pushed"
 
       - name: Build and push cache updater image 🏗️
         run: |
           echo "🦩 Building cache updater image..."
-          # Suppress Maven download logs and only show build status
           docker build \
+            --quiet \
             --build-arg PROFILE=cache-updater \
-            --build-arg MAVEN_OPTS="-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" \
-            --build-arg MAVEN_CLI_OPTS="--batch-mode --quiet" \
             -t "${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}" \
             -t "${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest" \
-            backend
+            backend > /dev/null
           
           echo "🦩 Pushing cache updater image..."
-          docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}"
-          docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest"
+          docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}" > /dev/null
+          docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest" > /dev/null
+          echo "✅ Cache updater image built and pushed"
 
       - name: Build and push frontend image 🎨 🦩
         run: |
           echo "🦩 Building frontend image..."
-          # Add .npmrc to suppress npm progress bars and unnecessary logs
-          echo "progress=false" > frontend/.npmrc
-          echo "loglevel=error" >> frontend/.npmrc
-          
-          if ! docker build \
-            --build-arg NPM_CONFIG_LOGLEVEL=error \
-            --build-arg CI=true \
+          docker build \
+            --quiet \
             -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} \
-            ./frontend; then
-            echo "❌ Error: Failed to build frontend image"
-            exit 1
-          fi
+            ./frontend > /dev/null
           
-          echo "🦩 Pushing versioned frontend image..."
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}; then
-            echo "❌ Error: Failed to push frontend versioned image"
-            exit 1
-          fi
+          echo "🦩 Pushing frontend image..."
+          docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} > /dev/null
           
           echo "🦩 Tagging and pushing latest..."
-          docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
-            echo "❌ Error: Failed to push frontend latest image"
-            exit 1
-          fi
+          docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest > /dev/null
+          docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest > /dev/null
           
-          echo "✅ Frontend image build and push completed"
+          echo "✅ Frontend image built and pushed"
       - name: Cleanup old images 🧹 🦩
         run: |
           echo "🦩 Cleaning up old images..."
@@ -449,27 +433,17 @@ jobs:
           
           echo "🦩 Installing NGINX Ingress Controller..."
           
-          # First, check if there's an existing installation
-          echo "🦩 Checking for existing NGINX installation..."
-          if helm list -n ingress-nginx | grep -q "ingress-nginx"; then
-            echo "🦩 Found existing installation, cleaning up..."
-            
-            # Remove finalizers from all resources
-            kubectl -n ingress-nginx get all -o name | xargs -I {} kubectl -n ingress-nginx patch {} -p '{"metadata":{"finalizers":[]}}' --type=merge || true
-            
-            # Delete the stuck release secret
-            kubectl -n ingress-nginx get secrets -o name | grep -i helm | xargs -I {} kubectl -n ingress-nginx delete {} || true
-            
-            # Remove the ConfigMap
-            kubectl -n ingress-nginx delete configmap -l app.kubernetes.io/name=ingress-nginx --ignore-not-found=true || true
-            
-            echo "✅ Cleanup completed"
-          else
-            echo "🦩 No existing installation found, creating new one..."
-          fi
+          # Force delete any existing installation
+          kubectl delete namespace ingress-nginx --ignore-not-found=true
           
-          echo "🦩 Installing/Upgrading NGINX Ingress Controller..."
-          NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+          # Wait for namespace to be fully deleted
+          while kubectl get namespace ingress-nginx >/dev/null 2>&1; do
+            echo "Waiting for namespace deletion..."
+            sleep 2
+          done
+          
+          # Install NGINX Ingress
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx \
             --create-namespace \
             --set controller.publishService.enabled=true \
@@ -485,14 +459,7 @@ jobs:
             --set controller.service.ports.https=443 \
             --set controller.service.targetPorts.http=80 \
             --set controller.service.targetPorts.https=80 \
-            --wait --timeout 5m"
-          
-          if ! eval "$NGINX_CMD"; then
-            echo "❌ Error: Failed to install NGINX Ingress"
-            kubectl get pods -n ingress-nginx
-            kubectl describe pods -n ingress-nginx
-            exit 1
-          fi
+            --wait --timeout 5m
 
           # Wait for ingress controller to be fully ready
           echo "🦩 Waiting for Ingress Controller to be ready..."
