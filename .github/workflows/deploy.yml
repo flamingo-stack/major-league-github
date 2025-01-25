@@ -416,42 +416,18 @@ jobs:
           # First, check if there's an existing installation
           echo "🦩 Checking for existing NGINX installation..."
           if helm list -n ingress-nginx | grep -q "ingress-nginx"; then
-            echo "🦩 Found existing installation, cleaning up..."
+            echo "🦩 Found existing installation, upgrading..."
             
-            # Get the load balancer ID
-            LB_NAME="${{ env.DOMAIN_NAME }}-lb"
-            LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
-            
-            # Remove finalizers to force cleanup
+            # Remove finalizers to allow upgrade
             kubectl get -n ingress-nginx $(kubectl get -n ingress-nginx all -o name) -o name | xargs -I {} kubectl patch -n ingress-nginx {} -p '{"metadata":{"finalizers":null}}' --type=merge || true
             
-            # Delete the release and namespace
-            helm uninstall ingress-nginx -n ingress-nginx || true
-            kubectl delete namespace ingress-nginx --wait || true
-            
-            # Delete the load balancer if it exists
-            if [ ! -z "$LB_ID" ]; then
-              echo "🦩 Deleting existing load balancer..."
-              doctl compute load-balancer delete --force "${LB_ID}" || true
-              # Wait for load balancer to be fully deleted
-              echo "🦩 Waiting for load balancer to be deleted..."
-              while doctl compute load-balancer get "${LB_ID}" > /dev/null 2>&1; do
-                echo "🦩 Still waiting for load balancer deletion..."
-                sleep 5
-              done
-            fi
-            
-            # Wait for namespace deletion to complete
-            echo "🦩 Waiting for namespace cleanup..."
-            while kubectl get namespace ingress-nginx > /dev/null 2>&1; do
-              echo "🦩 Still waiting for namespace cleanup..."
-              sleep 5
-            done
-            
-            echo "✅ Cleanup completed"
+            # Keep the existing namespace and load balancer
+            echo "✅ Proceeding with upgrade"
+          else
+            echo "🦩 No existing installation found, creating new one..."
           fi
           
-          echo "🦩 Installing NGINX Ingress Controller..."
+          echo "🦩 Installing/Upgrading NGINX Ingress Controller..."
           NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx \
             --create-namespace \
@@ -529,24 +505,11 @@ jobs:
           fi
           
           echo "🦩 Creating application secrets..."
-          # Create a temporary file for the tokens
-          echo "${{ env.GH_API_TOKENS }}" > github_tokens.txt
-          
-          # Delete existing secret if it exists
-          kubectl delete secret app-secrets --namespace=${REGISTRY_NAME} --ignore-not-found=true
-          
-          # Create the secret with the correct key
           if ! kubectl create secret generic app-secrets \
             --namespace=${REGISTRY_NAME} \
-            --from-literal=github.tokens="${{ env.GH_API_TOKENS }}"; then
+            --from-literal=github.tokens="${{ env.GH_API_TOKENS }}" \
+            --dry-run=client -o yaml | kubectl apply -f -; then
             echo "❌ Error: Failed to create application secrets"
-            exit 1
-          fi
-          
-          # Verify secret was created correctly
-          echo "🦩 Verifying secret creation..."
-          if ! kubectl get secret app-secrets --namespace=${REGISTRY_NAME} -o jsonpath='{.data}' | grep 'github\.tokens'; then
-            echo "❌ Error: Secret verification failed"
             exit 1
           fi
           
