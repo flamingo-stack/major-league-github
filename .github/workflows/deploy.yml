@@ -671,43 +671,41 @@ jobs:
           
           echo "🦩 Checking for existing DNS records..."
           
-          # Check for existing CNAME record
-          EXISTING_CNAME=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *${{ env.DOMAIN_NAME }}" || true)
-          if [ ! -z "$EXISTING_CNAME" ]; then
-            CNAME_ID=$(echo $EXISTING_CNAME | awk '{print $1}')
-            echo "🦩 Found existing CNAME record (ID: $CNAME_ID), removing it..."
-            if ! doctl compute domain records delete ${{ env.DOMAIN_SUFFIX }} $CNAME_ID --force; then
-              echo "❌ Error: Failed to delete CNAME record"
-              exit 1
+          # First, clean up any stale records for our subdomain
+          echo "🦩 Cleaning up any stale DNS records..."
+          RECORDS_TO_CLEAN=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header)
+          
+          # Clean up any A or CNAME records for our subdomain
+          echo "$RECORDS_TO_CLEAN" | while read -r record; do
+            RECORD_ID=$(echo $record | awk '{print $1}')
+            RECORD_TYPE=$(echo $record | awk '{print $2}')
+            RECORD_NAME=$(echo $record | awk '{print $3}')
+            
+            # Only process records for our subdomain
+            if [ "$RECORD_NAME" = "${{ env.DOMAIN_NAME }}" ] || [ "$RECORD_NAME" = "@" ]; then
+              if [ "$RECORD_TYPE" = "A" ] || [ "$RECORD_TYPE" = "CNAME" ]; then
+                echo "🦩 Removing old record: Type=$RECORD_TYPE, Name=$RECORD_NAME, ID=$RECORD_ID"
+                doctl compute domain records delete ${{ env.DOMAIN_SUFFIX }} $RECORD_ID --force || true
+              fi
             fi
-            echo "✅ CNAME record removed successfully"
+          done
+          
+          echo "🦩 Creating new A record for subdomain..."
+          if ! doctl compute domain records create ${{ env.DOMAIN_SUFFIX }} \
+            --record-type A \
+            --record-name "${{ env.DOMAIN_NAME }}" \
+            --record-data "${LB_IP}" \
+            --record-ttl 300; then
+            echo "❌ Error: Failed to create DNS record"
+            exit 1
           fi
           
-          # Check for existing A record
-          EXISTING_RECORD=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_NAME }}" || true)
+          echo "✅ DNS record created successfully"
           
-          if [ ! -z "$EXISTING_RECORD" ]; then
-            RECORD_ID=$(echo $EXISTING_RECORD | awk '{print $1}')
-            echo "🦩 Updating existing A record (ID: $RECORD_ID)..."
-            if ! doctl compute domain records update ${{ env.DOMAIN_SUFFIX }} --record-id $RECORD_ID \
-              --record-type A \
-              --record-data "${LB_IP}"; then
-              echo "❌ Error: Failed to update DNS record"
-              exit 1
-            fi
-            echo "✅ DNS record updated successfully"
-          else
-            echo "🦩 Creating new A record..."
-            if ! doctl compute domain records create ${{ env.DOMAIN_SUFFIX }} \
-              --record-type A \
-              --record-name "${{ env.DOMAIN_NAME }}" \
-              --record-data "${LB_IP}" \
-              --record-ttl 300; then
-              echo "❌ Error: Failed to create DNS record"
-              exit 1
-            fi
-            echo "✅ DNS record created successfully"
-          fi
+          echo "🦩 Verifying DNS configuration..."
+          FINAL_RECORDS=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format Type,Name,Data --no-header | grep "${{ env.DOMAIN_NAME }}" || true)
+          echo "Current DNS records for ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}:"
+          echo "$FINAL_RECORDS"
 
       - name: Verify Deployment 🔍 🦩
         run: |

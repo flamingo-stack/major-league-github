@@ -60,7 +60,6 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-resolver-dns-native-macos</artifactId>
             <classifier>osx-aarch_64</classifier>
-            <!-- Let Spring Boot manage the version -->
         </dependency>
 
         <!-- Redis dependencies -->
