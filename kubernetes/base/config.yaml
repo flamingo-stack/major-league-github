@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  BACKEND_URL: "http://web-service:${SERVER_PORT}"
+  BACKEND_URL: "http://web-service:${WEB_SERVICE_PORT}"
   DOMAIN_NAME: "${DOMAIN_NAME}"
   ENVIRONMENT: "${ENVIRONMENT}"
 ---
@@ -17,7 +17,7 @@ data:
   CACHE_IMPLEMENTATION: "redis"
   SPRING_DATA_REDIS_HOST: "redis"
   SPRING_DATA_REDIS_PORT: "6379"
-  SERVER_PORT: "8080"
+  SERVER_PORT: "${WEB_SERVICE_PORT}"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -29,7 +29,7 @@ data:
   CACHE_IMPLEMENTATION: "redis"
   SPRING_DATA_REDIS_HOST: "redis"
   SPRING_DATA_REDIS_PORT: "6379"
-  SERVER_PORT: "8081"
+  SERVER_PORT: "${CACHE_UPDATER_PORT}"
 ---
 apiVersion: v1
 kind: Secret
