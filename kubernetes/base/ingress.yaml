@@ -27,9 +27,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: backend-service
+                name: web-service
                 port:
-                  number: 8450
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:
