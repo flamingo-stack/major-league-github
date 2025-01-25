@@ -155,9 +155,9 @@ jobs:
           echo "🦩 Checking DigitalOcean Registry..."
           if ! doctl registry get > /dev/null 2>&1; then
             echo "🦩 Creating DigitalOcean Registry..."
-            if ! doctl registry create \
+            if ! doctl registry create "${REGISTRY_NAME}" \
               --subscription-tier basic \
-              --region ${CLUSTER_REGION}; then
+              --region "${CLUSTER_REGION}"; then
               echo "❌ Error: Failed to create registry"
               exit 1
             fi
