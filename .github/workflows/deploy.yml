@@ -334,51 +334,31 @@ jobs:
           
           echo "✅ Configuration completed successfully"
 
-      - name: Build and push backend image 🏗️ 🦩
+      - name: Build and push web service image 🏗️
         run: |
-          echo "🦩 Building backend image..."
-          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ./backend; then
-            echo "❌ Error: Failed to build backend image"
-            exit 1
-          fi
+          echo "🦩 Building web service image..."
+          docker build \
+            --build-arg PROFILE=web-service \
+            -t "${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}" \
+            -t "${REGISTRY}/${REGISTRY_NAME}/web-service:latest" \
+            backend
           
-          echo "🦩 Pushing versioned backend image..."
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}; then
-            echo "❌ Error: Failed to push backend versioned image"
-            exit 1
-          fi
-          
-          echo "🦩 Tagging and pushing latest..."
-          docker tag ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/backend:latest
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/backend:latest; then
-            echo "❌ Error: Failed to push backend latest image"
-            exit 1
-          fi
-          
-          echo "✅ Backend image build and push completed"
+          echo "🦩 Pushing web service image..."
+          docker push "${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}"
+          docker push "${REGISTRY}/${REGISTRY_NAME}/web-service:latest"
 
-      - name: Build and push frontend image 🎨 🦩
+      - name: Build and push cache updater image 🏗️
         run: |
-          echo "🦩 Building frontend image..."
-          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend; then
-            echo "❌ Error: Failed to build frontend image"
-            exit 1
-          fi
+          echo "🦩 Building cache updater image..."
+          docker build \
+            --build-arg PROFILE=cache-updater \
+            -t "${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}" \
+            -t "${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest" \
+            backend
           
-          echo "🦩 Pushing versioned frontend image..."
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}; then
-            echo "❌ Error: Failed to push frontend versioned image"
-            exit 1
-          fi
-          
-          echo "🦩 Tagging and pushing latest..."
-          docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
-            echo "❌ Error: Failed to push frontend latest image"
-            exit 1
-          fi
-          
-          echo "✅ Frontend image build and push completed"
+          echo "🦩 Pushing cache updater image..."
+          docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}"
+          docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest"
 
       - name: Cleanup old images 🧹 🦩
         run: |

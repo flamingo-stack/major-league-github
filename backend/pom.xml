@@ -69,6 +69,24 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>web-service</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <spring.profiles.active>web</spring.profiles.active>
+            </properties>
+        </profile>
+        <profile>
+            <id>cache-updater</id>
+            <properties>
+                <spring.profiles.active>cache-updater</spring.profiles.active>
+            </properties>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>

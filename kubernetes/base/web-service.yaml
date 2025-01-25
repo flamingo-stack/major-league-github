@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: web-service
   labels:
-    app: backend
+    app: web-service
 spec:
   replicas: ${BACKEND_REPLICAS}
   selector:
     matchLabels:
-      app: backend
+      app: web-service
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,7 +17,7 @@ spec:
   template:
     metadata:
       labels:
-        app: backend
+        app: web-service
       annotations:
         checksum/config: ${CONFIG_CHECKSUM}
     spec:
@@ -28,29 +28,25 @@ spec:
           image: busybox:1.28
           command: ['sh', '-c', 'until nc -z redis 6379; do echo waiting for redis; sleep 2; done;']
       containers:
-        - name: backend
-          image: ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}
+        - name: web-service
+          image: ${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}
           imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: 8450
+              containerPort: 8080
           envFrom:
             - configMapRef:
                 name: app-config
-            - configMapRef:
-                name: backend-config
           env:
-            - name: GITHUB_TOKENS
+            - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: github.tokens
+                  key: github.token
             - name: SPRING_REDIS_HOST
               value: redis
             - name: SPRING_REDIS_PORT
               value: "6379"
-            - name: CACHE_IMPLEMENTATION
-              value: redis
           resources:
             requests:
               memory: ${BACKEND_REQUEST_MEMORY}
@@ -86,14 +82,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend-service
+  name: web-service
   labels:
-    app: backend
+    app: web-service
 spec:
   selector:
-    app: backend
+    app: web-service
   ports:
     - name: http
-      port: 8450
+      port: 8080
       targetPort: http
   type: ClusterIP 

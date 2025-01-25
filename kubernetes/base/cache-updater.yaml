@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache-updater
+  labels:
+    app: cache-updater
+spec:
+  replicas: 1  # Only need one instance for cache updates
+  selector:
+    matchLabels:
+      app: cache-updater
+  strategy:
+    type: Recreate  # Since we only have one replica
+  template:
+    metadata:
+      labels:
+        app: cache-updater
+      annotations:
+        checksum/config: ${CONFIG_CHECKSUM}
+    spec:
+      imagePullSecrets:
+        - name: registry-credentials
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nc -z redis 6379; do echo waiting for redis; sleep 2; done;']
+      containers:
+        - name: cache-updater
+          image: ${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: github.token
+            - name: SPRING_REDIS_HOST
+              value: redis
+            - name: SPRING_REDIS_PORT
+              value: "6379"
+          resources:
+            requests:
+              memory: ${BACKEND_REQUEST_MEMORY}
+              cpu: ${BACKEND_REQUEST_CPU}
+            limits:
+              memory: ${BACKEND_LIMIT_MEMORY}
+              cpu: ${BACKEND_LIMIT_CPU}
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3 
