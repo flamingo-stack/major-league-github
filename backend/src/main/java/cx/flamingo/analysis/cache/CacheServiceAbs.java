@@ -178,9 +178,8 @@ public abstract class CacheServiceAbs {
 
     protected String generateGithubCacheKey(City city, String language, int pageNumber) {
         StringBuilder key = new StringBuilder();
-        key.append('/')
+        key.append(getDelimiter())
                 .append(city.getId())
-                .append("/Contributors")
                 .append(getDelimiter())
                 .append(language)
                 .append(getDelimiter()) 
