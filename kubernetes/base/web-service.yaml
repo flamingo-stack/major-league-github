@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: web-service
+  name: ${SERVICE_NAME}
   labels:
-    app: web-service
+    app: ${SERVICE_NAME}
 spec:
   replicas: ${BACKEND_REPLICAS}
   selector:
     matchLabels:
-      app: web-service
+      app: ${SERVICE_NAME}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,22 +17,23 @@ spec:
   template:
     metadata:
       labels:
-        app: web-service
+        app: ${SERVICE_NAME}
     spec:
       imagePullSecrets:
         - name: registry-credentials
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nc -z redis 6379; do echo waiting for redis; sleep 2; done;']
       containers:
-        - name: web-service
-          image: ${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}
+        - name: ${SERVICE_NAME}
+          image: ${REGISTRY}/${REGISTRY_NAME}/${SERVICE_NAME}:${VERSION}
           imagePullPolicy: Always
-          ports:
-            - name: http
-              containerPort: 8080
           envFrom:
             - configMapRef:
                 name: app-config
             - configMapRef:
-                name: web-service-config
+                name: ${SERVICE_NAME}-config
           env:
             - name: GITHUB_TOKENS
               valueFrom:
@@ -53,39 +54,16 @@ spec:
           startupProbe:
             httpGet:
               path: /actuator/health
-              port: http
+              port: 8081
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 30
-          readinessProbe:
-            httpGet:
-              path: /actuator/health/readiness
-              port: http
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: http
+              port: 8081
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 3
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: web-service
-  labels:
-    app: web-service
-spec:
-  selector:
-    app: web-service
-  ports:
-    - name: http
-      port: 8080
-      targetPort: http
-  type: ClusterIP 
+            failureThreshold: 3 

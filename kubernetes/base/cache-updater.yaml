@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cache-updater
+  name: ${SERVICE_NAME}
   labels:
-    app: cache-updater
+    app: ${SERVICE_NAME}
 spec:
-  replicas: 1
+  replicas: ${BACKEND_REPLICAS}
   selector:
     matchLabels:
-      app: cache-updater
+      app: ${SERVICE_NAME}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,17 +17,23 @@ spec:
   template:
     metadata:
       labels:
-        app: cache-updater
+        app: ${SERVICE_NAME}
     spec:
       imagePullSecrets:
         - name: registry-credentials
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nc -z redis 6379; do echo waiting for redis; sleep 2; done;']
       containers:
-        - name: cache-updater
-          image: ${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}
+        - name: ${SERVICE_NAME}
+          image: ${REGISTRY}/${REGISTRY_NAME}/${SERVICE_NAME}:${VERSION}
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: app-config
+            - configMapRef:
+                name: ${SERVICE_NAME}-config
           env:
             - name: GITHUB_TOKENS
               valueFrom:

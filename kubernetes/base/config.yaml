@@ -12,22 +12,22 @@ kind: ConfigMap
 metadata:
   name: web-service-config
 data:
-  SPRING_PROFILES_ACTIVE: "web"
+  SERVICE_NAME: "web"
   JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
   CACHE_IMPLEMENTATION: "redis"
-  REDIS_HOST: "redis"
-  REDIS_PORT: "6379"
+  SPRING_DATA_REDIS_HOST: "redis"
+  SPRING_DATA_REDIS_PORT: "6379"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cache-updater-config
 data:
-  SPRING_PROFILES_ACTIVE: "cache-updater"
+  SERVICE_NAME: "cache-updater"
   JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
   CACHE_IMPLEMENTATION: "redis"
-  REDIS_HOST: "redis"
-  REDIS_PORT: "6379"
+  SPRING_DATA_REDIS_HOST: "redis"
+  SPRING_DATA_REDIS_PORT: "6379"
 ---
 apiVersion: v1
 kind: Secret
