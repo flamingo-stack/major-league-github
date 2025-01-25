@@ -157,8 +157,7 @@ jobs:
             echo "🦩 Creating DigitalOcean Registry..."
             if ! doctl registry create \
               --subscription-tier basic \
-              --region ${CLUSTER_REGION} \
-              --wait; then
+              --region ${CLUSTER_REGION}; then
               echo "❌ Error: Failed to create registry"
               exit 1
             fi
@@ -169,8 +168,7 @@ jobs:
               --exclude-tags latest \
               --keep-tags 5 \
               --schedule "0 0 * * 6" \
-              --include-all-repositories \
-              --wait; then
+              --include-all-repositories; then
               echo "⚠️ Warning: Failed to configure garbage collection"
               # Don't exit on garbage collection failure, it's not critical
             fi
