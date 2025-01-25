@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ${SERVICE_NAME}
+  name: ${SERVICE_NAME:-web-service}
   labels:
-    app: ${SERVICE_NAME}
+    app: ${SERVICE_NAME:-web-service}
 spec:
   replicas: ${BACKEND_REPLICAS}
   selector:
