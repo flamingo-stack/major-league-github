@@ -3,28 +3,29 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  ENVIRONMENT: ${ENVIRONMENT:-production}
-  DOMAIN_NAME: ${DOMAIN_NAME:-major-league-github}
-  BACKEND_URL: ${BACKEND_URL:-http://backend-service:8450}
+  BACKEND_URL: "${BACKEND_URL:-http://web-service:8080}"
+  DOMAIN_NAME: "${DOMAIN_NAME}"
+  ENVIRONMENT: "${ENVIRONMENT}"
+  SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-web}"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: backend-config
 data: 
-  SPRING_PROFILES_ACTIVE: "prod"
+  SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
   JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP:-1536m} -Xms${JAVA_MIN_HEAP:-768m} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
-  CACHE_IMPLEMENTATION: "redis"
-  SPRING_REDIS_HOST: "redis"
-  SPRING_REDIS_PORT: "6379"
+  CACHE_IMPLEMENTATION: "${CACHE_IMPLEMENTATION:-redis}"
+  SPRING_REDIS_HOST: "${SPRING_REDIS_HOST:-redis}"
+  SPRING_REDIS_PORT: "${SPRING_REDIS_PORT:-6379}"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: frontend-config
 data:
-  NODE_ENV: ${NODE_ENV:-production}
-  API_TIMEOUT: ${API_TIMEOUT:-30000}
+  NODE_ENV: "${NODE_ENV:-production}"
+  API_TIMEOUT: "${API_TIMEOUT:-30000}"
 ---
 # Template for required secrets - DO NOT store actual values here
 apiVersion: v1
@@ -41,4 +42,11 @@ metadata:
   name: registry-credentials
 type: kubernetes.io/dockerconfigjson
 data:
-  .dockerconfigjson: ${DOCKER_CONFIG_BASE64} 
+  .dockerconfigjson: ${DOCKER_CONFIG_BASE64}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cache-updater-config
+data:
+  SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-cache-updater}" 

@@ -556,6 +556,20 @@ jobs:
         env:
           REGISTRY_URL: ${REGISTRY}/${REGISTRY_NAME}
           DOMAIN_SUFFIX: ${{ env.DOMAIN_SUFFIX }}
+          DOMAIN_NAME: ${{ env.DOMAIN_NAME }}
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
+          VERSION: ${{ env.VERSION }}
+          BACKEND_URL: "http://web-service:8080"
+          SPRING_PROFILES_ACTIVE: "web"
+          NODE_ENV: "production"
+          API_TIMEOUT: "30000"
+          JAVA_MAX_HEAP: ${{ env.JAVA_MAX_HEAP }}
+          JAVA_MIN_HEAP: ${{ env.JAVA_MIN_HEAP }}
+          CACHE_IMPLEMENTATION: "redis"
+          SPRING_REDIS_HOST: "redis"
+          SPRING_REDIS_PORT: "6379"
+          GITHUB_TOKENS_BASE64: ${{ secrets.GH_API_TOKENS }}
+          DOCKER_CONFIG_BASE64: ${{ env.DOCKER_CONFIG_BASE64 }}
         run: |
           echo "🦩 Processing and applying Kubernetes configurations..."
           
