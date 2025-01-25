@@ -336,48 +336,90 @@ jobs:
 
       - name: Build and push web service image 🏗️
         run: |
+          # Function to retry Docker operations
+          docker_retry() {
+            local cmd=$1
+            local max_attempts=3
+            local attempt=1
+            local wait_time=10
+            
+            while [ $attempt -le $max_attempts ]; do
+              echo "🦩 Attempt $attempt of $max_attempts: $cmd"
+              if eval "$cmd" > /dev/null 2>&1; then
+                return 0
+              else
+                echo "❌ Attempt $attempt failed"
+                if [ $attempt -eq $max_attempts ]; then
+                  echo "❌ All attempts failed for command: $cmd"
+                  return 1
+                fi
+                echo "🦩 Waiting ${wait_time}s before retry..."
+                sleep $wait_time
+                wait_time=$((wait_time * 2))
+                attempt=$((attempt + 1))
+              fi
+            done
+          }
+
           echo "🦩 Building web service image..."
-          docker build \
-            --quiet \
-            --build-arg PROFILE=web-service \
-            -t "${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}" \
-            -t "${REGISTRY}/${REGISTRY_NAME}/web-service:latest" \
-            backend > /dev/null
+          if ! docker_retry "docker build --quiet --build-arg PROFILE=web-service -t ${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION} -t ${REGISTRY}/${REGISTRY_NAME}/web-service:latest backend"; then
+            echo "❌ Failed to build web service image"
+            exit 1
+          fi
           
-          echo "🦩 Pushing web service image..."
-          docker push "${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}" > /dev/null
-          docker push "${REGISTRY}/${REGISTRY_NAME}/web-service:latest" > /dev/null
+          echo "🦩 Pushing web service images..."
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}"; then
+            echo "❌ Failed to push web service version image"
+            exit 1
+          fi
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/web-service:latest"; then
+            echo "❌ Failed to push web service latest image"
+            exit 1
+          fi
           echo "✅ Web service image built and pushed"
 
       - name: Build and push cache updater image 🏗️
         run: |
           echo "🦩 Building cache updater image..."
-          docker build \
-            --quiet \
-            --build-arg PROFILE=cache-updater \
-            -t "${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}" \
-            -t "${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest" \
-            backend > /dev/null
+          if ! docker_retry "docker build --quiet --build-arg PROFILE=cache-updater -t ${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION} -t ${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest backend"; then
+            echo "❌ Failed to build cache updater image"
+            exit 1
+          fi
           
-          echo "🦩 Pushing cache updater image..."
-          docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}" > /dev/null
-          docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest" > /dev/null
+          echo "🦩 Pushing cache updater images..."
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}"; then
+            echo "❌ Failed to push cache updater version image"
+            exit 1
+          fi
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest"; then
+            echo "❌ Failed to push cache updater latest image"
+            exit 1
+          fi
           echo "✅ Cache updater image built and pushed"
 
       - name: Build and push frontend image 🎨 🦩
         run: |
           echo "🦩 Building frontend image..."
-          docker build \
-            --quiet \
-            -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} \
-            ./frontend > /dev/null
+          if ! docker_retry "docker build --quiet -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend"; then
+            echo "❌ Failed to build frontend image"
+            exit 1
+          fi
           
-          echo "🦩 Pushing frontend image..."
-          docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} > /dev/null
+          echo "🦩 Pushing frontend images..."
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}"; then
+            echo "❌ Failed to push frontend version image"
+            exit 1
+          fi
           
-          echo "🦩 Tagging and pushing latest..."
-          docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest > /dev/null
-          docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest > /dev/null
+          echo "🦩 Tagging and pushing latest frontend..."
+          if ! docker_retry "docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest"; then
+            echo "❌ Failed to tag frontend latest image"
+            exit 1
+          fi
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest"; then
+            echo "❌ Failed to push frontend latest image"
+            exit 1
+          fi
           
           echo "✅ Frontend image built and pushed"
       - name: Cleanup old images 🧹 🦩
@@ -433,42 +475,107 @@ jobs:
           
           echo "🦩 Installing NGINX Ingress Controller..."
           
-          # Force delete any existing installation
-          kubectl delete namespace ingress-nginx --ignore-not-found=true
+          # Function to sanitize name for load balancer
+          sanitize_name() {
+            echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//'
+          }
           
-          # Wait for namespace to be fully deleted
-          while kubectl get namespace ingress-nginx >/dev/null 2>&1; do
-            echo "Waiting for namespace deletion..."
-            sleep 2
+          # Sanitize the load balancer name
+          LB_NAME=$(sanitize_name "${{ env.DOMAIN_NAME }}-lb")
+          echo "🦩 Using sanitized load balancer name: ${LB_NAME}"
+          
+          # Function to cleanup NGINX installation
+          cleanup_nginx() {
+            echo "🦩 Cleaning up NGINX installation..."
+            kubectl delete namespace ingress-nginx --ignore-not-found=true
+            
+            # Wait for namespace to be fully deleted with timeout
+            local timeout=60
+            local counter=0
+            while kubectl get namespace ingress-nginx >/dev/null 2>&1; do
+              counter=$((counter + 1))
+              if [ $counter -gt $timeout ]; then
+                echo "❌ Error: Timeout waiting for namespace deletion"
+                return 1
+              fi
+              echo "🦩 Waiting for namespace deletion... ($counter/$timeout)"
+              sleep 2
+            done
+            return 0
+          }
+          
+          # Function to install NGINX
+          install_nginx() {
+            helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+              --namespace ingress-nginx \
+              --create-namespace \
+              --set controller.publishService.enabled=true \
+              --set controller.service.type=LoadBalancer \
+              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"="${LB_NAME}" \
+              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
+              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
+              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
+              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
+              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
+              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
+              --set controller.service.ports.http=80 \
+              --set controller.service.ports.https=443 \
+              --set controller.service.targetPorts.http=80 \
+              --set controller.service.targetPorts.https=80 \
+              --wait --timeout 5m
+          }
+          
+          # Try installation with retries
+          max_attempts=3
+          attempt=1
+          
+          while [ $attempt -le $max_attempts ]; do
+            echo "🦩 Installation attempt $attempt of $max_attempts"
+            
+            if ! cleanup_nginx; then
+              echo "❌ Failed to cleanup NGINX on attempt $attempt"
+              if [ $attempt -eq $max_attempts ]; then
+                echo "❌ All cleanup attempts failed"
+                exit 1
+              fi
+              attempt=$((attempt + 1))
+              continue
+            fi
+            
+            if install_nginx; then
+              echo "✅ NGINX installation successful on attempt $attempt"
+              break
+            else
+              echo "❌ NGINX installation failed on attempt $attempt"
+              kubectl get events -n ingress-nginx
+              
+              if [ $attempt -eq $max_attempts ]; then
+                echo "❌ All installation attempts failed"
+                exit 1
+              fi
+              
+              echo "🦩 Waiting before retry..."
+              sleep 30
+              attempt=$((attempt + 1))
+            fi
           done
           
-          # Install NGINX Ingress
-          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-            --namespace ingress-nginx \
-            --create-namespace \
-            --set controller.publishService.enabled=true \
-            --set controller.service.type=LoadBalancer \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-name\"=\"${{ env.DOMAIN_NAME }}-lb\" \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}\" \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=http \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-http-ports\"=80 \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports\"=443 \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-certificate-id\"=\"${EXISTING_CERT_ID}\" \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-redirect-http-to-https\"=true \
-            --set controller.service.ports.http=80 \
-            --set controller.service.ports.https=443 \
-            --set controller.service.targetPorts.http=80 \
-            --set controller.service.targetPorts.https=80 \
-            --wait --timeout 5m
-
-          # Wait for ingress controller to be fully ready
-          echo "🦩 Waiting for Ingress Controller to be ready..."
-          kubectl wait --namespace ingress-nginx \
+          # Verify installation
+          echo "🦩 Verifying NGINX installation..."
+          if ! kubectl wait --namespace ingress-nginx \
             --for=condition=ready pod \
             --selector=app.kubernetes.io/component=controller \
-            --timeout=5m
+            --timeout=5m; then
+            echo "❌ NGINX controller not ready after installation"
+            kubectl get pods -n ingress-nginx
+            kubectl describe pods -n ingress-nginx
+            exit 1
+          fi
+          
+          echo "✅ NGINX installation verified successfully"
 
-          # Attach load balancer to project
+      - name: Attach load balancer to project
+        run: |
           echo "🦩 Attaching load balancer to project..."
           LB_NAME="${{ env.DOMAIN_NAME }}-lb"
           LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
