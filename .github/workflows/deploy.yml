@@ -334,8 +334,10 @@ jobs:
           
           echo "✅ Configuration completed successfully"
 
-      - name: Build and push web service image 🏗️
+      - name: Setup common functions 🛠️
         run: |
+          # Create shared functions file
+          cat << 'EOF' > .github/shared-functions.sh
           # Function to retry Docker operations
           docker_retry() {
             local cmd=$1
@@ -360,7 +362,15 @@ jobs:
               fi
             done
           }
+          EOF
+          
+          chmod +x .github/shared-functions.sh
+          echo "✅ Common functions setup completed"
 
+      - name: Build and push web service image 🏗️
+        run: |
+          source .github/shared-functions.sh
+          
           echo "🦩 Building web service image..."
           if ! docker_retry "docker build --quiet --build-arg PROFILE=web-service -t ${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION} -t ${REGISTRY}/${REGISTRY_NAME}/web-service:latest backend"; then
             echo "❌ Failed to build web service image"
@@ -380,6 +390,8 @@ jobs:
 
       - name: Build and push cache updater image 🏗️
         run: |
+          source .github/shared-functions.sh
+          
           echo "🦩 Building cache updater image..."
           if ! docker_retry "docker build --quiet --build-arg PROFILE=cache-updater -t ${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION} -t ${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest backend"; then
             echo "❌ Failed to build cache updater image"
@@ -399,6 +411,8 @@ jobs:
 
       - name: Build and push frontend image 🎨 🦩
         run: |
+          source .github/shared-functions.sh
+          
           echo "🦩 Building frontend image..."
           if ! docker_retry "docker build --quiet -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend"; then
             echo "❌ Failed to build frontend image"
