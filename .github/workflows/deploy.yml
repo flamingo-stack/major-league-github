@@ -550,9 +550,13 @@ jobs:
           CACHE_UPDATER_PORT: "8081"
           JAVA_MAX_HEAP: ${{ env.JAVA_MAX_HEAP }}
           JAVA_MIN_HEAP: ${{ env.JAVA_MIN_HEAP }}
-          CACHE_IMPLEMENTATION: "redis"
-          GITHUB_TOKENS_BASE64: ${{ secrets.GH_API_TOKENS }}
-          DOCKER_CONFIG_BASE64: ${{ env.DOCKER_CONFIG_BASE64 }}
+          BACKEND_REQUEST_MEMORY: ${{ env.BACKEND_REQUEST_MEMORY }}
+          BACKEND_REQUEST_CPU: ${{ env.BACKEND_REQUEST_CPU }}
+          BACKEND_LIMIT_MEMORY: ${{ env.BACKEND_LIMIT_MEMORY }}
+          BACKEND_LIMIT_CPU: ${{ env.BACKEND_LIMIT_CPU }}
+          BACKEND_REPLICAS: ${{ env.BACKEND_REPLICAS }}
+          REGISTRY: ${{ env.REGISTRY }}
+          REGISTRY_NAME: ${{ env.REGISTRY_NAME }}
         run: |
           echo "🦩 Processing and applying Kubernetes configurations..."
           
