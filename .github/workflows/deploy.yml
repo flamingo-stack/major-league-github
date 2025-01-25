@@ -360,6 +360,28 @@ jobs:
           docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}"
           docker push "${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest"
 
+      - name: Build and push frontend image 🎨 🦩
+        run: |
+          echo "🦩 Building frontend image..."
+          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend; then
+            echo "❌ Error: Failed to build frontend image"
+            exit 1
+          fi
+          
+          echo "🦩 Pushing versioned frontend image..."
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}; then
+            echo "❌ Error: Failed to push frontend versioned image"
+            exit 1
+          fi
+          
+          echo "🦩 Tagging and pushing latest..."
+          docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest
+          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
+            echo "❌ Error: Failed to push frontend latest image"
+            exit 1
+          fi
+          
+          echo "✅ Frontend image build and push completed"
       - name: Cleanup old images 🧹 🦩
         run: |
           echo "🦩 Cleaning up old images..."
