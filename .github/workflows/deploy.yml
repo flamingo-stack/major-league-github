@@ -501,6 +501,15 @@ jobs:
           # Function to cleanup NGINX installation
           cleanup_nginx() {
             echo "🦩 Cleaning up NGINX installation..."
+            
+            # Get existing load balancer ID
+            local lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+            if [ ! -z "$lb_id" ]; then
+              echo "🦩 Found existing load balancer (ID: ${lb_id})"
+              # Don't delete the load balancer, we'll reuse it
+            fi
+            
+            # Delete the namespace but keep the load balancer
             kubectl delete namespace ingress-nginx --ignore-not-found=true
             
             # Wait for namespace to be fully deleted with timeout
@@ -520,23 +529,49 @@ jobs:
           
           # Function to install NGINX
           install_nginx() {
-            helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-              --namespace ingress-nginx \
-              --create-namespace \
-              --set controller.publishService.enabled=true \
-              --set controller.service.type=LoadBalancer \
-              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"="${LB_NAME}" \
-              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
-              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
-              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
-              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
-              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
-              --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
-              --set controller.service.ports.http=80 \
-              --set controller.service.ports.https=443 \
-              --set controller.service.targetPorts.http=80 \
-              --set controller.service.targetPorts.https=80 \
-              --wait --timeout 5m
+            # Check if load balancer exists and get its ID
+            local lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+            
+            if [ ! -z "$lb_id" ]; then
+              echo "🦩 Using existing load balancer (ID: ${lb_id})"
+              # Add annotation to use existing load balancer
+              helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+                --namespace ingress-nginx \
+                --create-namespace \
+                --set controller.publishService.enabled=true \
+                --set controller.service.type=LoadBalancer \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-id"="${lb_id}" \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
+                --set controller.service.ports.http=80 \
+                --set controller.service.ports.https=443 \
+                --set controller.service.targetPorts.http=80 \
+                --set controller.service.targetPorts.https=80 \
+                --wait --timeout 5m
+            else
+              echo "🦩 Creating new load balancer"
+              helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+                --namespace ingress-nginx \
+                --create-namespace \
+                --set controller.publishService.enabled=true \
+                --set controller.service.type=LoadBalancer \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"="${LB_NAME}" \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
+                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
+                --set controller.service.ports.http=80 \
+                --set controller.service.ports.https=443 \
+                --set controller.service.targetPorts.http=80 \
+                --set controller.service.targetPorts.https=80 \
+                --wait --timeout 5m
+            fi
           }
           
           # Try installation with retries
