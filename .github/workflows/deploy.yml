@@ -23,7 +23,7 @@ env:
   
   # Cluster configuration
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
-  CLUSTER_REGION: sfo3
+  CLUSTER_REGION: nyc3
   CLUSTER_SIZE: s-2vcpu-4gb
   CLUSTER_NODE_COUNT: "2"
   CLUSTER_VERSION: latest
@@ -163,12 +163,11 @@ jobs:
             fi
             
             echo "🦩 Configuring registry garbage collection..."
-            if ! doctl registry garbage-collection configure \
-              --include-untagged-manifests \
+            if ! doctl registry garbage-collection start \
+              --tag-retention-count 5 \
+              --include-untagged \
               --exclude-tags latest \
-              --keep-tags 5 \
-              --schedule "0 0 * * 6" \
-              --include-all-repositories; then
+              --force; then
               echo "⚠️ Warning: Failed to configure garbage collection"
               # Don't exit on garbage collection failure, it's not critical
             fi
