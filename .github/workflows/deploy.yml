@@ -738,14 +738,14 @@ jobs:
           
           # Verify ConfigMaps exist
           echo "🦩 Verifying ConfigMaps..."
-          for config in web-service-config cache-updater-config; do
+          for config in web-service-config cache-updater-config frontend-config; do
             if ! kubectl get configmap -n ${REGISTRY_NAME} $config >/dev/null 2>&1; then
               echo "❌ ConfigMap $config not found"
               exit 1
             fi
           done
           
-          # Process Redis configuration
+          # Process and apply Redis first
           echo "🦩 Processing Redis configuration..."
           envsubst < kubernetes/base/redis.yaml > processed_k8s/redis.yaml
           echo "🦩 Applying Redis..."
