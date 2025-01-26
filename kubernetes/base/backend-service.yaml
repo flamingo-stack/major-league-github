@@ -78,5 +78,5 @@ spec:
   ports:
     - name: http
       port: ${SERVER_PORT}
-      targetPort: http
+      targetPort: ${SERVER_PORT}
   type: ClusterIP 
