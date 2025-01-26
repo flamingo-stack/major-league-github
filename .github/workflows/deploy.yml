@@ -581,11 +581,18 @@ jobs:
             --namespace ingress-nginx \
             --create-namespace \
             --set controller.service.annotations."kubernetes\.digitalocean\.com/load-balancer-id"="${lb_id:-""}" \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname\"=\"${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}\" \
             --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"="${LB_NAME}" \
             --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
-            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"="https" \
             --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"="443" \
-            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"="true" \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports\"=80 \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol\"=http \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"="https" \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https\"=true \
+            --set controller.service.ports.http=80 \
+            --set controller.service.ports.https=443 \
+            --set controller.service.targetPorts.http=80 \
+            --set controller.service.targetPorts.https=80 \
             --wait \
             --timeout 5m; then
             echo "❌ NGINX installation failed"
