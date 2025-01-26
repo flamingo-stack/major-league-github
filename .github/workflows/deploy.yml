@@ -885,7 +885,7 @@ jobs:
             --record-type A \
             --record-name "${{ env.DOMAIN_NAME }}" \
             --record-data "${LB_IP}" \
-            --record-ttl 5; then
+            --record-ttl 30; then
             echo "❌ Error: Failed to create DNS record"
             exit 1
           fi
