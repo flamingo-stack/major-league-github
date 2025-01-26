@@ -367,7 +367,25 @@ jobs:
           chmod +x .github/shared-functions.sh
           echo "✅ Common functions setup completed"
 
+      - name: Check for changes 🔍
+        id: check-changes
+        run: |
+          # Get the last successful commit
+          LAST_SUCCESS_SHA=$(git rev-list --first-parent --before="1 month ago" HEAD | head -n 1)
+          
+          # Check for changes in different components
+          BACKEND_CHANGED=$(git diff --quiet $LAST_SUCCESS_SHA HEAD backend/ || echo "true")
+          FRONTEND_CHANGED=$(git diff --quiet $LAST_SUCCESS_SHA HEAD frontend/ || echo "true")
+          
+          # Export the results
+          echo "backend_changed=${BACKEND_CHANGED:-false}" >> $GITHUB_OUTPUT
+          echo "frontend_changed=${FRONTEND_CHANGED:-false}" >> $GITHUB_OUTPUT
+          
+          echo "Backend changed: ${BACKEND_CHANGED:-false}"
+          echo "Frontend changed: ${FRONTEND_CHANGED:-false}"
+
       - name: Build and push web service image 🏗️
+        if: steps.check-changes.outputs.backend_changed == 'true'
         run: |
           source .github/shared-functions.sh
           
@@ -389,6 +407,7 @@ jobs:
           echo "✅ Web service image built and pushed"
 
       - name: Build and push cache updater image 🏗️
+        if: steps.check-changes.outputs.backend_changed == 'true'
         run: |
           source .github/shared-functions.sh
           
@@ -410,6 +429,7 @@ jobs:
           echo "✅ Cache updater image built and pushed"
 
       - name: Build and push frontend image 🎨 🦩
+        if: steps.check-changes.outputs.frontend_changed == 'true'
         run: |
           source .github/shared-functions.sh
           
