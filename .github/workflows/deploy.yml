@@ -690,6 +690,8 @@ jobs:
           API_TIMEOUT: "30000"
           WEB_SERVICE_PORT: "8080"
           CACHE_UPDATER_PORT: "8081"
+          WEB_SERVICE_NAME: "web-service"
+          CACHE_UPDATER_NAME: "cache-updater"
           JAVA_MAX_HEAP: ${{ env.JAVA_MAX_HEAP }}
           JAVA_MIN_HEAP: ${{ env.JAVA_MIN_HEAP }}
           BACKEND_REQUEST_MEMORY: ${{ env.BACKEND_REQUEST_MEMORY }}

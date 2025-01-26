@@ -27,7 +27,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: web-service-service
+                name: ${WEB_SERVICE_NAME}-service
                 port:
                   number: 8080
           - path: /
