@@ -537,35 +537,24 @@ jobs:
           cleanup_nginx() {
             echo "🦩 Cleaning up NGINX installation..."
             
-            # Get existing load balancer ID
-            lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
-            if [ ! -z "$lb_id" ]; then
-              echo "🦩 Found existing load balancer to reuse (ID: ${lb_id})"
+            echo "🦩 Removing NGINX installation..."
+            if ! helm uninstall ingress-nginx -n ingress-nginx --wait --timeout 5m 2>/dev/null; then
+              echo "⚠️ No existing NGINX installation found or uninstall failed"
             fi
             
-            # Delete the namespace but keep the load balancer
-            kubectl delete namespace ingress-nginx --ignore-not-found=true
-            
-            # Wait for namespace to be fully deleted with timeout
+            # Wait for all ingress-nginx pods to be removed
+            echo "🦩 Waiting for NGINX pods cleanup..."
             local timeout=60
             local counter=0
-            while kubectl get namespace ingress-nginx >/dev/null 2>&1; do
+            while kubectl get pods -n ingress-nginx 2>/dev/null | grep -q "ingress-nginx"; do
               counter=$((counter + 1))
               if [ $counter -gt $timeout ]; then
-                echo "❌ Error: Timeout waiting for namespace deletion"
+                echo "❌ Error: Timeout waiting for NGINX pods cleanup"
                 return 1
               fi
-              echo "🦩 Waiting for namespace deletion... ($counter/$timeout)"
+              echo "🦩 Waiting for NGINX pods cleanup... ($counter/$timeout)"
               sleep 2
             done
-            
-            # If we have a load balancer, wait for it to be ready again
-            if [ ! -z "$lb_id" ]; then
-              if ! wait_for_lb $lb_id; then
-                echo "❌ Load balancer is not ready after cleanup"
-                return 1
-              fi
-            fi
             
             return 0
           }
@@ -586,6 +575,8 @@ jobs:
           fi
           
           echo "🦩 Installing NGINX Ingress with ${lb_id:+"existing"}${lb_id:-"new"} load balancer"
+          
+          echo "🦩 Installing NGINX Ingress with existing load balancer configuration"
           if ! helm install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx \
             --create-namespace \
