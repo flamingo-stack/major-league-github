@@ -705,18 +705,32 @@ jobs:
           # Create a temporary directory for processed files
           mkdir -p processed_k8s
           
-          # Process config.yaml first
+          # Process and apply config first
           echo "🦩 Processing config.yaml..."
           envsubst < kubernetes/base/config.yaml > processed_k8s/config.yaml
+          echo "🦩 Applying ConfigMaps..."
+          if ! kubectl apply -n ${REGISTRY_NAME} -f processed_k8s/config.yaml; then
+            echo "❌ Error: Failed to apply ConfigMaps"
+            exit 1
+          fi
+          
+          # Verify ConfigMaps exist
+          echo "🦩 Verifying ConfigMaps..."
+          for config in web-service-config cache-updater-config; do
+            if ! kubectl get configmap -n ${REGISTRY_NAME} $config >/dev/null 2>&1; then
+              echo "❌ ConfigMap $config not found"
+              exit 1
+            fi
+          done
           
           # Process Redis configuration
           echo "🦩 Processing Redis configuration..."
           envsubst < kubernetes/base/redis.yaml > processed_k8s/redis.yaml
-          
-          # Apply config and Redis first
-          echo "🦩 Applying ConfigMaps and Redis..."
-          kubectl apply -n ${REGISTRY_NAME} -f processed_k8s/config.yaml
-          kubectl apply -n ${REGISTRY_NAME} -f processed_k8s/redis.yaml
+          echo "🦩 Applying Redis..."
+          if ! kubectl apply -n ${REGISTRY_NAME} -f processed_k8s/redis.yaml; then
+            echo "❌ Error: Failed to apply Redis"
+            exit 1
+          fi
           
           # Wait for Redis to be ready
           echo "🦩 Waiting for Redis to be ready..."
@@ -731,33 +745,61 @@ jobs:
           fi
           echo "✅ Redis is ready"
           
-          # Process and apply backend service for web-service profile
-          echo "🦩 Processing backend service for web-service..."
-          SERVICE_NAME=web-service SERVER_PORT=${WEB_SERVICE_PORT} \
+          # Process backend services
+          echo "🦩 Processing backend services..."
+          
+          # Web Service
+          echo "🦩 Processing web service..."
+          WEB_SERVICE=web-service \
+          SERVICE_NAME=web-service \
+          SERVER_PORT=${WEB_SERVICE_PORT} \
             envsubst < kubernetes/base/backend-service.yaml > processed_k8s/web-service.yaml
           
-          # Process and apply backend service for cache-updater profile
-          echo "🦩 Processing backend service for cache-updater..."
-          SERVICE_NAME=cache-updater SERVER_PORT=${CACHE_UPDATER_PORT} \
+          # Cache Updater
+          echo "🦩 Processing cache updater..."
+          CACHE_UPDATER=cache-updater \
+          SERVICE_NAME=cache-updater \
+          SERVER_PORT=${CACHE_UPDATER_PORT} \
             envsubst < kubernetes/base/backend-service.yaml > processed_k8s/cache-updater.yaml
           
-          # Process remaining files (excluding already processed ones)
+          # Apply services
+          echo "🦩 Applying services..."
+          for service in web-service cache-updater; do
+            echo "🦩 Applying $service..."
+            if ! kubectl apply -n ${REGISTRY_NAME} -f processed_k8s/$service.yaml; then
+              echo "❌ Error: Failed to apply $service"
+              kubectl get pods -n ${REGISTRY_NAME} -l app=$service
+              kubectl describe pods -n ${REGISTRY_NAME} -l app=$service
+              exit 1
+            fi
+          done
+          
+          # Wait for services to be ready
+          echo "🦩 Waiting for services to be ready..."
+          for service in web-service cache-updater; do
+            echo "🦩 Waiting for $service..."
+            if ! kubectl wait --namespace ${REGISTRY_NAME} \
+              --for=condition=ready pod \
+              --selector=app=$service \
+              --timeout=5m; then
+              echo "❌ $service is not ready"
+              kubectl get pods -n ${REGISTRY_NAME} -l app=$service
+              kubectl describe pods -n ${REGISTRY_NAME} -l app=$service
+              exit 1
+            fi
+          done
+          
+          # Process and apply remaining files
           for file in kubernetes/base/*.yaml; do
             if [[ "$file" != *"backend-service.yaml"* && \
                   "$file" != *"config.yaml"* && \
                   "$file" != *"redis.yaml"* ]]; then
               echo "🦩 Processing $file..."
               envsubst < "$file" > "processed_k8s/$(basename "$file")"
-            fi
-          done
-          
-          # Apply remaining files
-          for file in processed_k8s/*.yaml; do
-            if [[ "$file" != *"config.yaml"* && "$file" != *"redis.yaml"* ]]; then
-              echo "🦩 Applying $file..."
-              if ! kubectl apply -n ${REGISTRY_NAME} -f "$file"; then
-                echo "❌ Error: Failed to apply $file"
-                cat "$file"  # Print the file content for debugging
+              
+              echo "🦩 Applying $(basename "$file")..."
+              if ! kubectl apply -n ${REGISTRY_NAME} -f "processed_k8s/$(basename "$file")"; then
+                echo "❌ Error: Failed to apply $(basename "$file")"
                 exit 1
               fi
             fi

@@ -30,6 +30,8 @@ spec:
                 name: app-config
             - configMapRef:
                 name: ${SERVICE_NAME}-config
+            - secretRef:
+                name: app-secrets
           env:
             - name: GITHUB_TOKENS
               valueFrom:
@@ -51,7 +53,7 @@ spec:
             httpGet:
               path: /actuator/health
               port: ${SERVER_PORT}
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 30
