@@ -444,210 +444,210 @@ jobs:
           fi
           echo "✅ Image cleanup completed"
 
-      - name: Setup Kubernetes Dependencies 🎯 🦩
-        run: |
-          echo "🦩 Installing Helm..."
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+      # - name: Setup Kubernetes Dependencies 🎯 🦩
+      #   run: |
+      #     echo "🦩 Installing Helm..."
+      #     curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
           
-          echo "🦩 Adding Helm repositories..."
-          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-          helm repo update
+      #     echo "🦩 Adding Helm repositories..."
+      #     helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+      #     helm repo update
           
-          echo "🦩 Setting up SSL certificate..."
-          CERT_NAME="${{ env.DOMAIN_NAME }}-cert"
+      #     echo "🦩 Setting up SSL certificate..."
+      #     CERT_NAME="${{ env.DOMAIN_NAME }}-cert"
           
-          # Check if certificate already exists and is valid  
-          echo "🦩 Checking for existing certificate..."
-          EXISTING_CERT_ID=$(doctl compute certificate list --format ID,Name,State --no-header | grep "${CERT_NAME}" | grep "verified" | awk '{print $1}')
+      #     # Check if certificate already exists and is valid  
+      #     echo "🦩 Checking for existing certificate..."
+      #     EXISTING_CERT_ID=$(doctl compute certificate list --format ID,Name,State --no-header | grep "${CERT_NAME}" | grep "verified" | awk '{print $1}')
           
-          if [ -z "$EXISTING_CERT_ID" ]; then
-            echo "🦩 No valid certificate found. Creating new one..."
-            if ! doctl compute certificate create \
-              --name ${CERT_NAME} \
-              --type lets_encrypt \
-              --dns-names ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}; then
-              echo "❌ Error: Failed to create certificate"
-              exit 1
-            fi
+      #     if [ -z "$EXISTING_CERT_ID" ]; then
+      #       echo "🦩 No valid certificate found. Creating new one..."
+      #       if ! doctl compute certificate create \
+      #         --name ${CERT_NAME} \
+      #         --type lets_encrypt \
+      #         --dns-names ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}; then
+      #         echo "❌ Error: Failed to create certificate"
+      #         exit 1
+      #       fi
             
-            echo "🦩 Waiting for certificate to be ready..."
-            for i in {1..30}; do
-              if doctl compute certificate list | grep -q "${CERT_NAME}.*verified"; then
-                echo "✅ Certificate is ready"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "❌ Error: Certificate creation timed out"
-                exit 1
-              fi
-              echo "🦩 Waiting for certificate... (attempt $i/30)"
-              sleep 10
-            done
-          else
-            echo "✅ Using existing verified certificate with ID: $EXISTING_CERT_ID"
-          fi
+      #       echo "🦩 Waiting for certificate to be ready..."
+      #       for i in {1..30}; do
+      #         if doctl compute certificate list | grep -q "${CERT_NAME}.*verified"; then
+      #           echo "✅ Certificate is ready"
+      #           break
+      #         fi
+      #         if [ $i -eq 30 ]; then
+      #           echo "❌ Error: Certificate creation timed out"
+      #           exit 1
+      #         fi
+      #         echo "🦩 Waiting for certificate... (attempt $i/30)"
+      #         sleep 10
+      #       done
+      #     else
+      #       echo "✅ Using existing verified certificate with ID: $EXISTING_CERT_ID"
+      #     fi
           
-          echo "🦩 Installing NGINX Ingress Controller..."
+      #     echo "🦩 Installing NGINX Ingress Controller..."
           
-          # Function to sanitize name for load balancer
-          sanitize_name() {
-            echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//'
-          }
+      #     # Function to sanitize name for load balancer
+      #     sanitize_name() {
+      #       echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//'
+      #     }
           
-          # Sanitize the load balancer name
-          LB_NAME=$(sanitize_name "${{ env.DOMAIN_NAME }}-lb")
-          echo "🦩 Using sanitized load balancer name: ${LB_NAME}"
+      #     # Sanitize the load balancer name
+      #     LB_NAME=$(sanitize_name "${{ env.DOMAIN_NAME }}-lb")
+      #     echo "🦩 Using sanitized load balancer name: ${LB_NAME}"
           
-          # Function to cleanup NGINX installation
-          cleanup_nginx() {
-            echo "🦩 Cleaning up NGINX installation..."
+      #     # Function to cleanup NGINX installation
+      #     cleanup_nginx() {
+      #       echo "🦩 Cleaning up NGINX installation..."
             
-            # Get existing load balancer ID
-            local lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
-            if [ ! -z "$lb_id" ]; then
-              echo "🦩 Found existing load balancer (ID: ${lb_id})"
-              # Don't delete the load balancer, we'll reuse it
-            fi
+      #       # Get existing load balancer ID
+      #       local lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+      #       if [ ! -z "$lb_id" ]; then
+      #         echo "🦩 Found existing load balancer (ID: ${lb_id})"
+      #         # Don't delete the load balancer, we'll reuse it
+      #       fi
             
-            # Delete the namespace but keep the load balancer
-            kubectl delete namespace ingress-nginx --ignore-not-found=true
+      #       # Delete the namespace but keep the load balancer
+      #       kubectl delete namespace ingress-nginx --ignore-not-found=true
             
-            # Wait for namespace to be fully deleted with timeout
-            local timeout=60
-            local counter=0
-            while kubectl get namespace ingress-nginx >/dev/null 2>&1; do
-              counter=$((counter + 1))
-              if [ $counter -gt $timeout ]; then
-                echo "❌ Error: Timeout waiting for namespace deletion"
-                return 1
-              fi
-              echo "🦩 Waiting for namespace deletion... ($counter/$timeout)"
-              sleep 2
-            done
-            return 0
-          }
+      #       # Wait for namespace to be fully deleted with timeout
+      #       local timeout=60
+      #       local counter=0
+      #       while kubectl get namespace ingress-nginx >/dev/null 2>&1; do
+      #         counter=$((counter + 1))
+      #         if [ $counter -gt $timeout ]; then
+      #           echo "❌ Error: Timeout waiting for namespace deletion"
+      #           return 1
+      #         fi
+      #         echo "🦩 Waiting for namespace deletion... ($counter/$timeout)"
+      #         sleep 2
+      #       done
+      #       return 0
+      #     }
           
-          # Function to install NGINX
-          install_nginx() {
-            # Check if load balancer exists and get its ID
-            local lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+      #     # Function to install NGINX
+      #     install_nginx() {
+      #       # Check if load balancer exists and get its ID
+      #       local lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
             
-            if [ ! -z "$lb_id" ]; then
-              echo "🦩 Using existing load balancer (ID: ${lb_id})"
-              # Add annotation to use existing load balancer
-              helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-                --namespace ingress-nginx \
-                --create-namespace \
-                --set controller.publishService.enabled=true \
-                --set controller.service.type=LoadBalancer \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-id"="${lb_id}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
-                --set controller.service.ports.http=80 \
-                --set controller.service.ports.https=443 \
-                --set controller.service.targetPorts.http=80 \
-                --set controller.service.targetPorts.https=80 \
-                --wait --timeout 5m
-            else
-              echo "🦩 Creating new load balancer"
-              helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-                --namespace ingress-nginx \
-                --create-namespace \
-                --set controller.publishService.enabled=true \
-                --set controller.service.type=LoadBalancer \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"="${LB_NAME}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
-                --set controller.service.ports.http=80 \
-                --set controller.service.ports.https=443 \
-                --set controller.service.targetPorts.http=80 \
-                --set controller.service.targetPorts.https=80 \
-                --wait --timeout 5m
-            fi
-          }
+      #       if [ ! -z "$lb_id" ]; then
+      #         echo "🦩 Using existing load balancer (ID: ${lb_id})"
+      #         # Add annotation to use existing load balancer
+      #         helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+      #           --namespace ingress-nginx \
+      #           --create-namespace \
+      #           --set controller.publishService.enabled=true \
+      #           --set controller.service.type=LoadBalancer \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-id"="${lb_id}" \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
+      #           --set controller.service.ports.http=80 \
+      #           --set controller.service.ports.https=443 \
+      #           --set controller.service.targetPorts.http=80 \
+      #           --set controller.service.targetPorts.https=80 \
+      #           --wait --timeout 5m
+      #       else
+      #         echo "🦩 Creating new load balancer"
+      #         helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+      #           --namespace ingress-nginx \
+      #           --create-namespace \
+      #           --set controller.publishService.enabled=true \
+      #           --set controller.service.type=LoadBalancer \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"="${LB_NAME}" \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
+      #           --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
+      #           --set controller.service.ports.http=80 \
+      #           --set controller.service.ports.https=443 \
+      #           --set controller.service.targetPorts.http=80 \
+      #           --set controller.service.targetPorts.https=80 \
+      #           --wait --timeout 5m
+      #       fi
+      #     }
           
-          # Try installation with retries
-          max_attempts=3
-          attempt=1
+      #     # Try installation with retries
+      #     max_attempts=3
+      #     attempt=1
           
-          while [ $attempt -le $max_attempts ]; do
-            echo "🦩 Installation attempt $attempt of $max_attempts"
+      #     while [ $attempt -le $max_attempts ]; do
+      #       echo "🦩 Installation attempt $attempt of $max_attempts"
             
-            if ! cleanup_nginx; then
-              echo "❌ Failed to cleanup NGINX on attempt $attempt"
-              if [ $attempt -eq $max_attempts ]; then
-                echo "❌ All cleanup attempts failed"
-                exit 1
-              fi
-              attempt=$((attempt + 1))
-              continue
-            fi
+      #       if ! cleanup_nginx; then
+      #         echo "❌ Failed to cleanup NGINX on attempt $attempt"
+      #         if [ $attempt -eq $max_attempts ]; then
+      #           echo "❌ All cleanup attempts failed"
+      #           exit 1
+      #         fi
+      #         attempt=$((attempt + 1))
+      #         continue
+      #       fi
             
-            if install_nginx; then
-              echo "✅ NGINX installation successful on attempt $attempt"
-              break
-            else
-              echo "❌ NGINX installation failed on attempt $attempt"
-              kubectl get events -n ingress-nginx
+      #       if install_nginx; then
+      #         echo "✅ NGINX installation successful on attempt $attempt"
+      #         break
+      #       else
+      #         echo "❌ NGINX installation failed on attempt $attempt"
+      #         kubectl get events -n ingress-nginx
               
-              if [ $attempt -eq $max_attempts ]; then
-                echo "❌ All installation attempts failed"
-                exit 1
-              fi
+      #         if [ $attempt -eq $max_attempts ]; then
+      #           echo "❌ All installation attempts failed"
+      #           exit 1
+      #         fi
               
-              echo "🦩 Waiting before retry..."
-              sleep 30
-              attempt=$((attempt + 1))
-            fi
-          done
+      #         echo "🦩 Waiting before retry..."
+      #         sleep 30
+      #         attempt=$((attempt + 1))
+      #       fi
+      #     done
           
-          # Verify installation
-          echo "🦩 Verifying NGINX installation..."
-          if ! kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=controller \
-            --timeout=5m; then
-            echo "❌ NGINX controller not ready after installation"
-            kubectl get pods -n ingress-nginx
-            kubectl describe pods -n ingress-nginx
-            exit 1
-          fi
+      #     # Verify installation
+      #     echo "🦩 Verifying NGINX installation..."
+      #     if ! kubectl wait --namespace ingress-nginx \
+      #       --for=condition=ready pod \
+      #       --selector=app.kubernetes.io/component=controller \
+      #       --timeout=5m; then
+      #       echo "❌ NGINX controller not ready after installation"
+      #       kubectl get pods -n ingress-nginx
+      #       kubectl describe pods -n ingress-nginx
+      #       exit 1
+      #     fi
           
-          echo "✅ NGINX installation verified successfully"
+      #     echo "✅ NGINX installation verified successfully"
 
-      - name: Attach load balancer to project
-        run: |
-          echo "🦩 Attaching load balancer to project..."
-          LB_NAME="${{ env.DOMAIN_NAME }}-lb"
-          LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
-          if [ ! -z "$LB_ID" ]; then
-            LB_URN="do:loadbalancer:${LB_ID}"
-            PROJECT_ID=$(doctl projects list --format ID,Name --no-header | grep -i "${{ env.PROJECT_NAME }}" | awk '{print $1}')
-            if [ ! -z "$PROJECT_ID" ]; then
-              echo "🦩 Attaching load balancer (${LB_URN}) to project (${PROJECT_ID})..."
-              if ! doctl projects resources assign "${PROJECT_ID}" --resource="${LB_URN}"; then
-                echo "⚠️ Warning: Failed to attach load balancer to project"
-              fi
-            else
-              echo "⚠️ Warning: Could not find project ID"
-            fi
-          else
-            echo "⚠️ Warning: Could not find load balancer to attach to project"
-          fi
+      # - name: Attach load balancer to project
+      #   run: |
+      #     echo "🦩 Attaching load balancer to project..."
+      #     LB_NAME="${{ env.DOMAIN_NAME }}-lb"
+      #     LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+      #     if [ ! -z "$LB_ID" ]; then
+      #       LB_URN="do:loadbalancer:${LB_ID}"
+      #       PROJECT_ID=$(doctl projects list --format ID,Name --no-header | grep -i "${{ env.PROJECT_NAME }}" | awk '{print $1}')
+      #       if [ ! -z "$PROJECT_ID" ]; then
+      #         echo "🦩 Attaching load balancer (${LB_URN}) to project (${PROJECT_ID})..."
+      #         if ! doctl projects resources assign "${PROJECT_ID}" --resource="${LB_URN}"; then
+      #           echo "⚠️ Warning: Failed to attach load balancer to project"
+      #         fi
+      #       else
+      #         echo "⚠️ Warning: Could not find project ID"
+      #       fi
+      #     else
+      #       echo "⚠️ Warning: Could not find load balancer to attach to project"
+      #     fi
 
-          echo "🦩 Creating namespace if not exists..."
-          if ! kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -; then
-            echo "❌ Error: Failed to create namespace"
-            exit 1
-          fi
+      #     echo "🦩 Creating namespace if not exists..."
+      #     if ! kubectl create namespace ${REGISTRY_NAME} --dry-run=client -o yaml | kubectl apply -f -; then
+      #       echo "❌ Error: Failed to create namespace"
+      #       exit 1
+      #     fi
 
       - name: Create Kubernetes Secrets 🦩
         run: |
