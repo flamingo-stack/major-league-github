@@ -498,15 +498,49 @@ jobs:
           LB_NAME=$(sanitize_name "${{ env.DOMAIN_NAME }}-lb")
           echo "🦩 Using sanitized load balancer name: ${LB_NAME}"
           
+          # Function to check load balancer status
+          check_lb_status() {
+            local lb_id=$1
+            local status=$(doctl compute load-balancer get $lb_id --format Status --no-header)
+            echo $status
+          }
+          
+          # Function to wait for load balancer to be ready
+          wait_for_lb() {
+            local lb_id=$1
+            local timeout=300  # 5 minutes timeout
+            local interval=10  # Check every 10 seconds
+            local elapsed=0
+            
+            echo "🦩 Waiting for load balancer to be ready..."
+            while [ $elapsed -lt $timeout ]; do
+              local status=$(check_lb_status $lb_id)
+              
+              if [[ "$status" == "active" ]]; then
+                echo "✅ Load balancer is ready"
+                return 0
+              elif [[ "$status" == "errored" ]]; then
+                echo "❌ Load balancer is in error state"
+                return 1
+              fi
+              
+              echo "🦩 Load balancer status: $status (waited ${elapsed}s)"
+              sleep $interval
+              elapsed=$((elapsed + interval))
+            done
+            
+            echo "❌ Timeout waiting for load balancer"
+            return 1
+          }
+          
           # Function to cleanup NGINX installation
           cleanup_nginx() {
             echo "🦩 Cleaning up NGINX installation..."
             
             # Get existing load balancer ID
-            local lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+            lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
             if [ ! -z "$lb_id" ]; then
-              echo "🦩 Found existing load balancer (ID: ${lb_id})"
-              # Don't delete the load balancer, we'll reuse it
+              echo "🦩 Found existing load balancer to reuse (ID: ${lb_id})"
             fi
             
             # Delete the namespace but keep the load balancer
@@ -524,104 +558,51 @@ jobs:
               echo "🦩 Waiting for namespace deletion... ($counter/$timeout)"
               sleep 2
             done
+            
+            # If we have a load balancer, wait for it to be ready again
+            if [ ! -z "$lb_id" ]; then
+              if ! wait_for_lb $lb_id; then
+                echo "❌ Load balancer is not ready after cleanup"
+                return 1
+              fi
+            fi
+            
             return 0
           }
           
-          # Function to install NGINX
-          install_nginx() {
-            # Check if load balancer exists and get its ID
-            local lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
-            
-            if [ ! -z "$lb_id" ]; then
-              echo "🦩 Using existing load balancer (ID: ${lb_id})"
-              # Add annotation to use existing load balancer
-              helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-                --namespace ingress-nginx \
-                --create-namespace \
-                --set controller.publishService.enabled=true \
-                --set controller.service.type=LoadBalancer \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-id"="${lb_id}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
-                --set controller.service.ports.http=80 \
-                --set controller.service.ports.https=443 \
-                --set controller.service.targetPorts.http=80 \
-                --set controller.service.targetPorts.https=80 \
-                --wait --timeout 5m
-            else
-              echo "🦩 Creating new load balancer"
-              helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-                --namespace ingress-nginx \
-                --create-namespace \
-                --set controller.publishService.enabled=true \
-                --set controller.service.type=LoadBalancer \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"="${LB_NAME}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
-                --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
-                --set controller.service.ports.http=80 \
-                --set controller.service.ports.https=443 \
-                --set controller.service.targetPorts.http=80 \
-                --set controller.service.targetPorts.https=80 \
-                --wait --timeout 5m
-            fi
-          }
+          # Install NGINX Ingress Controller
+          echo "🦩 Installing NGINX Ingress Controller..."
           
-          # Try installation with retries
-          max_attempts=3
-          attempt=1
+          # Get existing load balancer ID before cleanup
+          lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+          if [ ! -z "$lb_id" ]; then
+            echo "🦩 Found existing load balancer to reuse (ID: ${lb_id})"
+          fi
           
-          while [ $attempt -le $max_attempts ]; do
-            echo "🦩 Installation attempt $attempt of $max_attempts"
-            
-            if ! cleanup_nginx; then
-              echo "❌ Failed to cleanup NGINX on attempt $attempt"
-              if [ $attempt -eq $max_attempts ]; then
-                echo "❌ All cleanup attempts failed"
-                exit 1
-              fi
-              attempt=$((attempt + 1))
-              continue
-            fi
-            
-            if install_nginx; then
-              echo "✅ NGINX installation successful on attempt $attempt"
-              break
-            else
-              echo "❌ NGINX installation failed on attempt $attempt"
-              kubectl get events -n ingress-nginx
-              
-              if [ $attempt -eq $max_attempts ]; then
-                echo "❌ All installation attempts failed"
-                exit 1
-              fi
-              
-              echo "🦩 Waiting before retry..."
-              sleep 30
-              attempt=$((attempt + 1))
-            fi
-          done
-          
-          # Verify installation
-          echo "🦩 Verifying NGINX installation..."
-          if ! kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=controller \
-            --timeout=5m; then
-            echo "❌ NGINX controller not ready after installation"
-            kubectl get pods -n ingress-nginx
-            kubectl describe pods -n ingress-nginx
+          # Cleanup existing installation
+          if ! cleanup_nginx; then
+            echo "❌ Failed to cleanup NGINX installation"
             exit 1
           fi
           
-          echo "✅ NGINX installation verified successfully"
+          echo "🦩 Installing NGINX Ingress with ${lb_id:+"existing"}${lb_id:-"new"} load balancer"
+          if ! helm install ingress-nginx ingress-nginx/ingress-nginx \
+            --namespace ingress-nginx \
+            --create-namespace \
+            --set controller.service.annotations."kubernetes\.digitalocean\.com/load-balancer-id"="${lb_id:-""}" \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"="${LB_NAME}" \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"="${EXISTING_CERT_ID}" \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"="https" \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"="443" \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"="true" \
+            --wait \
+            --timeout 5m; then
+            echo "❌ NGINX installation failed"
+            kubectl get events -n ingress-nginx --sort-by='.lastTimestamp'
+            exit 1
+          fi
+          
+          echo "✅ NGINX Ingress Controller installed successfully"
 
       - name: Attach load balancer to project
         run: |
