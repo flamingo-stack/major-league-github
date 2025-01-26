@@ -18,12 +18,12 @@ import lombok.extern.slf4j.Slf4j;
 public class RedisCacheService extends CacheServiceAbs {
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final ValueOperations<String, Object> valueOps;
+    protected final ValueOperations<String, Object> valueOps;
     private static final String EXPIRATION_SUFFIX = ":expiration";
 
     public RedisCacheService(Gson gson,
             RedisTemplate<String, Object> redisTemplate) {
-        super( gson);
+        super(gson);
         this.redisTemplate = redisTemplate;
         this.valueOps = redisTemplate.opsForValue();
     }
@@ -54,7 +54,7 @@ public class RedisCacheService extends CacheServiceAbs {
         return 0L;
     }
 
-    private String buildRedisKey(String cachePath, String key) {
+    protected String buildRedisKey(String cachePath, String key) {
         return cachePath + getDelimiter() + key;
     }
 

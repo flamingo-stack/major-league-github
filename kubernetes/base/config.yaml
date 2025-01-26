@@ -18,6 +18,7 @@ metadata:
 data:
   SERVER_PORT: "${WEB_SERVICE_PORT}"
   SPRING_PROFILES_ACTIVE: "${WEB_SERVICE_NAME}"
+  CACHE_MODE: "read-only"
 ---
 apiVersion: v1
 kind: ConfigMap
