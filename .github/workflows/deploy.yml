@@ -580,7 +580,7 @@ jobs:
 
           echo "${{ env.DOMAIN_NAME }}"
           echo "${{ env.DOMAIN_SUFFIX }}"
-          FULL_DOMAIN_NAME =${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }};
+          FULL_DOMAIN_NAME ="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
           echo "FULL_DOMAIN_NAME: ${FULL_DOMAIN_NAME}"
           echo "LB_NAME: ${LB_NAME}"
           echo "EXISTING_CERT_ID: ${EXISTING_CERT_ID}"
