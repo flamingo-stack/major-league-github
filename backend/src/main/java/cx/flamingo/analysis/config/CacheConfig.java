@@ -11,7 +11,9 @@ import cx.flamingo.analysis.cache.impl.ReadOnlyCacheService;
 import cx.flamingo.analysis.cache.impl.RedisCacheService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Configuration
 public class CacheConfig {
 
@@ -63,12 +65,14 @@ public class CacheConfig {
                                       DiskCacheService diskCache,
                                       ReadOnlyCacheService readOnlyCache) {
         CacheMode mode = CacheMode.fromString(cacheMode);
+        CacheImplementation impl = CacheImplementation.fromString(cacheImplementation);
+        
+        log.info("Initializing cache with mode: {} and implementation: {}", mode.getValue(), impl.getValue());
         
         if (mode == CacheMode.READ_ONLY) {
             return readOnlyCache;
         }
 
-        CacheImplementation impl = CacheImplementation.fromString(cacheImplementation);
         return impl == CacheImplementation.REDIS ? redisCache : diskCache;
     }
 } 
