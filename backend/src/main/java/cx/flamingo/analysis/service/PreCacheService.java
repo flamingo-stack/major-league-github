@@ -34,6 +34,7 @@ public class PreCacheService {
 
         for (Language language : languages) {
             try {
+                log.info("Refreshing cache for language {}", language.getName());
                 // Force cache refresh for all cities
                 contributorController.getContributors(null, null, null, null, language.getId(), 15, GithubService.GithubApiPriority.Low);
             } catch (Exception e) {
