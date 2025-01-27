@@ -16,9 +16,15 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
 
     return (
         <Box sx={{ 
-            borderBottom: 1,
-            borderColor: 'divider',
-            minHeight: { xs: 70, sm: 80 }
+            borderBottom: '1px solid',
+            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+            bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+            position: 'sticky',
+            top: 0,
+            zIndex: 1000,
+            boxShadow: theme => theme.palette.mode === 'dark' 
+              ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+              : '0 4px 12px rgba(0, 0, 0, 0.1)',
         }}>
             <Container maxWidth="lg">
                 <Box sx={{ 
@@ -26,7 +32,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: { xs: 1, sm: 2 },
-                    minHeight: { xs: 70, sm: 80 },
+                    minHeight: { xs: 64, sm: 72 },
                     px: { xs: 2, sm: 3 }
                 }}>
                     <Box sx={{ 
@@ -38,8 +44,8 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                     }}>
                         <Logo 
                             sx={{ 
-                                fontSize: { xs: 20, sm: 32 },
-                                color: theme => theme.palette.mode === 'dark' ? 'white' : 'black',
+                                fontSize: { xs: 20, sm: 28 },
+                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                                 flexShrink: 0
                             }}
                         />
@@ -47,9 +53,9 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                             variant="h6" 
                             sx={{ 
                                 fontWeight: 600,
-                                fontSize: { xs: '0.9rem', sm: '1.25rem' },
+                                fontSize: { xs: '0.9rem', sm: '1.1rem' },
                                 letterSpacing: '-0.025em',
-                                color: theme => theme.palette.mode === 'dark' ? 'white' : 'black',
+                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis'
@@ -61,7 +67,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                     <Box sx={{ 
                         display: 'flex', 
                         alignItems: 'center', 
-                        gap: { xs: 0.5, sm: 2 }, 
+                        gap: { xs: 1, sm: 2 }, 
                         flexShrink: 0 
                     }}>
                         <Link
@@ -72,19 +78,21 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 1,
-                                px: { xs: 1, sm: 2 },
-                                py: { xs: 0.5, sm: 1 },
-                                borderRadius: 1,
-                                border: 1,
-                                borderColor: 'divider',
-                                color: 'text.secondary',
+                                px: { xs: 1.5, sm: 2 },
+                                py: { xs: 0.75, sm: 1 },
+                                borderRadius: '6px',
+                                border: '1px solid',
+                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
                                 textDecoration: 'none',
                                 whiteSpace: 'nowrap',
-                                fontSize: { xs: '0.75rem', sm: '1rem' },
-                                height: { xs: 28, sm: 'auto' },
+                                fontSize: { xs: '0.875rem', sm: '0.875rem' },
+                                height: { xs: 32, sm: 36 },
+                                transition: 'all 0.2s',
                                 '&:hover': {
-                                    borderColor: 'text.primary',
-                                    color: 'text.primary'
+                                    borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
                                 }
                             }}
                         >
@@ -92,16 +100,19 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                         </Link>
                         <IconButton 
                             onClick={onToggleTheme}
-                            size={isMobile ? "small" : "medium"}
+                            size="small"
                             sx={{
-                                color: 'text.secondary',
-                                p: { xs: 0.5, sm: 1 },
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                p: 0.75,
                                 '&:hover': {
-                                    color: 'text.primary'
+                                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
                                 }
                             }}
                         >
-                            {isDarkMode ? <LightMode sx={{ fontSize: { xs: 18, sm: 24 } }} /> : <DarkMode sx={{ fontSize: { xs: 18, sm: 24 } }} />}
+                            {isDarkMode ? 
+                                <LightMode sx={{ fontSize: '1.25rem' }} /> : 
+                                <DarkMode sx={{ fontSize: '1.25rem' }} />
+                            }
                         </IconButton>
                     </Box>
                 </Box>

@@ -45,66 +45,81 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
         }}
       >
         {/* Left side - Team message */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Typography
-            variant="body2"
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            gap: { xs: 0.75, sm: 1 },
+            flexWrap: 'wrap'
+          }}
+        >
+          <Box
             sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
               color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+              fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+              whiteSpace: 'nowrap'
             }}
           >
-            Made with ❤️ in
-          </Typography>
-          <Link
-            href="https://www.google.com/maps/place/Miami+Beach,+FL"
-            target="_blank"
-            rel="noopener noreferrer"
+            Made with ❤️ by <span style={{ display: 'inline-flex', marginLeft: '1px' }}>🦩</span>
+          </Box>
+          <Box
             sx={{
-              color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-              textDecoration: 'none',
-              '&:hover': {
-                textDecoration: 'underline',
-              }
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+              fontSize: { xs: '0.8125rem', sm: '0.875rem' }
             }}
-          >
-            <Typography
-              variant="body2"
-              component="span"
+          > in 
+            <Link
+              href="https://www.google.com/maps/place/Miami+Beach,+FL"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+                '&:hover': {
+                  textDecoration: 'underline',
+                }
+              }}
             >
               Miami Beach
-            </Typography>
-          </Link>
-          <Typography
-            variant="body2"
-            sx={{
-              color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-            }}
-          >
-            by the 🦩 team
-          </Typography>
+            </Link>
+          </Box>
         </Box>
 
         {/* Right side - CTA and expand button */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <Box 
-            onClick={() => setIsExpanded(!isExpanded)}
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 2,
-              cursor: 'pointer',
-              '&:hover': {
-                '& .MuiTypography-root': {
-                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                }
-              }
+        <Box 
+          onClick={() => setIsExpanded(!isExpanded)}
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'flex-start',
+            gap: { xs: 0.25, sm: 0.5 },
+            cursor: 'pointer',
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+            textAlign: 'right',
+            maxWidth: '100%'
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              whiteSpace: 'nowrap'
             }}
           >
             <Avatar
               src={hiringManager.avatarUrl}
               alt={hiringManager.name}
               sx={{ 
-                width: 32, 
-                height: 32,
+                width: { xs: 24, sm: 28 }, 
+                height: { xs: 24, sm: 28 },
                 border: '2px solid',
                 borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
               }}
@@ -115,9 +130,13 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                 color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                 fontWeight: 500,
                 transition: 'color 0.2s',
+                fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                '&:hover': {
+                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                }
               }}
             >
-              Come work with us • {jobOpenings.length} open position{jobOpenings.length !== 1 ? 's' : ''}
+              Come work with us
             </Typography>
             <IconButton 
               size="small"
@@ -127,11 +146,28 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               }}
               sx={{ 
                 color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                p: 0.5,
+                p: { xs: 0.25, sm: 0.5 },
               }}
             >
-              {isExpanded ? <ExpandLessIcon sx={{ fontSize: '1.25rem' }} /> : <ExpandMoreIcon sx={{ fontSize: '1.25rem' }} />}
+              {isExpanded ? 
+                <ExpandLessIcon sx={{ fontSize: { xs: '1rem', sm: '1.1rem' } }} /> : 
+                <ExpandMoreIcon sx={{ fontSize: { xs: '1rem', sm: '1.1rem' } }} />
+              }
             </IconButton>
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+              fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+              width: '100%',
+              justifyContent: 'flex-end',
+              mt: { xs: -0.5, sm: -0.25 }
+            }}
+          >
+            {jobOpenings.length} open position{jobOpenings.length !== 1 ? 's' : ''}
           </Box>
         </Box>
       </Box>

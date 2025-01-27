@@ -33,6 +33,8 @@ import cx.flamingo.analysis.exception.GithubTooFastException;
 import cx.flamingo.analysis.graphql.GitHubQueryBuilder;
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Contributor;
+import cx.flamingo.analysis.model.HiringManagerProfile;
+import cx.flamingo.analysis.model.HiringManagerProfile.SocialLink;
 import cx.flamingo.analysis.model.Language;
 import cx.flamingo.analysis.rate.GithubToken;
 import cx.flamingo.analysis.rate.GithubTokenRateManager;
@@ -527,5 +529,157 @@ public class GithubService {
             }
         }
         return 0;
+    }
+
+    public record GitHubProfile(
+        String login,
+        String id,
+        String node_id,
+        String avatar_url,
+        String gravatar_id,
+        String url,
+        String html_url,
+        String followers_url,
+        String following_url,
+        String gists_url,
+        String starred_url,
+        String subscriptions_url,
+        String organizations_url,
+        String repos_url,
+        String events_url,
+        String received_events_url,
+        String type,
+        String user_view_type,
+        boolean site_admin,
+        String name,
+        String company,
+        String blog,
+        String location,
+        String email,
+        Boolean hireable,
+        String bio,
+        String twitter_username,
+        int public_repos,
+        int public_gists,
+        int followers,
+        int following,
+        String created_at,
+        String updated_at,
+        int private_gists,
+        int total_private_repos,
+        int owned_private_repos,
+        int disk_usage,
+        int collaborators,
+        boolean two_factor_authentication
+    ) {}
+
+    public HiringManagerProfile fetchUserProfile(String username) {
+        // First get the basic profile info using REST API
+        String githubApiUrl = String.format("https://api.github.com/users/%s", username);
+        
+        Pair<WebClient, GithubToken> webClientToGithubToken = githubTokenRateManager.getBestAvailableClient();
+        var response = webClientToGithubToken.getValue0().get()
+            .uri(githubApiUrl)
+            .retrieve()
+            .bodyToMono(String.class)
+            .block();
+
+        GitHubProfile githubProfile = gson.fromJson(response, GitHubProfile.class);
+        
+        // Then get social accounts using GraphQL API
+        String graphqlQuery = """
+            query {
+              user(login: "%s") {
+                login
+                name
+                bio
+                avatarUrl
+                twitterUsername
+                socialAccounts(first: 10) {
+                  nodes {
+                    provider
+                    url
+                  }
+                }
+              }
+            }
+        """.formatted(username);
+
+        JsonObject queryJson = new JsonObject();
+        queryJson.addProperty("query", graphqlQuery);
+        
+        var graphqlResponse = webClientToGithubToken.getValue0().post()
+            .uri("https://api.github.com/graphql")
+            .bodyValue(gson.toJson(queryJson))
+            .retrieve()
+            .bodyToMono(String.class)
+            .block();
+
+        JsonObject graphqlData = JsonParser.parseString(graphqlResponse)
+            .getAsJsonObject()
+            .getAsJsonObject("data")
+            .getAsJsonObject("user");
+        
+        String role = "Engineering Manager";
+        String bio = "Building OpenFrame - the open-source platform helping MSPs break free from vendor lock-in.";
+        
+        if (githubProfile.bio != null && !githubProfile.bio.isEmpty()) {
+            String[] bioLines = githubProfile.bio.split("\n", 2);
+            if (bioLines.length > 0) {
+                role = bioLines[0].trim();
+                if (bioLines.length > 1) {
+                    bio = bioLines[1].trim();
+                }
+            }
+        }
+
+        List<SocialLink> socialLinks = new ArrayList<>();
+        
+        // Add social accounts from GraphQL response
+        JsonArray socialAccounts = graphqlData.getAsJsonObject("socialAccounts")
+            .getAsJsonArray("nodes");
+        
+        for (JsonElement account : socialAccounts) {
+            JsonObject accountObj = account.getAsJsonObject();
+            String provider = accountObj.get("provider").getAsString().toLowerCase();
+            String url = accountObj.get("url").getAsString();
+            
+            socialLinks.add(SocialLink.builder()
+                .platform(provider)
+                .url(url)
+                .build());
+        }
+
+        // Always add GitHub
+        socialLinks.add(SocialLink.builder()
+            .platform("github")
+            .url(String.format("https://github.com/%s", username))
+            .build());
+
+        // Add email if present
+        if (githubProfile.email != null && !githubProfile.email.trim().isEmpty()) {
+            socialLinks.add(SocialLink.builder()
+                .platform("email")
+                .url("mailto:" + githubProfile.email.trim())
+                .build());
+        }
+
+        return HiringManagerProfile.builder()
+            .name(githubProfile.name != null ? githubProfile.name : username)
+            .avatarUrl(githubProfile.avatar_url)
+            .role(role)
+            .bio(bio)
+            .socialLinks(socialLinks)
+            .build();
+    }
+
+    private String determineWebsitePlatform(String url) {
+        url = url.toLowerCase();
+        if (url.contains("linkedin.com")) return "linkedin";
+        if (url.contains("instagram.com")) return "instagram";
+        if (url.contains("twitter.com") || url.contains("x.com")) return "twitter";
+        if (url.contains("facebook.com")) return "facebook";
+        if (url.contains("github.com")) return "github";
+        return "website";
     }
 }
