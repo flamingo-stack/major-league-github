@@ -35,10 +35,10 @@ export async function getContributors({
     if (maxResults) params.set('maxResults', maxResults.toString());
 
     const response = await axios.get<ApiResponse<Contributor[]>>(`/api/contributors?${params.toString()}`, { signal });
-    if (response.data.status === 'error') {
-        throw new Error(response.data.message || 'Failed to fetch contributors');
+    if (response.data.status !== 'success') {
+        throw new Error(response.data.message);
     }
-    return response.data.data || [];
+    return response.data.data;
 }
 
 // Autocomplete endpoints
@@ -59,10 +59,10 @@ export const autocompleteRegions = async (
       indexes: null // This will prevent axios from adding the [] suffix
     }
   });
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch regions');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
-  return response.data.data || [];
+  return response.data.data;
 };
 
 export const autocompleteStates = async (
@@ -82,10 +82,10 @@ export const autocompleteStates = async (
       indexes: null // This will prevent axios from adding the [] suffix
     }
   });
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch states');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
-  return response.data.data || [];
+  return response.data.data;
 };
 
 export const autocompleteCities = async (
@@ -102,10 +102,10 @@ export const autocompleteCities = async (
     },
     signal
   });
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch cities');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
-  return response.data.data || [];
+  return response.data.data;
 };
 
 export const autocompleteLanguages = async (
@@ -118,10 +118,10 @@ export const autocompleteLanguages = async (
     },
     signal
   });
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch languages');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
-  return response.data.data || [];
+  return response.data.data;
 };
 
 export const autocompleteTeams = async (
@@ -134,64 +134,49 @@ export const autocompleteTeams = async (
     },
     signal
   });
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch teams');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
-  return response.data.data || [];
+  return response.data.data;
 };
 
 // Entity endpoints
 export const getRegionById = async (id: string): Promise<Region> => {
   const response = await axios.get<ApiResponse<Region>>(`/api/entities/regions/${id}`);
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch region');
-  }
-  if (!response.data.data) {
-    throw new Error('Region not found');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
   return response.data.data;
 };
 
 export const getStateById = async (id: string): Promise<State> => {
   const response = await axios.get<ApiResponse<State>>(`/api/entities/states/${id}`);
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch state');
-  }
-  if (!response.data.data) {
-    throw new Error('State not found');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
   return response.data.data;
 };
 
 export const getCityById = async (id: string): Promise<City> => {
   const response = await axios.get<ApiResponse<City>>(`/api/entities/cities/${id}`);
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch city');
-  }
-  if (!response.data.data) {
-    throw new Error('City not found');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
   return response.data.data;
 };
 
 export const getLanguageById = async (id: string): Promise<Language> => {
   const response = await axios.get<ApiResponse<Language>>(`/api/entities/languages/${id}`);
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch language');
-  }
-  if (!response.data.data) {
-    throw new Error('Language not found');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
   return response.data.data;
 };
 
 export const getTeamById = async (id: string): Promise<SoccerTeam> => {
   const response = await axios.get<ApiResponse<SoccerTeam>>(`/api/entities/teams/${id}`);
-  if (response.data.status === 'error') {
-    throw new Error(response.data.message || 'Failed to fetch team');
-  }
-  if (!response.data.data) {
-    throw new Error('Team not found');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
   }
   return response.data.data;
 }; 

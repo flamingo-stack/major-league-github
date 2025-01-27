@@ -8,7 +8,7 @@ import { RegionAutocomplete } from './RegionAutocomplete';
 import { StateAutocomplete } from './StateAutocomplete';
 import { CityAutocomplete } from './CityAutocomplete';
 import { useEffect, useState } from 'react';
-import { autocompleteLanguages } from '../services/api';
+import { getLanguageById, getTeamById, getRegionById, getStateById, getCityById, autocompleteLanguages } from '../services/api';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
@@ -46,18 +46,12 @@ export const FiltersPanel = () => {
       try {
         // Load language or set default to Java
         if (urlState.languageId) {
-          const language = await queryClient.fetchQuery({
-            queryKey: ['language', urlState.languageId],
-            queryFn: () => fetch(`/api/entities/languages/${urlState.languageId}`).then(res => res.json())
-          });
+          const language = await getLanguageById(urlState.languageId);
           setSelectedLanguage(language);
           setLanguageInput(language.displayName);
         } else {
           // Set Java as default
-          const languages = await queryClient.fetchQuery({
-            queryKey: ['languages', 'Java'],
-            queryFn: ({ signal }) => autocompleteLanguages('Java', signal)
-          });
+          const languages = await autocompleteLanguages('Java');
           const java = languages.find(lang => lang.name === 'Java');
           if (java) {
             setSelectedLanguage(java);
@@ -71,58 +65,56 @@ export const FiltersPanel = () => {
 
         // Load team
         if (urlState.teamId) {
-          const team = await queryClient.fetchQuery({
-            queryKey: ['team', urlState.teamId],
-            queryFn: () => fetch(`/api/entities/teams/${urlState.teamId}`).then(res => res.json())
-          });
+          const team = await getTeamById(urlState.teamId);
           setSelectedTeam(team);
           setTeamInput(team.name);
         }
 
         // Load region
         if (urlState.selectedRegionId) {
-          const region = await queryClient.fetchQuery({
-            queryKey: ['region', urlState.selectedRegionId],
-            queryFn: () => fetch(`/api/entities/regions/${urlState.selectedRegionId}`).then(res => res.json())
-          });
+          const region = await getRegionById(urlState.selectedRegionId);
           setSelectedRegion(region);
           setRegionInput(region.displayName);
         }
 
         // Load state
         if (urlState.stateId) {
-          const state = await queryClient.fetchQuery({
-            queryKey: ['state', urlState.stateId],
-            queryFn: () => fetch(`/api/entities/states/${urlState.stateId}`).then(res => res.json())
-          });
+          const state = await getStateById(urlState.stateId);
           setSelectedState(state);
           setStateInput(state.name);
         }
 
         // Load city
         if (urlState.selectedCityId) {
-          const city = await queryClient.fetchQuery({
-            queryKey: ['city', urlState.selectedCityId],
-            queryFn: () => fetch(`/api/entities/cities/${urlState.selectedCityId}`).then(res => res.json())
-          });
+          const city = await getCityById(urlState.selectedCityId);
           setSelectedCity(city);
           setCityInput(city.name);
         }
       } catch (error) {
         console.error('Error loading initial state:', error);
-        // Clear invalid IDs from URL state
-        updateUrlState({
-          languageId: null,
-          teamId: null,
-          selectedRegionId: null,
-          stateId: null,
-          selectedCityId: null
-        });
+        // Only clear the problematic ID from URL state
+        const newState = { ...urlState };
+        if (error instanceof Error && error.message.includes('language')) {
+          newState.languageId = null;
+        }
+        if (error instanceof Error && error.message.includes('team')) {
+          newState.teamId = null;
+        }
+        if (error instanceof Error && error.message.includes('region')) {
+          newState.selectedRegionId = null;
+        }
+        if (error instanceof Error && error.message.includes('state')) {
+          newState.stateId = null;
+        }
+        if (error instanceof Error && error.message.includes('city')) {
+          newState.selectedCityId = null;
+        }
+        updateUrlState(newState);
       }
     };
 
     loadInitialState();
-  }, [urlState.languageId, urlState.teamId, urlState.selectedRegionId, urlState.stateId, urlState.selectedCityId]);
+  }, []);
 
   // Handle selection changes
   const handleLanguageChange = (language: Language | null) => {

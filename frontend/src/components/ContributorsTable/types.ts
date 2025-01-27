@@ -1,4 +1,4 @@
-import { Contributor } from '../../services/api';
+import { Contributor } from '../../types/api';
 
 export interface SoccerTeam {
     id: string;

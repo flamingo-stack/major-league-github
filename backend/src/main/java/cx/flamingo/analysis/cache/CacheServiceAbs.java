@@ -197,13 +197,7 @@ public abstract class CacheServiceAbs {
         return key.toString();
     }
 
-    private Boolean isCacheReady = null;
-
     public boolean isCacheReady() {
-
-        if (isCacheReady != null) {
-            return isCacheReady;
-        }
 
         if (!cacheShouldBeReady) {
             return true;
@@ -212,9 +206,7 @@ public abstract class CacheServiceAbs {
         Optional<Boolean> isReady = get(CACHE_IS_READY_PATH, CACHE_IS_READY_KEY, new TypeToken<Boolean>() {
         }, null);
 
-        isCacheReady = isReady.isPresent() && isReady.get();
-
-        return isCacheReady;
+        return isReady.isPresent() && isReady.get();
     }
 
     private static final String CACHE_IS_READY_PATH = "cache_is_ready";

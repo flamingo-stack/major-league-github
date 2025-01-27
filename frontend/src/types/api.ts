@@ -1,7 +1,7 @@
 export interface ApiResponse<T> {
-    status: 'success' | 'error';
-    message?: string;
-    data: T | null;
+    status: string;
+    message: string;
+    data: T;
 }
 
 export interface City {
