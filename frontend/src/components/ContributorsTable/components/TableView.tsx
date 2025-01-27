@@ -22,10 +22,27 @@ import { ContributorInfo } from './ContributorInfo';
 import { LocationInfo } from './LocationInfo';
 import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
+import { ErrorMessage } from '../../ErrorMessage';
 
-export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLoading }) => {
+export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
     if (isLoading) {
         return <LoadingSpinner message="Loading contributors..." />;
+    }
+
+    if (error) {
+        return (
+            <Box sx={{ p: 2 }}>
+                <ErrorMessage message={error instanceof Error ? error.message : 'An unknown error occurred'} />
+            </Box>
+        );
+    }
+
+    if (!contributors || contributors.length === 0) {
+        return (
+            <Box sx={{ p: 2 }}>
+                <ErrorMessage message="No contributors found" />
+            </Box>
+        );
     }
 
     const columns = [
