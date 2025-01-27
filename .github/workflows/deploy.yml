@@ -416,24 +416,19 @@ jobs:
           echo "🦩 Building frontend image..."
           if ! docker build frontend \
             --build-arg BACKEND_API_URL=https://${DOMAIN_NAME}.${DOMAIN_SUFFIX} \
-            -t ${REGISTRY}/frontend:${VERSION} \
-            -t ${REGISTRY}/frontend:latest; then
+            -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} \
+            -t ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
             echo "❌ Error: Failed to build frontend image"
             exit 1
           fi
           
           echo "🦩 Pushing frontend images..."
-          if ! docker_retry "docker push ${REGISTRY}/frontend:${VERSION}"; then
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}"; then
             echo "❌ Failed to push frontend version image"
             exit 1
           fi
           
-          echo "🦩 Tagging and pushing latest frontend..."
-          if ! docker_retry "docker tag ${REGISTRY}/frontend:${VERSION} ${REGISTRY}/frontend:latest"; then
-            echo "❌ Failed to tag frontend latest image"
-            exit 1
-          fi
-          if ! docker_retry "docker push ${REGISTRY}/frontend:latest"; then
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest"; then
             echo "❌ Failed to push frontend latest image"
             exit 1
           fi
