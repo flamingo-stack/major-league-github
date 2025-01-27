@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import cx.flamingo.analysis.cache.CacheServiceAbs;
+import cx.flamingo.analysis.config.CacheConfig.CacheMode;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 

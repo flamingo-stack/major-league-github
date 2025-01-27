@@ -21,7 +21,8 @@ public class CacheConfig {
     @RequiredArgsConstructor
     public enum CacheMode {
         READ_ONLY("read-only"),
-        READ_WRITE("read-write");
+        READ_WRITE("read-write"),
+        FORCE_UPDATE("force-update");
 
         private final String value;
 
@@ -66,6 +67,9 @@ public class CacheConfig {
                                       ReadOnlyCacheService readOnlyCache) {
         CacheMode mode = CacheMode.fromString(cacheMode);
         CacheImplementation impl = CacheImplementation.fromString(cacheImplementation);
+        redisCache.setCacheMode(mode);
+        diskCache.setCacheMode(mode);   
+        readOnlyCache.setCacheMode(mode);
         
         log.info("Initializing cache with mode: {} and implementation: {}", mode.getValue(), impl.getValue());
         

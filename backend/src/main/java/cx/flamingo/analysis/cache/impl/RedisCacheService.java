@@ -107,4 +107,5 @@ public class RedisCacheService extends CacheServiceAbs {
             log.error("Failed to invalidate Redis cache for key '{}': {}", redisKey, e.getMessage());
         }
     }
+
 }

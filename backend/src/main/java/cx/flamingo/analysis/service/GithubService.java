@@ -176,8 +176,9 @@ public class GithubService {
             try {
                 response = executeGraphQLQuery(query, language.getName(), pageCount, city);
             } catch (GithubTimeoutException th) {
-                log.warn("Timeout occurred, will reduce the return size");
                 numberOfUsers = Math.max(1, numberOfUsers / 3);
+                log.warn("Timeout occurred, will reduce the return size to {} users", numberOfUsers);
+                
                 continue;
             } catch (GithubRateLimitException th) {
                 log.warn("Rate limit exceeded, switching to next token");
@@ -204,8 +205,9 @@ public class GithubService {
             }
 
             if (response == null || !response.has("data")) {
-                log.warn("No data in response for city: {} and language: {}, will retry. Retries left: {}", city.getName(), language.getName(), maxRetries);
+                numberOfUsers = Math.max(1, numberOfUsers / 3);
                 maxRetries--;
+                log.warn("No data in response for city: {} and language: {}, will retry. Retries left: {}, number of users: {}", city.getName(), language.getName(), maxRetries, numberOfUsers);
                 continue;
             }
 

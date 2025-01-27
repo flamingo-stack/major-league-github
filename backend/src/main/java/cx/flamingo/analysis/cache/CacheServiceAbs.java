@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
+import cx.flamingo.analysis.config.CacheConfig.CacheMode;
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Contributor;
 import lombok.Data;
@@ -66,7 +67,8 @@ public abstract class CacheServiceAbs {
             Long age = System.currentTimeMillis() - lastModified;
             boolean isStale = age > refreshInterval;
             if (isStale) {
-                log.info("Cache entry is stale (age: {} minutes): {}", Duration.ofMillis(age).toMinutes(), cachePath + ":" + key);
+                log.info("Cache entry is stale (age: {} minutes): {}", Duration.ofMillis(age).toMinutes(),
+                        cachePath + ":" + key);
             }
             return isStale;
         } catch (Throwable e) {
@@ -78,21 +80,30 @@ public abstract class CacheServiceAbs {
     /**
      * Specialized method for caching GitHub API responses
      */
-    public Optional<JsonObject> getGitHubApiResponse(City city, String language, int pageNumber, Supplier<JsonObject> supplier) {
+    public Optional<JsonObject> getGitHubApiResponse(City city, String language, int pageNumber,
+            Supplier<JsonObject> supplier) {
         String cacheKey = generateGithubCacheKey(city, language, pageNumber);
-        Optional<JsonObject> cachedResponse = get(getGithubCachePath(), cacheKey, new TypeToken<JsonObject>() {
-        }, githubRefreshIntervalMs);
 
-        if (cachedResponse.isPresent() && isCacheEntryStale(getGithubCachePath(), cacheKey, githubRefreshIntervalMs)) {
-            invalidate(getGithubCachePath(), cacheKey);
-            // Start async refresh but don't wait for it
-            doHttpCallAsync(supplier, getGithubCachePath(), cacheKey);
-        }
+        fetchFromCache: {
+            if (forceCacheUpdate()) {
+                break fetchFromCache;
+            }
 
-        if (cachedResponse.isPresent()) {
-            log.debug("Cache hit for GitHub API response - city: {}, language: {}, page: {}",
-                    city.getId(), language, pageNumber);
-            return cachedResponse;
+            Optional<JsonObject> cachedResponse = get(getGithubCachePath(), cacheKey, new TypeToken<JsonObject>() {
+            }, githubRefreshIntervalMs);
+
+            if (cachedResponse.isPresent()
+                    && isCacheEntryStale(getGithubCachePath(), cacheKey, githubRefreshIntervalMs)) {
+                invalidate(getGithubCachePath(), cacheKey);
+                // Start async refresh but don't wait for it
+                doHttpCallAsync(supplier, getGithubCachePath(), cacheKey);
+            }
+
+            if (cachedResponse.isPresent()) {
+                log.debug("Cache hit for GitHub API response - city: {}, language: {}, page: {}",
+                        city.getId(), language, pageNumber);
+                return cachedResponse;
+            }
         }
 
         return doHttpCall(supplier, getGithubCachePath(), cacheKey);
@@ -112,22 +123,28 @@ public abstract class CacheServiceAbs {
 
         String cacheKey = generateCacheKey(cityId, regionId, stateId, teamId, languageId, maxResults);
 
-        Optional<List<Contributor>> cachedResponse = get(getHttpCachePath(), cacheKey,
-                new TypeToken<List<Contributor>>() {
-        }, httpRefreshIntervalMs);
+        fetchFromCache: {
+            if (forceCacheUpdate()) {
+                break fetchFromCache;
+            }
 
-        if (cachedResponse.isPresent() && isCacheEntryStale(getHttpCachePath(), cacheKey, httpRefreshIntervalMs)) {
-            invalidate(getHttpCachePath(), cacheKey);
-            // Start async refresh but don't wait for it
-            doHttpCallAsync(supplier, getHttpCachePath(), cacheKey);
+            Optional<List<Contributor>> cachedResponse = get(getHttpCachePath(), cacheKey,
+                    new TypeToken<List<Contributor>>() {
+                    }, httpRefreshIntervalMs);
+
+            if (cachedResponse.isPresent() && isCacheEntryStale(getHttpCachePath(), cacheKey, httpRefreshIntervalMs)) {
+                invalidate(getHttpCachePath(), cacheKey);
+                // Start async refresh but don't wait for it
+                doHttpCallAsync(supplier, getHttpCachePath(), cacheKey);
+            }
+
+            if (cachedResponse.isPresent()) {
+                log.debug("Cache hit for key: {}", cacheKey);
+                return cachedResponse;
+            }
+
+            log.info("Cache miss for key: {}", cacheKey);
         }
-
-        if (cachedResponse.isPresent()) {
-            log.debug("Cache hit for key: {}", cacheKey);
-            return cachedResponse;
-        }
-
-        log.info("Cache miss for key: {}", cacheKey);
         return doHttpCall(supplier, getHttpCachePath(), cacheKey);
     }
 
@@ -169,7 +186,8 @@ public abstract class CacheServiceAbs {
 
     protected abstract String getGithubCachePath();
 
-    protected String generateCacheKey(String cityId, String regionId, String stateId, String teamId, String language, int maxResults) {
+    protected String generateCacheKey(String cityId, String regionId, String stateId, String teamId, String language,
+            int maxResults) {
         StringBuilder key = new StringBuilder();
         key.append(cityId != null ? cityId : NONE)
                 .append(getDelimiter())
@@ -214,5 +232,19 @@ public abstract class CacheServiceAbs {
 
     public void setCacheIsReady(boolean isReady) {
         put(CACHE_IS_READY_PATH, CACHE_IS_READY_KEY, isReady);
+    }
+
+    public boolean forceCacheUpdate() {
+        return getCacheMode() == CacheMode.FORCE_UPDATE;
+    }
+
+    private CacheMode cacheMode = CacheMode.READ_WRITE;
+
+    private CacheMode getCacheMode() {
+        return cacheMode;
+    }
+
+    public void setCacheMode(CacheMode cacheMode) {
+        this.cacheMode = cacheMode;
     }
 }
