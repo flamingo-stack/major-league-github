@@ -83,12 +83,12 @@ module.exports = {
       directory: path.join(__dirname, 'dist'),
       publicPath: '/'
     },
-    port: 8451,
+    port: 8450,
     historyApiFallback: true,
     hot: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8450',
+        target: 'http://localhost:8080',
         secure: false
       }
     },

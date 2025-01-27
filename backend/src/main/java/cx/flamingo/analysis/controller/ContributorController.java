@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import cx.flamingo.analysis.cache.CacheServiceAbs;
+import cx.flamingo.analysis.model.ApiResponse;
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Contributor;
 import cx.flamingo.analysis.model.Language;
@@ -34,7 +35,7 @@ public class ContributorController {
     private final LanguageService languageService;
 
     @GetMapping
-    public List<Contributor> getContributors(
+    public ApiResponse<List<Contributor>> getContributors(
             @RequestParam(required = false) String cityId,
             @RequestParam(required = false) String regionId,
             @RequestParam(required = false) String stateId,
@@ -42,6 +43,11 @@ public class ContributorController {
             @RequestParam(required = false) String languageId,
             @RequestParam(defaultValue = "15") int maxResults,
             @RequestParam(required = false, defaultValue = "High") GithubService.GithubApiPriority priority) {
+
+        if (!cacheService.isCacheReady()) {
+            log.warn("Cache is still being populated, returning empty list");
+            return ApiResponse.error("Cache is still being populated");
+        }
 
         return cacheService.getHttpResponse(cityId, regionId, stateId, teamId, languageId, maxResults, () -> {
             Map<String, City> targetCities = new HashMap<>();
@@ -119,9 +125,12 @@ public class ContributorController {
             }
 
             return githubService.getTopContributorsIn(new ArrayList<>(targetCities.values()), selectedLanguage, maxResults, priority);
+        }).map(contributors -> {
+            String message = String.format("Found %d contributors matching the criteria", contributors.size());
+            return ApiResponse.success(contributors, message);
         }).orElseGet(() -> {
             log.warn("Cache miss and failed to fetch contributors. Returning empty list.");
-            return new ArrayList<>();
+            return ApiResponse.error("Failed to fetch contributors");
         });
     }
 }

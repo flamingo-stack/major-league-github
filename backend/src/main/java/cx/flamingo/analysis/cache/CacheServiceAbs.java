@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class CacheServiceAbs {
 
-    
     protected final String NONE = "NONE";
 
     protected final Gson gson;
@@ -35,6 +34,9 @@ public abstract class CacheServiceAbs {
 
     @Value("${cache.expiration.ms:3600000}")
     protected long cacheExpirationMs;
+
+    @Value("${cache.should.be.ready:false}")
+    protected boolean cacheShouldBeReady;
 
     public abstract String getDelimiter();
 
@@ -51,9 +53,16 @@ public abstract class CacheServiceAbs {
 
     protected abstract Long getInsertTime(String cachePath, String key);
 
-    protected boolean isCacheEntryStale(String cachePath, String key, long refreshInterval) {
+    protected boolean isCacheEntryStale(String cachePath, String key, Long refreshInterval) {
         try {
             Long lastModified = getInsertTime(cachePath, key);
+            if (refreshInterval == null) {
+                return false;
+            }
+
+            if (lastModified == null) {
+                return true;
+            }
             Long age = System.currentTimeMillis() - lastModified;
             boolean isStale = age > refreshInterval;
             if (isStale) {
@@ -144,7 +153,7 @@ public abstract class CacheServiceAbs {
     /**
      * Get a value from the cache
      */
-    public abstract <T> Optional<T> get(String cachePath, String key, TypeToken<T> typeRef, long refreshInterval);
+    public abstract <T> Optional<T> get(String cachePath, String key, TypeToken<T> typeRef, Long refreshInterval);
 
     /**
      * Put a value in the cache
@@ -182,9 +191,36 @@ public abstract class CacheServiceAbs {
                 .append(city.getId())
                 .append(getDelimiter())
                 .append(language)
-                .append(getDelimiter()) 
+                .append(getDelimiter())
                 .append("page_")
                 .append(pageNumber);
         return key.toString();
+    }
+
+    private Boolean isCacheReady = null;
+
+    public boolean isCacheReady() {
+
+        if (isCacheReady != null) {
+            return isCacheReady;
+        }
+
+        if (!cacheShouldBeReady) {
+            return true;
+        }
+
+        Optional<Boolean> isReady = get(CACHE_IS_READY_PATH, CACHE_IS_READY_KEY, new TypeToken<Boolean>() {
+        }, null);
+
+        isCacheReady = isReady.isPresent() && isReady.get();
+
+        return isCacheReady;
+    }
+
+    private static final String CACHE_IS_READY_PATH = "cache_is_ready";
+    private static final String CACHE_IS_READY_KEY = "cache_is_ready";
+
+    public void setCacheIsReady(boolean isReady) {
+        put(CACHE_IS_READY_PATH, CACHE_IS_READY_KEY, isReady);
     }
 }

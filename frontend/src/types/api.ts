@@ -1,3 +1,9 @@
+export interface ApiResponse<T> {
+    status: 'success' | 'error';
+    message?: string;
+    data: T | null;
+}
+
 export interface City {
     id: string;
     name: string;
@@ -56,4 +62,23 @@ export interface SoccerTeam {
     teamUrl: string;
     wikipediaUrl: string;
     logoUrl: string;
+}
+
+export interface Contributor {
+    login: string;
+    name: string;
+    url: string;
+    avatarUrl: string;
+    totalCommits: number;
+    javaRepos: number;
+    starsReceived: number;
+    starsGiven: number;
+    forksReceived: number;
+    forksGiven: number;
+    latestCommitDate: string;
+    score: number;
+    cityId: string;
+    nearestTeamId?: string;
+    city: City;
+    nearestTeam?: SoccerTeam;
 } 

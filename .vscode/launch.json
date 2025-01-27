@@ -25,7 +25,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Debug Frontend",
-            "url": "http://localhost:8451",
+            "url": "http://localhost:8450",
             "webRoot": "${workspaceFolder}/frontend",
             "preLaunchTask": "npm: dev",
             "sourceMaps": true,

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import cx.flamingo.analysis.model.ApiResponse;
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Language;
 import cx.flamingo.analysis.model.Region;
@@ -33,7 +34,7 @@ public class AutocompleteController {
     private final SoccerTeamService soccerTeamService;
 
     @GetMapping("/cities")
-    public List<City> autocompleteCities(
+    public ApiResponse<List<City>> autocompleteCities(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String regionId,
             @RequestParam(required = false) String stateId,
@@ -43,11 +44,12 @@ public class AutocompleteController {
                 regionId != null ? regionId : "none",
                 stateId != null ? stateId : "none",
                 maxResults);
-        return cityService.autocompleteCities(query, regionId, stateId, maxResults);
+        List<City> cities = cityService.autocompleteCities(query, regionId, stateId, maxResults);
+        return ApiResponse.success(cities, String.format("Found %d cities matching the criteria", cities.size()));
     }
 
     @GetMapping("/regions")
-    public List<Region> autocompleteRegions(
+    public ApiResponse<List<Region>> autocompleteRegions(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String stateId,
             @RequestParam(required = false) List<String> cityIds,
@@ -57,11 +59,12 @@ public class AutocompleteController {
                 stateId != null ? stateId : "none",
                 cityIds != null ? cityIds : "none",
                 maxResults);
-        return regionService.autocompleteRegions(query, stateId, cityIds, maxResults);
+        List<Region> regions = regionService.autocompleteRegions(query, stateId, cityIds, maxResults);
+        return ApiResponse.success(regions, String.format("Found %d regions matching the criteria", regions.size()));
     }
 
     @GetMapping("/states")
-    public List<State> autocompleteStates(
+    public ApiResponse<List<State>> autocompleteStates(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String regionId,
             @RequestParam(required = false) List<String> cityIds,
@@ -71,26 +74,29 @@ public class AutocompleteController {
                 regionId != null ? regionId : "none",
                 cityIds != null ? cityIds : "none",
                 maxResults);
-        return stateService.autocompleteStates(query, regionId, cityIds, maxResults);
+        List<State> states = stateService.autocompleteStates(query, regionId, cityIds, maxResults);
+        return ApiResponse.success(states, String.format("Found %d states matching the criteria", states.size()));
     }
 
     @GetMapping("/languages")
-    public List<Language> autocompleteLanguages(
+    public ApiResponse<List<Language>> autocompleteLanguages(
             @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "50") int maxResults) {
         log.info("Autocomplete languages with query: {}, maxResults: {}", 
                 query != null ? query : "none", 
                 maxResults);
-        return languageService.autocompleteLanguages(query, maxResults);
+        List<Language> languages = languageService.autocompleteLanguages(query, maxResults);
+        return ApiResponse.success(languages, String.format("Found %d languages matching the criteria", languages.size()));
     }
 
     @GetMapping("/teams")
-    public List<SoccerTeam> autocompleteTeams(
+    public ApiResponse<List<SoccerTeam>> autocompleteTeams(
             @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "50") int maxResults) {
         log.info("Autocomplete teams with query: {}, maxResults: {}", 
                 query != null ? query : "none", 
                 maxResults);
-        return soccerTeamService.autocompleteTeams(query, maxResults);
+        List<SoccerTeam> teams = soccerTeamService.autocompleteTeams(query, maxResults);
+        return ApiResponse.success(teams, String.format("Found %d teams matching the criteria", teams.size()));
     }
 }

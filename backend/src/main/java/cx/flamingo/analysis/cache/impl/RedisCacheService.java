@@ -59,7 +59,7 @@ public class RedisCacheService extends CacheServiceAbs {
     }
 
     @Override
-    public <T> Optional<T> get(String cachePath, String key, TypeToken<T> typeRef, long refreshInterval) {
+    public <T> Optional<T> get(String cachePath, String key, TypeToken<T> typeRef, Long refreshInterval) {
         String redisKey = buildRedisKey(cachePath, key);
         Object cachedValue = valueOps.get(redisKey);
 

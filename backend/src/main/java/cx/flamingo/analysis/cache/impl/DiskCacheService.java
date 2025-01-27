@@ -5,8 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -76,7 +74,7 @@ public class DiskCacheService extends CacheServiceAbs {
     }
 
     @Override
-    public <T> Optional<T> get(String cachePath, String key, TypeToken<T> typeRef, long refreshInterval) {
+    public <T> Optional<T> get(String cachePath, String key, TypeToken<T> typeRef, Long refreshInterval) {
         Path filePath = Paths.get(cachePath, key + ".json");
 
         if (!Files.exists(filePath)) {
@@ -84,7 +82,7 @@ public class DiskCacheService extends CacheServiceAbs {
             return Optional.empty();
         }
 
-        if (isCacheEntryStale(filePath, refreshInterval)) {
+        if (isCacheEntryStale(cachePath, key, refreshInterval)) {
             log.debug("Cache entry is stale for key: '{}'", key);
             try {
                 Files.deleteIfExists(filePath);
@@ -155,20 +153,4 @@ public class DiskCacheService extends CacheServiceAbs {
         }
     }
 
-    private boolean isCacheEntryStale(Path filePath, long refreshInterval) {
-        try {
-            BasicFileAttributes attrs = Files.readAttributes(filePath, BasicFileAttributes.class);
-            Instant lastModified = attrs.lastModifiedTime().toInstant();
-            Duration age = Duration.between(lastModified, Instant.now());
-
-            boolean isStale = age.toMillis() > refreshInterval;
-            if (isStale) {
-                log.info("Cache entry is stale (age: {} hours): {}", age.toHours(), filePath);
-            }
-            return isStale;
-        } catch (IOException e) {
-            log.error("Error checking cache entry age: {}", e.getMessage());
-            return true;
-        }
-    }
 }
