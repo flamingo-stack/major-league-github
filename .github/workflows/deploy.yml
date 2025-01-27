@@ -784,9 +784,16 @@ jobs:
           SERVER_PORT=${CACHE_UPDATER_PORT} \
             envsubst < kubernetes/base/backend-service.yaml > processed_k8s/cache-updater.yaml
           
+           # Frontend
+          echo "🦩 Processing frontend..."
+          FRONTEND=frontend \
+          SERVICE_NAME=frontend \
+          SERVER_PORT=${FRONTEND_PORT} \
+            envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
+            
           # Apply services
           echo "🦩 Applying services..."
-          for service in web-service cache-updater; do
+          for service in web-service cache-updater frontend; do
             echo "🦩 Applying $service..."
             if ! kubectl apply -n ${REGISTRY_NAME} -f processed_k8s/$service.yaml; then
               echo "❌ Error: Failed to apply $service"
@@ -798,7 +805,7 @@ jobs:
           
           # Wait for services to be ready
           echo "🦩 Waiting for services to be ready..."
-          for service in web-service cache-updater; do
+          for service in web-service cache-updater frontend; do
             echo "🦩 Waiting for $service..."
             if ! kubectl wait --namespace ${REGISTRY_NAME} \
               --for=condition=ready pod \
@@ -815,7 +822,8 @@ jobs:
           for file in kubernetes/base/*.yaml; do
             if [[ "$file" != *"backend-service.yaml"* && \
                   "$file" != *"config.yaml"* && \
-                  "$file" != *"redis.yaml"* ]]; then
+                  "$file" != *"redis.yaml"* && \
+                  "$file" != *"frontend.yaml"* ]]; then
               echo "🦩 Processing $file..."
               envsubst < "$file" > "processed_k8s/$(basename "$file")"
               

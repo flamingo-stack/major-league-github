@@ -31,6 +31,8 @@ spec:
           ports:
             - containerPort: 80
               name: http
+            - containerPort: 81
+              name: health
           resources:
             requests:
               memory: ${FRONTEND_REQUEST_MEMORY}
@@ -41,7 +43,7 @@ spec:
           startupProbe:
             httpGet:
               path: /nginx-health
-              port: http
+              port: health
             initialDelaySeconds: 15
             periodSeconds: 5
             timeoutSeconds: 2
@@ -49,7 +51,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /nginx-health
-              port: http
+              port: health
             initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 2
@@ -57,7 +59,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /nginx-health
-              port: http
+              port: health
             initialDelaySeconds: 15
             periodSeconds: 20
             timeoutSeconds: 2
