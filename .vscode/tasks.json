@@ -2,38 +2,47 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "npm",
-            "script": "dev",
-            "path": "frontend",
+            "label": "Start Frontend Dev Server (Production)",
+            "type": "shell",
+            "command": "cd frontend && BACKEND_API_URL=https://major-league-github.flamingo.cx PORT=8450 npm run dev",
             "isBackground": true,
-            "problemMatcher": [
-                {
-                    "owner": "webpack",
-                    "pattern": [
-                        {
-                            "regexp": "ERROR in (.*?)(?: \\((.*?)\\))?:(.*)$",
-                            "file": 1,
-                            "line": 2,
-                            "message": 3
-                        }
-                    ],
-                    "background": {
-                        "activeOnStart": true,
-                        "beginsPattern": {
-                            "regexp": "(webpack.*)|(node:.*)"
-                        },
-                        "endsPattern": {
-                            "regexp": "webpack [0-9.]+ compiled successfully"
-                        }
-                    }
+            "problemMatcher": {
+                "owner": "webpack",
+                "pattern": {
+                    "regexp": "^$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "webpack compiled",
+                    "endsPattern": "webpack compiled successfully"
                 }
-            ],
-            "group": "build",
-            "label": "npm: dev",
-            "detail": "webpack serve",
+            },
             "presentation": {
-                "reveal": "silent",
-                "panel": "dedicated"
+                "reveal": "always",
+                "panel": "new",
+                "group": "frontend"
+            }
+        },
+        {
+            "label": "Start Frontend Dev Server",
+            "type": "shell",
+            "command": "cd frontend && BACKEND_API_URL=http://localhost:8080 PORT=8450 npm run dev",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "webpack",
+                "pattern": {
+                    "regexp": "^$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "webpack compiled",
+                    "endsPattern": "webpack compiled successfully"
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "group": "frontend"
             }
         }
     ]

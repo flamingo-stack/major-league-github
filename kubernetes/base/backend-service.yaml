@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: ${SERVICE_NAME}
   labels:
-    app: backend
+    app: ${SERVICE_NAME}
 spec:
   replicas: ${BACKEND_REPLICAS}
   selector:
     matchLabels:
-      app: backend
+      app: ${SERVICE_NAME}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,30 +17,31 @@ spec:
   template:
     metadata:
       labels:
-        app: backend
-      annotations:
-        checksum/config: ${CONFIG_CHECKSUM}
+        app: ${SERVICE_NAME}
     spec:
       imagePullSecrets:
         - name: registry-credentials
       containers:
-        - name: backend
-          image: ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}
+        - name: ${SERVICE_NAME}
+          image: ${REGISTRY}/${REGISTRY_NAME}/${SERVICE_NAME}:${VERSION}
           imagePullPolicy: Always
-          ports:
-            - name: http
-              containerPort: 8450
           envFrom:
             - configMapRef:
                 name: app-config
             - configMapRef:
-                name: backend-config
+                name: ${SERVICE_NAME}-config
+            - secretRef:
+                name: app-secrets
           env:
             - name: GITHUB_TOKENS
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
                   key: github.tokens
+            - name: SPRING_REDIS_HOST
+              value: redis
+            - name: SPRING_REDIS_PORT
+              value: "6379"
           resources:
             requests:
               memory: ${BACKEND_REQUEST_MEMORY}
@@ -51,39 +52,31 @@ spec:
           startupProbe:
             httpGet:
               path: /actuator/health
-              port: http
-            initialDelaySeconds: 30
+              port: ${SERVER_PORT}
+            initialDelaySeconds: 60
             periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 10
             failureThreshold: 30
-          readinessProbe:
-            httpGet:
-              path: /actuator/health/readiness
-              port: http
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: http
-            initialDelaySeconds: 60
+              port: ${SERVER_PORT}
+            initialDelaySeconds: 90
             periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 3 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend-service
+  name: ${SERVICE_NAME}-service
   labels:
-    app: backend
+    app: ${SERVICE_NAME}
 spec:
   selector:
-    app: backend
+    app: ${SERVICE_NAME}
   ports:
     - name: http
-      port: 8450
-      targetPort: http
+      port: ${SERVER_PORT}
+      targetPort: ${SERVER_PORT}
   type: ClusterIP 

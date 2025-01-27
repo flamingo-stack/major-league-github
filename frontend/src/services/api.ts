@@ -1,24 +1,11 @@
 import axios from 'axios';
-import { City, Region, State, Language, SoccerTeam } from '../types/api';
+import { City, Region, State, Language, SoccerTeam, ApiResponse, Contributor } from '../types/api';
 
-export interface Contributor {
-    login: string;
-    name: string;
-    url: string;
-    avatarUrl: string;
-    totalCommits: number;
-    javaRepos: number;
-    starsReceived: number;
-    starsGiven: number;
-    forksReceived: number;
-    forksGiven: number;
-    latestCommitDate: string;
-    score: number;
-    cityId: string;
-    nearestTeamId?: string;
-    city: City;
-    nearestTeam?: SoccerTeam;
-}
+// Configure axios to use the backend URL from environment
+const BACKEND_API_URL = process.env.BACKEND_API_URL || '/';
+console.log('API Service: Using backend URL:', BACKEND_API_URL);
+
+axios.defaults.baseURL = BACKEND_API_URL;
 
 interface GetContributorsParams {
     cityId?: string;
@@ -47,11 +34,11 @@ export async function getContributors({
     if (languageId) params.set('languageId', languageId);
     if (maxResults) params.set('maxResults', maxResults.toString());
 
-    const response = await fetch(`/api/contributors?${params.toString()}`, { signal });
-    if (!response.ok) {
-        throw new Error('Failed to fetch contributors');
+    const response = await axios.get<ApiResponse<Contributor[]>>(`/api/contributors?${params.toString()}`, { signal });
+    if (response.data.status !== 'success') {
+        throw new Error(response.data.message);
     }
-    return response.json();
+    return response.data.data;
 }
 
 // Autocomplete endpoints
@@ -61,7 +48,7 @@ export const autocompleteRegions = async (
   cityIds: string[] | undefined,
   signal?: AbortSignal
 ): Promise<Region[]> => {
-  const response = await axios.get<Region[]>('/api/autocomplete/regions', {
+  const response = await axios.get<ApiResponse<Region[]>>('/api/autocomplete/regions', {
     params: { 
       query, 
       stateId, 
@@ -72,7 +59,10 @@ export const autocompleteRegions = async (
       indexes: null // This will prevent axios from adding the [] suffix
     }
   });
-  return response.data;
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 export const autocompleteStates = async (
@@ -81,7 +71,7 @@ export const autocompleteStates = async (
   cityIds?: string[],
   signal?: AbortSignal
 ): Promise<State[]> => {
-  const response = await axios.get<State[]>('/api/autocomplete/states', {
+  const response = await axios.get<ApiResponse<State[]>>('/api/autocomplete/states', {
     params: { 
       query,
       regionId,
@@ -92,7 +82,10 @@ export const autocompleteStates = async (
       indexes: null // This will prevent axios from adding the [] suffix
     }
   });
-  return response.data;
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 export const autocompleteCities = async (
@@ -101,7 +94,7 @@ export const autocompleteCities = async (
   stateId: string | undefined,
   signal?: AbortSignal
 ): Promise<City[]> => {
-  const response = await axios.get<City[]>('/api/autocomplete/cities', {
+  const response = await axios.get<ApiResponse<City[]>>('/api/autocomplete/cities', {
     params: { 
       query, 
       regionId, 
@@ -109,57 +102,81 @@ export const autocompleteCities = async (
     },
     signal
   });
-  return response.data;
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 export const autocompleteLanguages = async (
   query: string,
   signal?: AbortSignal
 ): Promise<Language[]> => {
-  const response = await axios.get<Language[]>('/api/autocomplete/languages', {
+  const response = await axios.get<ApiResponse<Language[]>>('/api/autocomplete/languages', {
     params: { 
       query
     },
     signal
   });
-  return response.data;
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 export const autocompleteTeams = async (
   query: string,
   signal?: AbortSignal
 ): Promise<SoccerTeam[]> => {
-  const response = await axios.get<SoccerTeam[]>('/api/autocomplete/teams', {
+  const response = await axios.get<ApiResponse<SoccerTeam[]>>('/api/autocomplete/teams', {
     params: { 
       query
     },
     signal
   });
-  return response.data;
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 // Entity endpoints
 export const getRegionById = async (id: string): Promise<Region> => {
-  const response = await axios.get<Region>(`/api/entities/regions/${id}`);
-  return response.data;
+  const response = await axios.get<ApiResponse<Region>>(`/api/entities/regions/${id}`);
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 export const getStateById = async (id: string): Promise<State> => {
-  const response = await axios.get<State>(`/api/entities/states/${id}`);
-  return response.data;
+  const response = await axios.get<ApiResponse<State>>(`/api/entities/states/${id}`);
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 export const getCityById = async (id: string): Promise<City> => {
-  const response = await axios.get<City>(`/api/entities/cities/${id}`);
-  return response.data;
+  const response = await axios.get<ApiResponse<City>>(`/api/entities/cities/${id}`);
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 export const getLanguageById = async (id: string): Promise<Language> => {
-  const response = await axios.get<Language>(`/api/entities/languages/${id}`);
-  return response.data;
+  const response = await axios.get<ApiResponse<Language>>(`/api/entities/languages/${id}`);
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 export const getTeamById = async (id: string): Promise<SoccerTeam> => {
-  const response = await axios.get<SoccerTeam>(`/api/entities/teams/${id}`);
-  return response.data;
+  const response = await axios.get<ApiResponse<SoccerTeam>>(`/api/entities/teams/${id}`);
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 }; 

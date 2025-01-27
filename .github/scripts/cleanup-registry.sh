@@ -8,7 +8,6 @@ echo "🦩 Starting registry cleanup..."
 # Function to clean manifest string
 clean_manifest() {
     local manifest=$1
-    # Extract just the SHA256 digest, removing tags and other info
     echo "$manifest" | awk '{print $1}'
 }
 
@@ -21,19 +20,13 @@ for repo in $repos; do
         continue
     fi
     
-    echo "🦩 Processing repository: $repo"
-    
     # Get manifests for the repository
     manifests=$(doctl registry repository list-manifests "$repo")
     
     # Skip if no manifests found
     if [ -z "$manifests" ]; then
-        echo "No manifests found for $repo"
         continue
     fi
-    
-    echo "🦩 Found manifests:"
-    echo "$manifests"
     
     # Process each manifest
     while IFS= read -r manifest; do
@@ -48,25 +41,20 @@ for repo in $repos; do
         
         # Skip if manifest has 'latest' tag
         if echo "$tags" | grep -q "latest"; then
-            echo "Skipping manifest with 'latest' tag"
             continue
         fi
         
-        echo "🦩 Processing manifest: $digest (Tags: $tags)"
-        
-        # Delete the manifest
-        if doctl registry repository delete-manifest "$repo" "$digest" --force; then
-            echo "✅ Successfully deleted manifest: $digest"
-        else
-            echo "⚠️ Warning: Failed to delete manifest: $digest"
+        # Delete the manifest quietly
+        if doctl registry repository delete-manifest "$repo" "$digest" --force >/dev/null 2>&1; then
+            echo "✅ Cleaned up: $repo:$tags"
         fi
     done <<< "$manifests"
 done
 
-# Start garbage collection
-echo "🦩 Starting garbage collection..."
-if ! doctl registry garbage-collection start --force; then
-    echo "⚠️ Warning: Failed to start garbage collection"
+# Start garbage collection quietly
+echo "🦩 Running garbage collection..."
+if ! doctl registry garbage-collection start --force >/dev/null 2>&1; then
+    echo "⚠️ Warning: Garbage collection failed"
 fi
 
 echo "✅ Registry cleanup completed" 

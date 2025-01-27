@@ -18,7 +18,7 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
     }
 
     if (error) {
-        return <div>Error: {error.message}</div>;
+        return <div>Error: {error instanceof Error ? error.message : 'An unknown error occurred'}</div>;
     }
 
     if (!contributors || contributors.length === 0) {

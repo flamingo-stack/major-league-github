@@ -22,5 +22,5 @@
         <appender-ref ref="File" />
     </root>
 
-    <logger name="cx.flamingo" level="DEBUG" />
+    <logger name="cx.flamingo" level="INFO" />
 </configuration> 

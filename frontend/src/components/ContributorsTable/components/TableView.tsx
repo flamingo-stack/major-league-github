@@ -16,7 +16,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import StarIcon from '@mui/icons-material/Star';
 import ForkRightIcon from '@mui/icons-material/ForkRight';
 import UpdateIcon from '@mui/icons-material/Update';
-import { Contributor } from '../../../services/api';
+import { Contributor } from '../../../types/api';
 import { ContributorsTableProps } from '../types';
 import { ContributorInfo } from './ContributorInfo';
 import { LocationInfo } from './LocationInfo';

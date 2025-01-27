@@ -23,9 +23,9 @@ env:
   
   # Cluster configuration
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
-  CLUSTER_REGION: sfo3
-  CLUSTER_SIZE: s-2vcpu-4gb
-  CLUSTER_NODE_COUNT: "2"
+  CLUSTER_REGION: nyc3
+  CLUSTER_SIZE: s-4vcpu-8gb
+  CLUSTER_NODE_COUNT: 1
   CLUSTER_VERSION: latest
   
   # Replica counts
@@ -33,20 +33,20 @@ env:
   FRONTEND_REPLICAS: 1
   
   # Backend resources
-  BACKEND_REQUEST_MEMORY: 512Mi
+  BACKEND_REQUEST_MEMORY: 1Gi
   BACKEND_REQUEST_CPU: 200m
-  BACKEND_LIMIT_MEMORY: 1Gi
+  BACKEND_LIMIT_MEMORY: 2Gi
   BACKEND_LIMIT_CPU: 500m
   
   # Frontend resources
-  FRONTEND_REQUEST_MEMORY: 128Mi
+  FRONTEND_REQUEST_MEMORY: 256Mi
   FRONTEND_REQUEST_CPU: 100m
-  FRONTEND_LIMIT_MEMORY: 256Mi
+  FRONTEND_LIMIT_MEMORY: 512Mi
   FRONTEND_LIMIT_CPU: 200m
   
   # Java settings
-  JAVA_MAX_HEAP: 768m
-  JAVA_MIN_HEAP: 512m
+  JAVA_MAX_HEAP: 1536m
+  JAVA_MIN_HEAP: 1024m
 
 jobs:
   build-and-deploy:
@@ -155,22 +155,17 @@ jobs:
           echo "🦩 Checking DigitalOcean Registry..."
           if ! doctl registry get > /dev/null 2>&1; then
             echo "🦩 Creating DigitalOcean Registry..."
-            if ! doctl registry create \
+            if ! doctl registry create "${REGISTRY_NAME}" \
               --subscription-tier basic \
-              --region ${CLUSTER_REGION} \
-              --wait; then
+              --region "${CLUSTER_REGION}"; then
               echo "❌ Error: Failed to create registry"
               exit 1
             fi
             
             echo "🦩 Configuring registry garbage collection..."
-            if ! doctl registry garbage-collection configure \
+            if ! doctl registry garbage-collection start \
               --include-untagged-manifests \
-              --exclude-tags latest \
-              --keep-tags 5 \
-              --schedule "0 0 * * 6" \
-              --include-all-repositories \
-              --wait; then
+              --force; then
               echo "⚠️ Warning: Failed to configure garbage collection"
               # Don't exit on garbage collection failure, it's not critical
             fi
@@ -339,52 +334,106 @@ jobs:
           
           echo "✅ Configuration completed successfully"
 
-      - name: Build and push backend image 🏗️ 🦩
+      - name: Setup common functions 🛠️
         run: |
-          echo "🦩 Building backend image..."
-          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ./backend; then
-            echo "❌ Error: Failed to build backend image"
+          # Create shared functions file
+          cat << 'EOF' > .github/shared-functions.sh
+          # Function to retry Docker operations
+          docker_retry() {
+            local cmd=$1
+            local max_attempts=3
+            local attempt=1
+            local wait_time=10
+            
+            while [ $attempt -le $max_attempts ]; do
+              echo "🦩 Attempt $attempt of $max_attempts: $cmd"
+              if eval "$cmd" > /dev/null 2>&1; then
+                return 0
+              else
+                echo "❌ Attempt $attempt failed"
+                if [ $attempt -eq $max_attempts ]; then
+                  echo "❌ All attempts failed for command: $cmd"
+                  return 1
+                fi
+                echo "🦩 Waiting ${wait_time}s before retry..."
+                sleep $wait_time
+                wait_time=$((wait_time * 2))
+                attempt=$((attempt + 1))
+              fi
+            done
+          }
+          EOF
+          
+          chmod +x .github/shared-functions.sh
+          echo "✅ Common functions setup completed"
+
+      - name: Build and push web service image 🏗️
+        run: |
+          source .github/shared-functions.sh
+          
+          echo "🦩 Building web service image..."
+          if ! docker_retry "docker build --quiet --build-arg PROFILE=web-service -t ${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION} -t ${REGISTRY}/${REGISTRY_NAME}/web-service:latest backend"; then
+            echo "❌ Failed to build web service image"
             exit 1
           fi
           
-          echo "🦩 Pushing versioned backend image..."
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION}; then
-            echo "❌ Error: Failed to push backend versioned image"
+          echo "🦩 Pushing web service images..."
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/web-service:${VERSION}"; then
+            echo "❌ Failed to push web service version image"
+            exit 1
+          fi
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/web-service:latest"; then
+            echo "❌ Failed to push web service latest image"
+            exit 1
+          fi
+          echo "✅ Web service image built and pushed"
+
+      - name: Build and push cache updater image 🏗️
+        run: |
+          source .github/shared-functions.sh
+          
+          echo "🦩 Building cache updater image..."
+          if ! docker_retry "docker build --quiet --build-arg PROFILE=cache-updater -t ${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION} -t ${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest backend"; then
+            echo "❌ Failed to build cache updater image"
             exit 1
           fi
           
-          echo "🦩 Tagging and pushing latest..."
-          docker tag ${REGISTRY}/${REGISTRY_NAME}/backend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/backend:latest
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/backend:latest; then
-            echo "❌ Error: Failed to push backend latest image"
+          echo "🦩 Pushing cache updater images..."
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/cache-updater:${VERSION}"; then
+            echo "❌ Failed to push cache updater version image"
             exit 1
           fi
-          
-          echo "✅ Backend image build and push completed"
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/cache-updater:latest"; then
+            echo "❌ Failed to push cache updater latest image"
+            exit 1
+          fi
+          echo "✅ Cache updater image built and pushed"
 
       - name: Build and push frontend image 🎨 🦩
         run: |
+          source .github/shared-functions.sh
+          
           echo "🦩 Building frontend image..."
-          if ! docker build -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend; then
+          if ! docker build frontend \
+            --build-arg BACKEND_API_URL=https://${DOMAIN_NAME}.${DOMAIN_SUFFIX} \
+            -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} \
+            -t ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
             echo "❌ Error: Failed to build frontend image"
             exit 1
           fi
           
-          echo "🦩 Pushing versioned frontend image..."
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}; then
-            echo "❌ Error: Failed to push frontend versioned image"
+          echo "🦩 Pushing frontend images..."
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}"; then
+            echo "❌ Failed to push frontend version image"
             exit 1
           fi
           
-          echo "🦩 Tagging and pushing latest..."
-          docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest
-          if ! docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
-            echo "❌ Error: Failed to push frontend latest image"
+          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest"; then
+            echo "❌ Failed to push frontend latest image"
             exit 1
           fi
           
-          echo "✅ Frontend image build and push completed"
-
+          echo "✅ Frontend image built and pushed"
       - name: Cleanup old images 🧹 🦩
         run: |
           echo "🦩 Cleaning up old images..."
@@ -438,78 +487,124 @@ jobs:
           
           echo "🦩 Installing NGINX Ingress Controller..."
           
-          # First, check if there's an existing installation
-          echo "🦩 Checking for existing NGINX installation..."
-          if helm list -n ingress-nginx | grep -q "ingress-nginx"; then
-            echo "🦩 Found existing installation, cleaning up..."
+          # Function to sanitize name for load balancer
+          sanitize_name() {
+            echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//'
+          }
+          
+          # Sanitize the load balancer name
+          LB_NAME=$(sanitize_name "${{ env.DOMAIN_NAME }}-lb")
+          echo "🦩 Using sanitized load balancer name: ${LB_NAME}"
+          
+          # Function to check load balancer status
+          check_lb_status() {
+            local lb_id=$1
+            local status=$(doctl compute load-balancer get $lb_id --format Status --no-header)
+            echo $status
+          }
+          
+          # Function to wait for load balancer to be ready
+          wait_for_lb() {
+            local lb_id=$1
+            local timeout=300  # 5 minutes timeout
+            local interval=10  # Check every 10 seconds
+            local elapsed=0
             
-            # Get the load balancer ID
-            LB_NAME="${{ env.DOMAIN_NAME }}-lb"
-            LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
-            
-            # Remove finalizers to force cleanup
-            kubectl get -n ingress-nginx $(kubectl get -n ingress-nginx all -o name) -o name | xargs -I {} kubectl patch -n ingress-nginx {} -p '{"metadata":{"finalizers":null}}' --type=merge || true
-            
-            # Delete the release and namespace
-            helm uninstall ingress-nginx -n ingress-nginx || true
-            kubectl delete namespace ingress-nginx --wait || true
-            
-            # Delete the load balancer if it exists
-            if [ ! -z "$LB_ID" ]; then
-              echo "🦩 Deleting existing load balancer..."
-              doctl compute load-balancer delete --force "${LB_ID}" || true
-              # Wait for load balancer to be fully deleted
-              echo "🦩 Waiting for load balancer to be deleted..."
-              while doctl compute load-balancer get "${LB_ID}" > /dev/null 2>&1; do
-                echo "🦩 Still waiting for load balancer deletion..."
-                sleep 5
-              done
-            fi
-            
-            # Wait for namespace deletion to complete
-            echo "🦩 Waiting for namespace cleanup..."
-            while kubectl get namespace ingress-nginx > /dev/null 2>&1; do
-              echo "🦩 Still waiting for namespace cleanup..."
-              sleep 5
+            echo "🦩 Waiting for load balancer to be ready..."
+            while [ $elapsed -lt $timeout ]; do
+              local status=$(check_lb_status $lb_id)
+              
+              if [[ "$status" == "active" ]]; then
+                echo "✅ Load balancer is ready"
+                return 0
+              elif [[ "$status" == "errored" ]]; then
+                echo "❌ Load balancer is in error state"
+                return 1
+              fi
+              
+              echo "🦩 Load balancer status: $status (waited ${elapsed}s)"
+              sleep $interval
+              elapsed=$((elapsed + interval))
             done
             
-            echo "✅ Cleanup completed"
+            echo "❌ Timeout waiting for load balancer"
+            return 1
+          }
+          
+          # Function to cleanup NGINX installation
+          cleanup_nginx() {
+            echo "🦩 Cleaning up NGINX installation..."
+            
+            echo "🦩 Removing NGINX installation..."
+            if ! helm uninstall ingress-nginx -n ingress-nginx --wait --timeout 5m 2>/dev/null; then
+              echo "⚠️ No existing NGINX installation found or uninstall failed"
+            fi
+            
+            # Wait for all ingress-nginx pods to be removed
+            echo "🦩 Waiting for NGINX pods cleanup..."
+            local timeout=60
+            local counter=0
+            while kubectl get pods -n ingress-nginx 2>/dev/null | grep -q "ingress-nginx"; do
+              counter=$((counter + 1))
+              if [ $counter -gt $timeout ]; then
+                echo "❌ Error: Timeout waiting for NGINX pods cleanup"
+                return 1
+              fi
+              echo "🦩 Waiting for NGINX pods cleanup... ($counter/$timeout)"
+              sleep 2
+            done
+            
+            return 0
+          }
+          
+          # Install NGINX Ingress Controller
+          echo "🦩 Installing NGINX Ingress Controller..."
+          
+          # Get existing load balancer ID before cleanup
+          lb_id=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
+          if [ ! -z "$lb_id" ]; then
+            echo "🦩 Found existing load balancer to reuse (ID: ${lb_id})"
           fi
           
-          echo "🦩 Installing NGINX Ingress Controller..."
-          NGINX_CMD="helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+          # Cleanup existing installation
+          if ! cleanup_nginx; then
+            echo "❌ Failed to cleanup NGINX installation"
+            exit 1
+          fi
+          
+          echo "🦩 Installing NGINX Ingress with ${lb_id:+"existing"}${lb_id:-"new"} load balancer"
+          
+          FULL_DOMAIN_NAME="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+
+          echo "🦩 Installing NGINX Ingress with existing load balancer configuration"
+
+          if ! helm install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx \
             --create-namespace \
-            --set controller.publishService.enabled=true \
-            --set controller.service.type=LoadBalancer \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-name\"=\"${{ env.DOMAIN_NAME }}-lb\" \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-hostname\"=\"${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}\" \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-protocol\"=http \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-http-ports\"=80 \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-tls-ports\"=443 \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-certificate-id\"=\"${EXISTING_CERT_ID}\" \
-            --set controller.service.annotations.\"service\\.beta\\.kubernetes\\.io/do-loadbalancer-redirect-http-to-https\"=true \
+            --set controller.service.annotations."kubernetes\.digitalocean\.com/load-balancer-id"=${lb_id:-""} \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"=${FULL_DOMAIN_NAME} \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"=${LB_NAME} \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-certificate-id"=${EXISTING_CERT_ID} \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-tls-ports"=443 \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-http-ports"=80 \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=http \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-protocol"=https \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-redirect-http-to-https"=true \
             --set controller.service.ports.http=80 \
             --set controller.service.ports.https=443 \
             --set controller.service.targetPorts.http=80 \
             --set controller.service.targetPorts.https=80 \
-            --wait --timeout 5m"
-          
-          if ! eval "$NGINX_CMD"; then
-            echo "❌ Error: Failed to install NGINX Ingress"
-            kubectl get pods -n ingress-nginx
-            kubectl describe pods -n ingress-nginx
+            --wait \
+            --timeout 5m; then
+            echo "❌ NGINX installation failed"
+            kubectl get events -n ingress-nginx --sort-by='.lastTimestamp'
             exit 1
           fi
+          
+          echo "✅ NGINX Ingress Controller installed successfully"
 
-          # Wait for ingress controller to be fully ready
-          echo "🦩 Waiting for Ingress Controller to be ready..."
-          kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=controller \
-            --timeout=5m
-
-          # Attach load balancer to project
+      - name: Attach load balancer to project
+        run: |
           echo "🦩 Attaching load balancer to project..."
           LB_NAME="${{ env.DOMAIN_NAME }}-lb"
           LB_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "${LB_NAME}" | awk '{print $1}')
@@ -554,24 +649,11 @@ jobs:
           fi
           
           echo "🦩 Creating application secrets..."
-          # Create a temporary file for the tokens
-          echo "${{ env.GH_API_TOKENS }}" > github_tokens.txt
-          
-          # Delete existing secret if it exists
-          kubectl delete secret app-secrets --namespace=${REGISTRY_NAME} --ignore-not-found=true
-          
-          # Create the secret with the correct key
           if ! kubectl create secret generic app-secrets \
             --namespace=${REGISTRY_NAME} \
-            --from-literal=github.tokens="${{ env.GH_API_TOKENS }}"; then
+            --from-literal=github.tokens="${{ env.GH_API_TOKENS }}" \
+            --dry-run=client -o yaml | kubectl apply -f -; then
             echo "❌ Error: Failed to create application secrets"
-            exit 1
-          fi
-          
-          # Verify secret was created correctly
-          echo "🦩 Verifying secret creation..."
-          if ! kubectl get secret app-secrets --namespace=${REGISTRY_NAME} -o jsonpath='{.data}' | grep 'github\.tokens'; then
-            echo "❌ Error: Secret verification failed"
             exit 1
           fi
           
@@ -579,68 +661,144 @@ jobs:
 
       - name: Deploy Kubernetes Configurations 🚀 🦩
         env:
-          REGISTRY_URL: ${REGISTRY}/${REGISTRY_NAME}
+          REGISTRY_URL: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}
           DOMAIN_SUFFIX: ${{ env.DOMAIN_SUFFIX }}
+          DOMAIN_NAME: ${{ env.DOMAIN_NAME }}
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
+          VERSION: ${{ env.VERSION }}
+          NODE_ENV: "production"
+          API_TIMEOUT: "30000"
+          WEB_SERVICE_PORT: "8080"
+          CACHE_UPDATER_PORT: "8081"
+          WEB_SERVICE_NAME: "web-service"
+          CACHE_UPDATER_NAME: "cache-updater"
+          JAVA_MAX_HEAP: ${{ env.JAVA_MAX_HEAP }}
+          JAVA_MIN_HEAP: ${{ env.JAVA_MIN_HEAP }}
+          BACKEND_REQUEST_MEMORY: ${{ env.BACKEND_REQUEST_MEMORY }}
+          BACKEND_REQUEST_CPU: ${{ env.BACKEND_REQUEST_CPU }}
+          BACKEND_LIMIT_MEMORY: ${{ env.BACKEND_LIMIT_MEMORY }}
+          BACKEND_LIMIT_CPU: ${{ env.BACKEND_LIMIT_CPU }}
+          BACKEND_REPLICAS: ${{ env.BACKEND_REPLICAS }}
+          REGISTRY: ${{ env.REGISTRY }}
+          REGISTRY_NAME: ${{ env.REGISTRY_NAME }}
         run: |
           echo "🦩 Processing and applying Kubernetes configurations..."
           
-          for file in kubernetes/base/*.yaml; do
-            echo "🦩 Processing $file..."
-            # Use envsubst to replace environment variables
-            envsubst < $file > processed.yaml
-            if ! kubectl apply -n ${REGISTRY_NAME} -f processed.yaml; then
-              echo "❌ Error: Failed to apply $file"
+          # Create a temporary directory for processed files
+          mkdir -p processed_k8s
+          
+          # Process and apply config first
+          echo "🦩 Processing config.yaml..."
+          envsubst < kubernetes/base/config.yaml > processed_k8s/config.yaml
+          echo "🦩 Applying ConfigMaps..."
+          if ! kubectl apply -n ${REGISTRY_NAME} -f processed_k8s/config.yaml; then
+            echo "❌ Error: Failed to apply ConfigMaps"
+            exit 1
+          fi
+          
+          # Verify ConfigMaps exist
+          echo "🦩 Verifying ConfigMaps..."
+          for config in web-service-config cache-updater-config frontend-config; do
+            if ! kubectl get configmap -n ${REGISTRY_NAME} $config >/dev/null 2>&1; then
+              echo "❌ ConfigMap $config not found"
               exit 1
             fi
-            rm processed.yaml
           done
           
-          echo "🦩 Waiting for deployments to be ready..."
+          # Process and apply Redis first
+          echo "🦩 Processing Redis configuration..."
+          envsubst < kubernetes/base/redis.yaml > processed_k8s/redis.yaml
+          echo "🦩 Applying Redis..."
+          if ! kubectl apply -n ${REGISTRY_NAME} -f processed_k8s/redis.yaml; then
+            echo "❌ Error: Failed to apply Redis"
+            exit 1
+          fi
           
-          # Function to check pod status and logs
-          check_deployment() {
-            local deployment=$1
-            echo "🦩 Checking status for deployment: $deployment"
+          # Wait for Redis to be ready
+          echo "🦩 Waiting for Redis to be ready..."
+          if ! kubectl wait --namespace ${REGISTRY_NAME} \
+            --for=condition=ready pod \
+            --selector=app=redis \
+            --timeout=5m; then
+            echo "❌ Redis is not ready"
+            kubectl get pods -n ${REGISTRY_NAME} -l app=redis
+            kubectl describe pods -n ${REGISTRY_NAME} -l app=redis
+            exit 1
+          fi
+          echo "✅ Redis is ready"
+          
+          # Process backend services
+          echo "🦩 Processing backend services..."
+          
+          # Web Service
+          echo "🦩 Processing web service..."
+          WEB_SERVICE=web-service \
+          SERVICE_NAME=web-service \
+          SERVER_PORT=${WEB_SERVICE_PORT} \
+            envsubst < kubernetes/base/backend-service.yaml > processed_k8s/web-service.yaml
+          
+          # Cache Updater
+          echo "🦩 Processing cache updater..."
+          CACHE_UPDATER=cache-updater \
+          SERVICE_NAME=cache-updater \
+          SERVER_PORT=${CACHE_UPDATER_PORT} \
+            envsubst < kubernetes/base/backend-service.yaml > processed_k8s/cache-updater.yaml
+          
+           # Frontend
+          echo "🦩 Processing frontend..."
+          FRONTEND=frontend \
+          SERVICE_NAME=frontend \
+          SERVER_PORT=${FRONTEND_PORT} \
+            envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
             
-            # Get pod status
-            echo "🦩 Pod status:"
-            kubectl -n ${REGISTRY_NAME} get pods -l app=$deployment -o wide
-            
-            # Get failed pods if any
-            failed_pods=$(kubectl -n ${REGISTRY_NAME} get pods -l app=$deployment -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}')
-            
-            if [ ! -z "$failed_pods" ]; then
-              echo "🦩 Found failed pods: $failed_pods"
-              for pod in $failed_pods; do
-                echo "🦩 Logs for failed pod $pod:"
-                kubectl -n ${REGISTRY_NAME} logs $pod --all-containers --tail=50
-                
-                echo "🦩 Events for failed pod $pod:"
-                kubectl -n ${REGISTRY_NAME} get events --field-selector involvedObject.name=$pod
-                
-                echo "🦩 Describing failed pod $pod:"
-                kubectl -n ${REGISTRY_NAME} describe pod $pod
-              done
+          # Apply services
+          echo "🦩 Applying services..."
+          for service in web-service cache-updater frontend; do
+            echo "🦩 Applying $service..."
+            if ! kubectl apply -n ${REGISTRY_NAME} -f processed_k8s/$service.yaml; then
+              echo "❌ Error: Failed to apply $service"
+              kubectl get pods -n ${REGISTRY_NAME} -l app=$service
+              kubectl describe pods -n ${REGISTRY_NAME} -l app=$service
+              exit 1
             fi
-          }
+          done
           
-          # Wait for backend deployment
-          echo "🦩 Waiting for backend deployment..."
-          if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/backend --timeout=5m; then
-            echo "❌ Error: Backend deployment failed to roll out"
-            check_deployment "backend"
-            exit 1
-          fi
+          # Wait for services to be ready
+          echo "🦩 Waiting for services to be ready..."
+          for service in web-service cache-updater frontend; do
+            echo "🦩 Waiting for $service..."
+            if ! kubectl wait --namespace ${REGISTRY_NAME} \
+              --for=condition=ready pod \
+              --selector=app=$service \
+              --timeout=5m; then
+              echo "❌ $service is not ready"
+              kubectl get pods -n ${REGISTRY_NAME} -l app=$service
+              kubectl describe pods -n ${REGISTRY_NAME} -l app=$service
+              exit 1
+            fi
+          done
           
-          # Wait for frontend deployment
-          echo "🦩 Waiting for frontend deployment..."
-          if ! kubectl -n ${REGISTRY_NAME} rollout status deployment/frontend --timeout=5m; then
-            echo "❌ Error: Frontend deployment failed to roll out"
-            check_deployment "frontend"
-            exit 1
-          fi
+          # Process and apply remaining files
+          for file in kubernetes/base/*.yaml; do
+            if [[ "$file" != *"backend-service.yaml"* && \
+                  "$file" != *"config.yaml"* && \
+                  "$file" != *"redis.yaml"* && \
+                  "$file" != *"frontend.yaml"* ]]; then
+              echo "🦩 Processing $file..."
+              envsubst < "$file" > "processed_k8s/$(basename "$file")"
+              
+              echo "🦩 Applying $(basename "$file")..."
+              if ! kubectl apply -n ${REGISTRY_NAME} -f "processed_k8s/$(basename "$file")"; then
+                echo "❌ Error: Failed to apply $(basename "$file")"
+                exit 1
+              fi
+            fi
+          done
           
-          echo "✅ Kubernetes configurations deployed successfully"
+          # Cleanup
+          rm -rf processed_k8s
+          
+          echo "✅ Kubernetes configurations applied successfully"
 
       - name: Create DNS Record 🌍 🦩
         run: |
@@ -671,43 +829,41 @@ jobs:
           
           echo "🦩 Checking for existing DNS records..."
           
-          # Check for existing CNAME record
-          EXISTING_CNAME=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *CNAME *${{ env.DOMAIN_NAME }}" || true)
-          if [ ! -z "$EXISTING_CNAME" ]; then
-            CNAME_ID=$(echo $EXISTING_CNAME | awk '{print $1}')
-            echo "🦩 Found existing CNAME record (ID: $CNAME_ID), removing it..."
-            if ! doctl compute domain records delete ${{ env.DOMAIN_SUFFIX }} $CNAME_ID --force; then
-              echo "❌ Error: Failed to delete CNAME record"
-              exit 1
+          # First, clean up any stale records for our subdomain
+          echo "🦩 Cleaning up any stale DNS records..."
+          RECORDS_TO_CLEAN=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header)
+          
+          # Clean up any A or CNAME records for our subdomain
+          echo "$RECORDS_TO_CLEAN" | while read -r record; do
+            RECORD_ID=$(echo $record | awk '{print $1}')
+            RECORD_TYPE=$(echo $record | awk '{print $2}')
+            RECORD_NAME=$(echo $record | awk '{print $3}')
+            
+            # Only process records for our subdomain
+            if [ "$RECORD_NAME" = "${{ env.DOMAIN_NAME }}" ] || [ "$RECORD_NAME" = "@" ]; then
+              if [ "$RECORD_TYPE" = "A" ] || [ "$RECORD_TYPE" = "CNAME" ]; then
+                echo "🦩 Removing old record: Type=$RECORD_TYPE, Name=$RECORD_NAME, ID=$RECORD_ID"
+                doctl compute domain records delete ${{ env.DOMAIN_SUFFIX }} $RECORD_ID --force || true
+              fi
             fi
-            echo "✅ CNAME record removed successfully"
+          done
+          
+          echo "🦩 Creating new A record for subdomain..."
+          if ! doctl compute domain records create ${{ env.DOMAIN_SUFFIX }} \
+            --record-type A \
+            --record-name "${{ env.DOMAIN_NAME }}" \
+            --record-data "${LB_IP}" \
+            --record-ttl 35; then
+            echo "❌ Error: Failed to create DNS record"
+            exit 1
           fi
           
-          # Check for existing A record
-          EXISTING_RECORD=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format ID,Type,Name --no-header | grep "^[0-9]* *A *${{ env.DOMAIN_NAME }}" || true)
+          echo "✅ DNS record created successfully"
           
-          if [ ! -z "$EXISTING_RECORD" ]; then
-            RECORD_ID=$(echo $EXISTING_RECORD | awk '{print $1}')
-            echo "🦩 Updating existing A record (ID: $RECORD_ID)..."
-            if ! doctl compute domain records update ${{ env.DOMAIN_SUFFIX }} --record-id $RECORD_ID \
-              --record-type A \
-              --record-data "${LB_IP}"; then
-              echo "❌ Error: Failed to update DNS record"
-              exit 1
-            fi
-            echo "✅ DNS record updated successfully"
-          else
-            echo "🦩 Creating new A record..."
-            if ! doctl compute domain records create ${{ env.DOMAIN_SUFFIX }} \
-              --record-type A \
-              --record-name "${{ env.DOMAIN_NAME }}" \
-              --record-data "${LB_IP}" \
-              --record-ttl 300; then
-              echo "❌ Error: Failed to create DNS record"
-              exit 1
-            fi
-            echo "✅ DNS record created successfully"
-          fi
+          echo "🦩 Verifying DNS configuration..."
+          FINAL_RECORDS=$(doctl compute domain records list ${{ env.DOMAIN_SUFFIX }} --format Type,Name,Data --no-header | grep "${{ env.DOMAIN_NAME }}" || true)
+          echo "Current DNS records for ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}:"
+          echo "$FINAL_RECORDS"
 
       - name: Verify Deployment 🔍 🦩
         run: |
@@ -758,18 +914,18 @@ jobs:
         run: |
           echo "DOMAIN_NAME=major-league-github" >> $GITHUB_ENV
           echo "ENVIRONMENT=production" >> $GITHUB_ENV
-          echo "BACKEND_REPLICAS=2" >> $GITHUB_ENV
-          echo "FRONTEND_REPLICAS=2" >> $GITHUB_ENV
+          echo "BACKEND_REPLICAS=1" >> $GITHUB_ENV
+          echo "FRONTEND_REPLICAS=1" >> $GITHUB_ENV
           # Reduced resource requests and limits
-          echo "BACKEND_REQUEST_MEMORY=512Mi" >> $GITHUB_ENV
+          echo "BACKEND_REQUEST_MEMORY=1Gi" >> $GITHUB_ENV
           echo "BACKEND_REQUEST_CPU=200m" >> $GITHUB_ENV
-          echo "BACKEND_LIMIT_MEMORY=1Gi" >> $GITHUB_ENV
+          echo "BACKEND_LIMIT_MEMORY=2Gi" >> $GITHUB_ENV
           echo "BACKEND_LIMIT_CPU=500m" >> $GITHUB_ENV
-          echo "FRONTEND_REQUEST_MEMORY=128Mi" >> $GITHUB_ENV
+          echo "FRONTEND_REQUEST_MEMORY=256Mi" >> $GITHUB_ENV
           echo "FRONTEND_REQUEST_CPU=100m" >> $GITHUB_ENV
-          echo "FRONTEND_LIMIT_MEMORY=256Mi" >> $GITHUB_ENV
+          echo "FRONTEND_LIMIT_MEMORY=512Mi" >> $GITHUB_ENV
           echo "FRONTEND_LIMIT_CPU=200m" >> $GITHUB_ENV
-          echo "JAVA_MAX_HEAP=768m" >> $GITHUB_ENV
-          echo "JAVA_MIN_HEAP=512m" >> $GITHUB_ENV
+          echo "JAVA_MAX_HEAP=1536m" >> $GITHUB_ENV
+          echo "JAVA_MIN_HEAP=1024m" >> $GITHUB_ENV
 
 

@@ -30,7 +30,7 @@ export const LanguageAutocomplete = ({
       onInputChange={onInputChange}
       options={languages}
       placeholder="Search languages..."
-      getOptionLabel={(option) => option.displayName}
+      getOptionLabel={(option: Language) => option.displayName}
     />
   );
 }; 

@@ -1,35 +1,81 @@
 {
     "version": "0.2.0",
-    "configurations": [
+    "compounds": [
         {
-            "type": "java",
-            "name": "Debug Major League Github Backend",
-            "request": "launch",
-            "mainClass": "cx.flamingo.analysis.MajorLeagueGithubApplication",
-            "projectName": "major-league-github"
+            "name": "Full Stack: Web Service",
+            "configurations": ["Debug Web Service", "Debug Frontend"],
+            "presentation": {
+                "hidden": false,
+                "group": "fullstack"
+            }
         },
         {
+            "name": "Full Stack: Cache Updater",
+            "configurations": ["Debug Cache Updater", "Debug Frontend"],
+            "presentation": {
+                "hidden": false,
+                "group": "fullstack"
+            }
+        }
+    ],
+    "configurations": [
+        {
+            "name": "Debug Frontend (Production)",
             "type": "chrome",
             "request": "launch",
-            "name": "Debug Major League Github Frontend",
-            "url": "http://localhost:8451",
+            "url": "http://localhost:8450",
             "webRoot": "${workspaceFolder}/frontend",
-            "preLaunchTask": "npm: dev",
+            "preLaunchTask": "Start Frontend Dev Server (Production)",
             "sourceMaps": true,
             "sourceMapPathOverrides": {
-                "webpack:///./*": "${webRoot}/*",
-                "webpack:///src/*": "${webRoot}/src/*"
+                "webpack:///./*": "${webRoot}/*"
+            }
+        },
+        {
+            "name": "Debug Frontend",
+            "request": "launch",
+            "type": "chrome",
+            "url": "http://localhost:8450",
+            "webRoot": "${workspaceFolder}/frontend",
+            "preLaunchTask": "Start Frontend Dev Server",
+            "env": {
+                "BACKEND_API_URL": "http://localhost:8080",
+                "PORT": "8450"
             },
-            "runtimeArgs": ["--remote-debugging-port=9222"],
-            "outFiles": ["${workspaceFolder}/frontend/dist/**/*.js"],
-            "resolveSourceMapLocations": [
-                "${workspaceFolder}/**",
-                "!**/node_modules/**"
-            ],
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "trace": true
+            "sourceMaps": true,
+            "sourceMapPathOverrides": {
+                "webpack:///./*": "${webRoot}/*"
+            }
+        },
+        {
+            "name": "Debug Web Service",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "cx.flamingo.analysis.MajorLeagueGithubApplication",
+            "projectName": "major-league-github",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "web-service",
+                "SERVER_PORT": "8080",
+                "LOGGING_LEVEL_ROOT": "INFO",
+                "LOGGING_LEVEL_CX_FLAMINGO": "DEBUG",
+                "SPRING_DATA_REDIS_HOST": "localhost",
+                "SPRING_DATA_REDIS_PORT": "6379"
+            }
+        },
+        {
+            "name": "Debug Cache Updater",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "cx.flamingo.analysis.MajorLeagueGithubApplication",
+            "projectName": "major-league-github",
+            "env": {
+                "SPRING_PROFILES_ACTIVE": "cache-updater",
+                "SERVER_PORT": "8081",
+                "LOGGING_LEVEL_ROOT": "INFO",
+                "LOGGING_LEVEL_CX_FLAMINGO": "DEBUG",
+                "SPRING_DATA_REDIS_HOST": "localhost",
+                "SPRING_DATA_REDIS_PORT": "6379"
+            }
         }
     ]
 } 

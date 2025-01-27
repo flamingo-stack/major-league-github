@@ -3,9 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "NODE_ENV=development npx webpack serve",
-    "build": "NODE_ENV=production webpack",
-    "lint": "eslint .",
+    "dev": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

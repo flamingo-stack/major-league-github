@@ -3,34 +3,37 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  ENVIRONMENT: ${ENVIRONMENT:-production}
-  DOMAIN_NAME: ${DOMAIN_NAME:-major-league-github}
-  BACKEND_URL: ${BACKEND_URL:-http://backend-service:8450}
+  BACKEND_URL: "http://${WEB_SERVICE_NAME}-service:${WEB_SERVICE_PORT}"
+  DOMAIN_NAME: "${DOMAIN_NAME}"
+  ENVIRONMENT: "${ENVIRONMENT}"
+  JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
+  CACHE_IMPLEMENTATION: "redis"
+  SPRING_DATA_REDIS_HOST: "redis"
+  SPRING_DATA_REDIS_PORT: "6379"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: backend-config
-data: 
-  SPRING_PROFILES_ACTIVE: "prod"
-  JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP:-1536m} -Xms${JAVA_MIN_HEAP:-768m} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: frontend-config
+  name: ${WEB_SERVICE_NAME}-config
 data:
-  NODE_ENV: ${NODE_ENV:-production}
-  API_TIMEOUT: ${API_TIMEOUT:-30000}
+  SERVER_PORT: "${WEB_SERVICE_PORT}"
+  SPRING_PROFILES_ACTIVE: "${WEB_SERVICE_NAME}"
 ---
-# Template for required secrets - DO NOT store actual values here
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${CACHE_UPDATER_NAME}-config
+data:
+  SERVER_PORT: "${CACHE_UPDATER_PORT}"
+  SPRING_PROFILES_ACTIVE: "${CACHE_UPDATER_NAME}"
+---
 apiVersion: v1
 kind: Secret
 metadata:
   name: app-secrets
 type: Opaque
-data:
-  GITHUB_TOKENS: ${GITHUB_TOKENS_BASE64}
+stringData:
+  github.tokens: "${GH_API_TOKENS}"
 ---
 apiVersion: v1
 kind: Secret
@@ -38,4 +41,12 @@ metadata:
   name: registry-credentials
 type: kubernetes.io/dockerconfigjson
 data:
-  .dockerconfigjson: ${DOCKER_CONFIG_BASE64} 
+  .dockerconfigjson: "${DOCKER_CONFIG_BASE64}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+data:
+  NODE_ENV: "${NODE_ENV:-production}"
+  API_TIMEOUT: "${API_TIMEOUT:-30000}" 

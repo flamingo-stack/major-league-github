@@ -24,9 +24,15 @@ spec:
       containers:
         - name: frontend
           image: ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: app-config
           ports:
             - containerPort: 80
               name: http
+            - containerPort: 81
+              name: health
           resources:
             requests:
               memory: ${FRONTEND_REQUEST_MEMORY}
@@ -34,23 +40,31 @@ spec:
             limits:
               memory: ${FRONTEND_LIMIT_MEMORY}
               cpu: ${FRONTEND_LIMIT_CPU}
-          livenessProbe:
+          startupProbe:
             httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 30
-            timeoutSeconds: 5
-            periodSeconds: 30
+              path: /nginx-health
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 30
           readinessProbe:
             httpGet:
-              path: /
-              port: http
+              path: /nginx-health
+              port: health
             initialDelaySeconds: 15
-            timeoutSeconds: 5
             periodSeconds: 10
-          envFrom:
-            - configMapRef:
-                name: app-config
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /nginx-health
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3 
+
 ---
 apiVersion: v1
 kind: Service
