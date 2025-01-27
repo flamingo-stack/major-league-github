@@ -42,25 +42,25 @@ spec:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 30
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 20
-            periodSeconds: 10
+            initialDelaySeconds: 5
+            periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 30
-            timeoutSeconds: 5
+            timeoutSeconds: 3
             failureThreshold: 3 
 
 ---
