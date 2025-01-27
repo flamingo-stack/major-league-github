@@ -97,7 +97,9 @@ public class GithubService {
                     .map(city -> CompletableFuture.supplyAsync(() -> {
                 try {
                     log.info("Fetching contributors for city: {}", city.getName());
-                    return getContributorsForCity(city, language, maxResults);
+                    List<Contributor> contributors = getContributorsForCity(city, language, maxResults);
+                    log.info("Found {} {} contributors for city: {}", contributors.size(), language.getName(), city.getName());
+                    return contributors;
                 } catch (Exception e) {
                     log.error("Failed to fetch contributors for city {}: {}", city.getName(), e.getMessage());
                     return new ArrayList<Contributor>();
@@ -202,8 +204,9 @@ public class GithubService {
             }
 
             if (response == null || !response.has("data")) {
-                log.warn("No data in response for city: {}, stopping pagination", city.getName());
-                break;
+                log.warn("No data in response for city: {} and language: {}, will retry. Retries left: {}", city.getName(), language.getName(), maxRetries);
+                maxRetries--;
+                continue;
             }
 
             JsonObject search = response.getAsJsonObject("data")
@@ -212,7 +215,7 @@ public class GithubService {
             List<Contributor> tempContributors = new ArrayList<>();
             processUsers(search.getAsJsonArray("nodes"), tempContributors, city);
             contributors.addAll(tempContributors);
-            log.debug("Found {} Java contributors on page {}", tempContributors.size(), pageCount + 1);
+            log.debug("Found {} {} contributors on page {}", tempContributors.size(), language.getName(), pageCount + 1);
 
             JsonObject pageInfo = search.getAsJsonObject("pageInfo");
             hasNextPage = pageInfo.get("hasNextPage").getAsBoolean();

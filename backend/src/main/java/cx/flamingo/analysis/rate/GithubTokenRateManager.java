@@ -282,7 +282,7 @@ public class GithubTokenRateManager {
         }
 
         // Log rate limit information
-        log.info("Token {} - Primary limits: Remaining={}/{}, Reset={}, Used={}",
+        log.debug("Token {} - Primary limits: Remaining={}/{}, Reset={}, Used={}",
                 token.getToken().substring(0, 8),
                 token.getRemainingRequests(),
                 token.getRateLimit(),
@@ -290,7 +290,7 @@ public class GithubTokenRateManager {
                 token.getUsedRequests());
         
         if (retryAfter != null) {
-            log.info("Token {} - Secondary rate limit hit: Retry-After={}, Last hit={}",
+            log.debug("Token {} - Secondary rate limit hit: Retry-After={}, Last hit={}",
                 token.getToken().substring(0, 8),
                 token.getRetryAfterSeconds(),
                 token.getLastSecondaryLimitHit() != null ? 

@@ -90,7 +90,7 @@ public class RedisCacheService extends CacheServiceAbs {
             // Let the RedisTemplate's serializer handle the conversion
             valueOps.set(redisKey, gson.toJson(value));
             valueOps.set(redisKey + EXPIRATION_SUFFIX, gson.toJson(Expiration.builder().timestamp(System.currentTimeMillis())));
-            log.info("Cached value in Redis for key: '{}'", redisKey);
+            log.debug("Cached value in Redis for key: '{}'", redisKey);
         } catch (Exception e) {
             log.error("Failed to write to Redis cache for key '{}': {}", redisKey, e.getMessage());
         }
