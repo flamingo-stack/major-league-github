@@ -1,9 +1,10 @@
 import React from 'react';
-import { useMediaQuery, useTheme } from '@mui/material';
+import { useMediaQuery, useTheme, Box } from '@mui/material';
 import { ContributorsTableProps } from './types';
 import { MobileView } from './components/MobileView';
 import { TableView } from './components/TableView';
 import { LoadingSpinner } from '../LoadingSpinner';
+import { ErrorMessage } from '../ErrorMessage';
 
 export const ContributorsTable: React.FC<ContributorsTableProps> = ({
     contributors,
@@ -18,11 +19,19 @@ export const ContributorsTable: React.FC<ContributorsTableProps> = ({
     }
 
     if (error) {
-        return <div>Error: {error instanceof Error ? error.message : 'An unknown error occurred'}</div>;
+        return (
+            <Box sx={{ p: 2 }}>
+                <ErrorMessage message={error instanceof Error ? error.message : 'An unknown error occurred'} />
+            </Box>
+        );
     }
 
     if (!contributors || contributors.length === 0) {
-        return <div>No contributors found</div>;
+        return (
+            <Box sx={{ p: 2 }}>
+                <ErrorMessage message="No contributors found" />
+            </Box>
+        );
     }
 
     return isMobile ? (

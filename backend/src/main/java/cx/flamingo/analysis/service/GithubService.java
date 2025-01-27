@@ -95,23 +95,20 @@ public class GithubService {
 
             // Create a list to hold the futures for this batch
             List<CompletableFuture<List<Contributor>>> futures = batch.stream()
-                    .map(
-                            city -> CompletableFuture.supplyAsync(() -> {
-                                try {
-                                    log.info("Fetching {} {} contributors for city: {}", maxResults, language.getName(),
-                                            city.getName());
-                                    List<Contributor> contributors = getContributorsForCity(city, language, maxResults);
-                                    log.info("Found {} {} contributors for city: {}", contributors.size(),
-                                            language.getName(),
-                                            city.getName());
-                                    return contributors;
-                                } catch (Exception e) {
-                                    log.error("Failed to fetch contributors for city {}: {}", city.getName(),
-                                            e.getMessage());
-                                    return new ArrayList<Contributor>();
-                                }
-                            }, priority == GithubApiPriority.High ? contributorsAsyncExecutorHigh
-                                    : contributorsAsyncExecutorLow))
+                    .map(city -> CompletableFuture.supplyAsync(() -> {
+                        try {
+                            log.info("Fetching {} {} contributors for city: {}", maxResults, language.getName(),
+                                    city.getName());
+                            List<Contributor> contributors = getContributorsForCity(city, language, maxResults);
+                            log.info("Found {} {} contributors for city: {}", contributors.size(), language.getName(),
+                                    city.getName());
+                            return contributors;
+                        } catch (Exception e) {
+                            log.error("Failed to fetch contributors for city {}: {}", city.getName(), e.getMessage());
+                            return new ArrayList<Contributor>();
+                        }
+                    }, priority == GithubApiPriority.High ? contributorsAsyncExecutorHigh
+                            : contributorsAsyncExecutorLow))
                     .collect(Collectors.toList());
 
             // Wait for all futures in this batch to complete

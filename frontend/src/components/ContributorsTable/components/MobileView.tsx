@@ -4,7 +4,8 @@ import {
     Typography,
     Card,
     Stack,
-    Theme
+    Theme,
+    Divider
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import CodeIcon from '@mui/icons-material/Code';
@@ -17,10 +18,27 @@ import { ContributorInfo } from './ContributorInfo';
 import { LocationInfo } from './LocationInfo';
 import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
+import { ErrorMessage } from '../../ErrorMessage';
 
-export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isLoading }) => {
+export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
     if (isLoading) {
         return <LoadingSpinner message="Loading contributors..." />;
+    }
+
+    if (error) {
+        return (
+            <Box sx={{ p: 2 }}>
+                <ErrorMessage message={error instanceof Error ? error.message : 'An unknown error occurred'} />
+            </Box>
+        );
+    }
+
+    if (!contributors || contributors.length === 0) {
+        return (
+            <Box sx={{ p: 2 }}>
+                <ErrorMessage message="No contributors found" />
+            </Box>
+        );
     }
 
     const StatItem = ({ icon, value, color }: { icon: React.ReactNode; value: string; color: (theme: Theme) => string }) => (
@@ -124,6 +142,13 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                             />
                         </Box>
                     </Box>
+                    {index < contributors.length - 1 && (
+                        <Divider sx={{ 
+                            borderColor: theme => theme.palette.mode === 'dark' 
+                                ? '#30363d' 
+                                : 'rgba(27, 31, 36, 0.15)'
+                        }} />
+                    )}
                 </Card>
             ))}
         </Stack>
