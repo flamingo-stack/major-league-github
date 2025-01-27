@@ -25,7 +25,7 @@ env:
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
   CLUSTER_REGION: nyc3
   CLUSTER_SIZE: s-4vcpu-8gb
-  CLUSTER_NODE_COUNT: "2"
+  CLUSTER_NODE_COUNT: 1
   CLUSTER_VERSION: latest
   
   # Replica counts

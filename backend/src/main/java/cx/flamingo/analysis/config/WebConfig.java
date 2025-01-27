@@ -13,15 +13,19 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        // Allow localhost ports for development
-        registry.addMapping("/api/**")
+        registry.addMapping("/**") // Allow CORS for all endpoints, including actuator
             .allowedOrigins(
-                "http://localhost:8450",  // Frontend dev server
-                "http://localhost:3000",  // Common React dev port
-                "https://major-league-github.flamingo.cx" // Production URL
+                // Development origins
+                "http://localhost:8450",
+                "http://localhost:3000",
+                // Production origins
+                "https://major-league-github.flamingo.cx",
+                // Allow the ingress controller origin
+                "http://major-league-github.flamingo.cx"
             )
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
+            .exposedHeaders("Access-Control-Allow-Origin")
             .allowCredentials(true)
             .maxAge(3600); // 1 hour max age
     }
