@@ -4,7 +4,7 @@ const webpack = require('webpack');
 
 // Read environment variables with fallbacks
 const PORT = process.env.PORT || '8450';
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:8080';
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'https://major-league-github.flamingo.cx';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 console.log('Webpack config:', {
@@ -96,6 +96,13 @@ module.exports = (env, argv) => ({
     port: parseInt(PORT, 10),
     historyApiFallback: true,
     hot: true,
+    proxy: {
+      '/api': {
+        target: BACKEND_API_URL,
+        changeOrigin: true,
+        secure: false,
+      }
+    },
     client: {
       overlay: {
         errors: true,
