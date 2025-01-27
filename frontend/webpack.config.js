@@ -1,8 +1,20 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
-module.exports = {
-  mode: 'development',
+// Read environment variables with fallbacks
+const PORT = process.env.PORT || '8450';
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:8080';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+console.log('Webpack config:', {
+  PORT,
+  BACKEND_API_URL,
+  NODE_ENV
+});
+
+module.exports = (env, argv) => ({
+  mode: argv.mode || 'development',
   entry: './src/main.tsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -18,11 +30,7 @@ module.exports = {
           loader: 'ts-loader',
           options: {
             configFile: path.resolve(__dirname, 'tsconfig.json'),
-            transpileOnly: true,
-            compilerOptions: {
-              module: 'esnext',
-              moduleResolution: 'node'
-            }
+            transpileOnly: true
           }
         },
         exclude: /node_modules/
@@ -33,14 +41,9 @@ module.exports = {
       },
       {
         test: /\.(woff|woff2|eot|ttf|otf)$/i,
-        type: 'asset',
+        type: 'asset/resource',
         generator: {
           filename: 'fonts/[name][ext]'
-        },
-        parser: {
-          dataUrlCondition: {
-            maxSize: 8 * 1024 // 8kb
-          }
         }
       },
       {
@@ -76,6 +79,10 @@ module.exports = {
       template: path.resolve(__dirname, './index.html'),
       favicon: path.resolve(__dirname, './src/assets/favicon.svg'),
       inject: true
+    }),
+    new webpack.DefinePlugin({
+      'process.env.BACKEND_API_URL': JSON.stringify(BACKEND_API_URL),
+      'process.env.NODE_ENV': JSON.stringify(NODE_ENV)
     })
   ],
   devServer: {
@@ -83,17 +90,15 @@ module.exports = {
       directory: path.join(__dirname, 'dist'),
       publicPath: '/'
     },
-    port: 8450,
+    port: parseInt(PORT, 10),
     historyApiFallback: true,
     hot: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        secure: false
-      }
-    },
-    devMiddleware: {
-      writeToDisk: true
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false
+      },
+      logging: 'info'
     }
   },
   optimization: {
@@ -108,5 +113,6 @@ module.exports = {
         }
       }
     }
-  }
-}; 
+  },
+  devtool: 'source-map'
+}); 

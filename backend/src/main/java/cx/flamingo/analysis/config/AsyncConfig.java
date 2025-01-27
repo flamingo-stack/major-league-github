@@ -3,6 +3,7 @@ package cx.flamingo.analysis.config;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -16,10 +17,14 @@ public class AsyncConfig {
 
     private ThreadPoolTaskExecutor executorLow;
 
+    @Value("${github.api.concurrency:10}")
+    private int githubApiConcurrency;
+
+
     @Bean(name = "contributorsAsyncExecutorLow")
     public ThreadPoolExecutor contributorsAsyncExecutorLow() {
         executorLow = new ThreadPoolTaskExecutor();
-        executorLow.setCorePoolSize(4);
+        executorLow.setCorePoolSize(githubApiConcurrency);
         executorLow.setMaxPoolSize(100);
         executorLow.setQueueCapacity(1000);
         executorLow.setThreadNamePrefix("GithuhContributorsLow-");
@@ -34,7 +39,7 @@ public class AsyncConfig {
     @Bean(name = "contributorsAsyncExecutorHigh")
     public ThreadPoolExecutor contributorsAsyncExecutorHigh() {
         executorHigh = new ThreadPoolTaskExecutor();
-        executorHigh.setCorePoolSize(4);
+        executorHigh.setCorePoolSize(githubApiConcurrency);
         executorHigh.setMaxPoolSize(100);
         executorHigh.setQueueCapacity(1000);
         executorHigh.setThreadNamePrefix("GithuhContributorsHigh-");
