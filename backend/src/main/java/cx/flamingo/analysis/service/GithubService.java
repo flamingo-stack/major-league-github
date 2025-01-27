@@ -163,7 +163,7 @@ public class GithubService {
         int numberOfUsers = maxResults;
         int maxRetries = 10;
 
-        while (hasNextPage && contributors.size() < maxResults) {
+        while (hasNextPage && contributors.size() < maxResults && maxRetries > 0) {
             log.debug("Fetching page {} for {} contributors in {}",
                     pageCount, language.getName(), city.getName());
 
@@ -186,20 +186,12 @@ public class GithubService {
                 continue;
             } catch (GithubTooFastException th) {
                 log.warn("Token might be invalid or expired, or too fast");
-                if (maxRetries == 0) {
-                    log.warn("Max retries reached, stopping loop");
-                    break;
-                }
                 maxRetries--;
                 continue;
             } catch (GithubGeneralException th) {
                 log.info("Error executing GraphQL query: {}", th.getMessage());
             } catch (Throwable th) {
                 log.error("Error executing GraphQL query: {}", th.getMessage(), th);
-                if (maxRetries == 0) {
-                    log.warn("Max retries reached, stopping loop");
-                    break;
-                }
                 maxRetries--;
                 continue;
             }
