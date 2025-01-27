@@ -367,43 +367,7 @@ jobs:
           chmod +x .github/shared-functions.sh
           echo "✅ Common functions setup completed"
 
-      - name: Check for changes 🔍
-        id: check-changes
-        run: |
-          # Get the last successful deployment tag
-          LAST_VERSION=$(git tag -l "v1.0.*" | sort -V | tail -n 1)
-          if [ -z "$LAST_VERSION" ]; then
-            echo "No previous version found, building all images"
-            echo "backend_changed=true" >> $GITHUB_OUTPUT
-            echo "frontend_changed=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          echo "🦩 Comparing changes with last version: ${LAST_VERSION}"
-          
-          # Check for changes in different components
-          BACKEND_CHANGED=$(git diff --quiet $LAST_VERSION HEAD backend/ || echo "true")
-          FRONTEND_CHANGED=$(git diff --quiet $LAST_VERSION HEAD frontend/ || echo "true")
-          
-          # If no changes detected but version is different, something changed
-          if [ "$BACKEND_CHANGED" != "true" ] && [ "$FRONTEND_CHANGED" != "true" ]; then
-            echo "No direct changes detected, checking if version changed"
-            if [ "$LAST_VERSION" != "${VERSION}" ]; then
-              echo "Version changed, building all images"
-              BACKEND_CHANGED="true"
-              FRONTEND_CHANGED="true"
-            fi
-          fi
-          
-          # Export the results
-          echo "backend_changed=${BACKEND_CHANGED:-false}" >> $GITHUB_OUTPUT
-          echo "frontend_changed=${FRONTEND_CHANGED:-false}" >> $GITHUB_OUTPUT
-          
-          echo "Backend changed: ${BACKEND_CHANGED:-false}"
-          echo "Frontend changed: ${FRONTEND_CHANGED:-false}"
-
       - name: Build and push web service image 🏗️
-        if: steps.check-changes.outputs.backend_changed == 'true'
         run: |
           source .github/shared-functions.sh
           
@@ -425,7 +389,6 @@ jobs:
           echo "✅ Web service image built and pushed"
 
       - name: Build and push cache updater image 🏗️
-        if: steps.check-changes.outputs.backend_changed == 'true'
         run: |
           source .github/shared-functions.sh
           
@@ -447,28 +410,30 @@ jobs:
           echo "✅ Cache updater image built and pushed"
 
       - name: Build and push frontend image 🎨 🦩
-        if: steps.check-changes.outputs.frontend_changed == 'true'
         run: |
           source .github/shared-functions.sh
           
           echo "🦩 Building frontend image..."
-          if ! docker_retry "docker build --quiet -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ./frontend"; then
-            echo "❌ Failed to build frontend image"
+          if ! docker build frontend \
+            --build-arg BACKEND_API_URL=https://${DOMAIN_NAME}.${DOMAIN_SUFFIX} \
+            -t ${REGISTRY}/frontend:${VERSION} \
+            -t ${REGISTRY}/frontend:latest; then
+            echo "❌ Error: Failed to build frontend image"
             exit 1
           fi
           
           echo "🦩 Pushing frontend images..."
-          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}"; then
+          if ! docker_retry "docker push ${REGISTRY}/frontend:${VERSION}"; then
             echo "❌ Failed to push frontend version image"
             exit 1
           fi
           
           echo "🦩 Tagging and pushing latest frontend..."
-          if ! docker_retry "docker tag ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} ${REGISTRY}/${REGISTRY_NAME}/frontend:latest"; then
+          if ! docker_retry "docker tag ${REGISTRY}/frontend:${VERSION} ${REGISTRY}/frontend:latest"; then
             echo "❌ Failed to tag frontend latest image"
             exit 1
           fi
-          if ! docker_retry "docker push ${REGISTRY}/${REGISTRY_NAME}/frontend:latest"; then
+          if ! docker_retry "docker push ${REGISTRY}/frontend:latest"; then
             echo "❌ Failed to push frontend latest image"
             exit 1
           fi
