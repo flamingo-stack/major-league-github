@@ -80,7 +80,8 @@ public class GithubService {
         this.githubApiConcurrency = githubApiConcurrency;
     }
 
-    public List<Contributor> getTopContributorsIn(List<City> cities, Language language, int maxResults, GithubApiPriority priority) {
+    public List<Contributor> getTopContributorsIn(List<City> cities, Language language, int maxResults,
+            GithubApiPriority priority) {
         if (language == null) {
             throw new IllegalArgumentException("Language cannot be null");
         }
@@ -94,17 +95,24 @@ public class GithubService {
 
             // Create a list to hold the futures for this batch
             List<CompletableFuture<List<Contributor>>> futures = batch.stream()
-                    .map(city -> CompletableFuture.supplyAsync(() -> {
-                try {
-                    log.info("Fetching contributors for city: {}", city.getName());
-                    List<Contributor> contributors = getContributorsForCity(city, language, maxResults);
-                    log.info("Found {} {} contributors for city: {}", contributors.size(), language.getName(), city.getName());
-                    return contributors;
-                } catch (Exception e) {
-                    log.error("Failed to fetch contributors for city {}: {}", city.getName(), e.getMessage());
-                    return new ArrayList<Contributor>();
-                }
-            }, priority == GithubApiPriority.High ? contributorsAsyncExecutorHigh : contributorsAsyncExecutorLow)).collect(Collectors.toList());
+                    .map(
+                            city -> CompletableFuture.supplyAsync(() -> {
+                                try {
+                                    log.info("Fetching {} {} contributors for city: {}", maxResults, language.getName(),
+                                            city.getName());
+                                    List<Contributor> contributors = getContributorsForCity(city, language, maxResults);
+                                    log.info("Found {} {} contributors for city: {}", contributors.size(),
+                                            language.getName(),
+                                            city.getName());
+                                    return contributors;
+                                } catch (Exception e) {
+                                    log.error("Failed to fetch contributors for city {}: {}", city.getName(),
+                                            e.getMessage());
+                                    return new ArrayList<Contributor>();
+                                }
+                            }, priority == GithubApiPriority.High ? contributorsAsyncExecutorHigh
+                                    : contributorsAsyncExecutorLow))
+                    .collect(Collectors.toList());
 
             // Wait for all futures in this batch to complete
             try {
@@ -129,8 +137,9 @@ public class GithubService {
                         .forEach(contributor -> {
                             // Keep the contributor with the highest score if duplicate
                             contributorsByLogin.merge(contributor.getLogin(), contributor,
-                                    (existing, newContributor)
-                                    -> existing.getScore() >= newContributor.getScore() ? existing : newContributor);
+                                    (existing, newContributor) -> existing.getScore() >= newContributor.getScore()
+                                            ? existing
+                                            : newContributor);
                         });
             } catch (Exception e) {
                 log.error("Error processing batch: {}", e.getMessage());
@@ -178,7 +187,7 @@ public class GithubService {
             } catch (GithubTimeoutException th) {
                 numberOfUsers = Math.max(1, numberOfUsers / 3);
                 log.warn("Timeout occurred, will reduce the return size to {} users", numberOfUsers);
-                
+
                 continue;
             } catch (GithubRateLimitException th) {
                 log.warn("Rate limit exceeded, switching to next token");
@@ -199,7 +208,9 @@ public class GithubService {
             if (response == null || !response.has("data")) {
                 numberOfUsers = Math.max(1, numberOfUsers / 3);
                 maxRetries--;
-                log.warn("No data in response for city: {} and language: {}, will retry. Retries left: {}, number of users: {}", city.getName(), language.getName(), maxRetries, numberOfUsers);
+                log.warn(
+                        "No data in response for city: {} and language: {}, will retry. Retries left: {}, number of users: {}",
+                        city.getName(), language.getName(), maxRetries, numberOfUsers);
                 continue;
             }
 
@@ -209,7 +220,8 @@ public class GithubService {
             List<Contributor> tempContributors = new ArrayList<>();
             processUsers(search.getAsJsonArray("nodes"), tempContributors, city);
             contributors.addAll(tempContributors);
-            log.debug("Found {} {} contributors on page {}", tempContributors.size(), language.getName(), pageCount + 1);
+            log.debug("Found {} {} contributors on page {}", tempContributors.size(), language.getName(),
+                    pageCount + 1);
 
             JsonObject pageInfo = search.getAsJsonObject("pageInfo");
             hasNextPage = pageInfo.get("hasNextPage").getAsBoolean();
@@ -228,7 +240,8 @@ public class GithubService {
         return contributors;
     }
 
-    private JsonObject executeGraphQLQuery(String query, String language, int pageNumber, City city) throws GithubTimeoutException, GithubRateLimitException {
+    private JsonObject executeGraphQLQuery(String query, String language, int pageNumber, City city)
+            throws GithubTimeoutException, GithubRateLimitException {
         githubTokenRateManager.initializeRateLimits();
         if (log.isDebugEnabled()) {
             log.debug("Raw GraphQL Query:\n{}", query);
@@ -253,7 +266,8 @@ public class GithubService {
                                     String retryAfter = !retryAfterHeaders.isEmpty() ? retryAfterHeaders.get(0) : null;
                                     if (retryAfter != null) {
                                         GithubToken token = webClientToGithubToken.getValue1();
-                                        githubTokenRateManager.updateTokenRateLimits(token, clientResponse.headers().asHttpHeaders());
+                                        githubTokenRateManager.updateTokenRateLimits(token,
+                                                clientResponse.headers().asHttpHeaders());
                                         log.error("Secondary rate limit hit. Retry after {} seconds", retryAfter);
                                     }
                                     throw new GithubTooFastException("Token might be invalid or expired, or too fast");
@@ -272,13 +286,16 @@ public class GithubService {
                                 for (JsonElement error : errors) {
                                     String message = error.getAsJsonObject().get("message").getAsString();
                                     if (message.contains("rate limit")) {
-                                        throw new GithubRateLimitException("Rate limit exceeded, switching to next token");
+                                        throw new GithubRateLimitException(
+                                                "Rate limit exceeded, switching to next token");
                                     }
                                     if (message.contains("timeout")) {
-                                        throw new GithubTimeoutException("Timeout occurred, will reduce the return size");
+                                        throw new GithubTimeoutException(
+                                                "Timeout occurred, will reduce the return size");
                                     }
                                     if (message.contains("forbidden")) {
-                                        throw new GithubTooFastException("Token might be invalid or expired, or too fast");
+                                        throw new GithubTooFastException(
+                                                "Token might be invalid or expired, or too fast");
                                     }
                                     log.warn("GitHub API error: {}", message);
                                 }
@@ -288,12 +305,13 @@ public class GithubService {
                             boolean isEmpty = !jsonResponse.has("data")
                                     || jsonResponse.get("data").isJsonNull()
                                     || (jsonResponse.getAsJsonObject("data").has("search")
-                                    && jsonResponse.getAsJsonObject("data")
-                                            .getAsJsonObject("search")
-                                            .getAsJsonArray("nodes")
-                                            .size() == 0);
+                                            && jsonResponse.getAsJsonObject("data")
+                                                    .getAsJsonObject("search")
+                                                    .getAsJsonArray("nodes")
+                                                    .size() == 0);
                             if (isEmpty) {
-                                log.info("Empty response for city: {}, will cache to avoid future API calls", city.getName());
+                                log.info("Empty response for city: {}, will cache to avoid future API calls",
+                                        city.getName());
                             }
 
                             return jsonResponse;
@@ -304,15 +322,12 @@ public class GithubService {
             } catch (Throwable th) {
                 String errorMessage = th.getMessage();
 
-                boolean isTimeout
-                        = errorMessage != null
+                boolean isTimeout = errorMessage != null
                         && (errorMessage.contains("timeout") || errorMessage.contains("Timeout"));
 
-                boolean isRateLimit
-                        = errorMessage != null && errorMessage.contains("rate limit");
+                boolean isRateLimit = errorMessage != null && errorMessage.contains("rate limit");
 
-                boolean isForbidden
-                        = errorMessage != null && errorMessage.contains("forbidden");
+                boolean isForbidden = errorMessage != null && errorMessage.contains("forbidden");
 
                 if (isTimeout) {
                     throw new GithubTimeoutException("Timeout occurred, will reduce the return size", th);
@@ -329,8 +344,7 @@ public class GithubService {
             }
         }).orElseThrow(() -> new GithubGeneralException(
                 String.format("No data returned for city: %s, language: %s, page: %d",
-                        city.getName(), language, pageNumber)
-        ));
+                        city.getName(), language, pageNumber)));
     }
 
     private String buildGitHubQuery(String cursor, City city, Language language, Integer numberOfUsers) {
@@ -372,8 +386,7 @@ public class GithubService {
                         totalForks,
                         starsGiven,
                         forksGiven,
-                        latestCommit
-                );
+                        latestCommit);
 
                 // Find nearest team
                 String nearestTeamId = soccerTeamService.findNearestTeamId(city);
@@ -391,7 +404,9 @@ public class GithubService {
                         .forksReceived(totalForks)
                         .totalStars(calculateTotalStars(repositories))
                         .totalForks(totalForks)
-                        .latestCommitDate(latestCommit != null ? latestCommit.atZone(java.time.ZoneOffset.UTC).toLocalDateTime() : null)
+                        .latestCommitDate(
+                                latestCommit != null ? latestCommit.atZone(java.time.ZoneOffset.UTC).toLocalDateTime()
+                                        : null)
                         .starsGiven(starsGiven)
                         .forksGiven(forksGiven)
                         .score((int) score)
@@ -427,9 +442,9 @@ public class GithubService {
     private long countJavaRepositories(JsonArray repositories) {
         return repositories.asList().stream()
                 .filter(repo -> repo.getAsJsonObject().has("primaryLanguage")
-                && !repo.getAsJsonObject().get("primaryLanguage").isJsonNull()
-                && repo.getAsJsonObject().getAsJsonObject("primaryLanguage")
-                        .get("name").getAsString().equals("Java"))
+                        && !repo.getAsJsonObject().get("primaryLanguage").isJsonNull()
+                        && repo.getAsJsonObject().getAsJsonObject("primaryLanguage")
+                                .get("name").getAsString().equals("Java"))
                 .count();
     }
 
@@ -460,7 +475,8 @@ public class GithubService {
 
     private String getStringOrDefault(JsonObject obj, String field, String defaultValue) {
         return obj.has(field) && !obj.get(field).isJsonNull()
-                ? obj.get(field).getAsString() : defaultValue;
+                ? obj.get(field).getAsString()
+                : defaultValue;
     }
 
     private int getContributionCount(JsonObject user) {
