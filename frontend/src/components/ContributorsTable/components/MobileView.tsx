@@ -19,8 +19,11 @@ import { LocationInfo } from './LocationInfo';
 import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
+import { useHiring } from '../../../hooks/useHiring';
 
 export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
+    const { hiringManager } = useHiring();
+
     if (isLoading) {
         return <LoadingSpinner message="Loading contributors..." />;
     }
@@ -93,7 +96,11 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                         gap: { xs: 2.5, sm: 2 }
                     }}>
                         <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-                            <ContributorInfo contributor={contributor} index={index} />
+                            <ContributorInfo 
+                                contributor={contributor} 
+                                index={index}
+                                hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
+                            />
                             <Box sx={{ mt: 2 }}>
                                 <LocationInfo contributor={contributor} />
                             </Box>

@@ -23,8 +23,11 @@ import { LocationInfo } from './LocationInfo';
 import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
+import { useHiring } from '../../../hooks/useHiring';
 
 export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
+    const { hiringManager } = useHiring();
+
     if (isLoading) {
         return <LoadingSpinner message="Loading contributors..." />;
     }
@@ -436,7 +439,11 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                 borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
                                 py: 1.5 
                             }}>
-                                <ContributorInfo contributor={contributor} index={index} />
+                                <ContributorInfo 
+                                    contributor={contributor} 
+                                    index={index} 
+                                    hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
+                                />
                             </TableCell>
                             <TableCell sx={{ 
                                 borderBottom: '1px solid',
