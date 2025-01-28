@@ -2,6 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 // Read environment variables with fallbacks
 const PORT = process.env.PORT || '8450';
@@ -95,6 +96,17 @@ module.exports = (env, argv) => {
     plugins: [
       new webpack.DefinePlugin({
         'process.env': JSON.stringify(process.env),
+      }),
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: 'public',
+            to: '.',
+            globOptions: {
+              ignore: ['**/index.html']
+            }
+          }
+        ]
       }),
       new HtmlWebpackPlugin({
         template: 'index.html',

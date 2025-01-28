@@ -26,7 +26,8 @@ public class PreCacheService {
     @Autowired
     CacheServiceAbs cacheService;
 
-    @Scheduled(initialDelay = 1000, fixedDelayString = "${github.cache.refresh.interval:3600000}")
+    // Always run the cache refresh cycle on startup
+    @Scheduled(initialDelay = 1000l, fixedDelay = 1000l)
     void runFullCacheCycle() {
         Instant startTime = Instant.now();
         log.info("Starting cache refresh cycle for all languages...");
@@ -36,7 +37,8 @@ public class PreCacheService {
             try {
                 log.info("Refreshing cache for language {}", language.getName());
                 // Force cache refresh for all cities
-                contributorController.getContributors(null, null, null, null, language.getId(), 15, GithubService.GithubApiPriority.Low);
+                contributorController.getContributors(null, null, null, null, language.getId(), 15,
+                        GithubService.GithubApiPriority.Low);
             } catch (Exception e) {
                 log.error("Error fetching contributors for language {}: {}", language.getName(), e.getMessage());
             }
