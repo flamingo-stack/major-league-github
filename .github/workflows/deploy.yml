@@ -334,6 +334,15 @@ jobs:
           
           echo "✅ Configuration completed successfully"
 
+      - name: Set OG Meta Tags Environment Variables 🎨
+        run: |
+          # Set OG Meta Tags environment variables
+          echo "OG_TITLE='Major League GitHub'" >> $GITHUB_ENV
+          echo "OG_DESCRIPTION='GitHub Scouting Report: Major League Edition'" >> $GITHUB_ENV
+          echo "OG_TYPE='website'" >> $GITHUB_ENV
+          echo "OG_IMAGE_URL='/og-image.jpg'" >> $GITHUB_ENV
+          echo "OG_SITE_NAME='Major League GitHub'" >> $GITHUB_ENV
+
       - name: Setup common functions 🛠️
         run: |
           # Create shared functions file
@@ -410,12 +419,24 @@ jobs:
           echo "✅ Cache updater image built and pushed"
 
       - name: Build and push frontend image 🎨 🦩
+        env:
+          OG_TITLE: ${{ env.OG_TITLE }}
+          OG_DESCRIPTION: ${{ env.OG_DESCRIPTION }}
+          OG_TYPE: ${{ env.OG_TYPE }}
+          OG_IMAGE_URL: ${{ env.OG_IMAGE_URL }}
+          OG_SITE_NAME: ${{ env.OG_SITE_NAME }}
         run: |
           source .github/shared-functions.sh
           
           echo "🦩 Building frontend image..."
           if ! docker build frontend \
             --build-arg BACKEND_API_URL=https://${DOMAIN_NAME}.${DOMAIN_SUFFIX} \
+            --build-arg OG_TITLE="${OG_TITLE}" \
+            --build-arg OG_DESCRIPTION="${OG_DESCRIPTION}" \
+            --build-arg OG_TYPE="${OG_TYPE}" \
+            --build-arg OG_IMAGE_URL="${OG_IMAGE_URL}" \
+            --build-arg OG_URL="https://${DOMAIN_NAME}.${DOMAIN_SUFFIX}" \
+            --build-arg OG_SITE_NAME="${OG_SITE_NAME}" \
             -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} \
             -t ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
             echo "❌ Error: Failed to build frontend image"
@@ -434,6 +455,7 @@ jobs:
           fi
           
           echo "✅ Frontend image built and pushed"
+
       - name: Cleanup old images 🧹 🦩
         run: |
           echo "🦩 Cleaning up old images..."
@@ -909,23 +931,5 @@ jobs:
           environment: production
           initial-status: success
           environment-url: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}
-
-      - name: Set environment variables
-        run: |
-          echo "DOMAIN_NAME=major-league-github" >> $GITHUB_ENV
-          echo "ENVIRONMENT=production" >> $GITHUB_ENV
-          echo "BACKEND_REPLICAS=1" >> $GITHUB_ENV
-          echo "FRONTEND_REPLICAS=1" >> $GITHUB_ENV
-          # Reduced resource requests and limits
-          echo "BACKEND_REQUEST_MEMORY=1Gi" >> $GITHUB_ENV
-          echo "BACKEND_REQUEST_CPU=200m" >> $GITHUB_ENV
-          echo "BACKEND_LIMIT_MEMORY=2Gi" >> $GITHUB_ENV
-          echo "BACKEND_LIMIT_CPU=500m" >> $GITHUB_ENV
-          echo "FRONTEND_REQUEST_MEMORY=256Mi" >> $GITHUB_ENV
-          echo "FRONTEND_REQUEST_CPU=100m" >> $GITHUB_ENV
-          echo "FRONTEND_LIMIT_MEMORY=512Mi" >> $GITHUB_ENV
-          echo "FRONTEND_LIMIT_CPU=200m" >> $GITHUB_ENV
-          echo "JAVA_MAX_HEAP=1536m" >> $GITHUB_ENV
-          echo "JAVA_MIN_HEAP=1024m" >> $GITHUB_ENV
 
 

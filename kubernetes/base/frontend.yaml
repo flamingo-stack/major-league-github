@@ -25,6 +25,19 @@ spec:
         - name: frontend
           image: ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}
           imagePullPolicy: Always
+          env:
+            - name: OG_TITLE
+              value: "${OG_TITLE}"
+            - name: OG_DESCRIPTION
+              value: "${OG_DESCRIPTION}"
+            - name: OG_TYPE
+              value: "${OG_TYPE}"
+            - name: OG_IMAGE_URL
+              value: "${OG_IMAGE_URL}"
+            - name: OG_URL
+              value: "https://${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
+            - name: OG_SITE_NAME
+              value: "${OG_SITE_NAME}"
           envFrom:
             - configMapRef:
                 name: app-config
