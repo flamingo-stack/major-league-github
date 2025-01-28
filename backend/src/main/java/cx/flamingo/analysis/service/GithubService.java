@@ -601,6 +601,28 @@ public class GithubService {
                     url
                   }
                 }
+                repositories(first: 100, orderBy: {field: STARGAZERS, direction: DESC}, ownerAffiliations: [OWNER]) {
+                  totalCount
+                  nodes {
+                    stargazerCount
+                    forkCount
+                    defaultBranchRef {
+                      target {
+                        ... on Commit {
+                          history {
+                            totalCount
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                contributionsCollection {
+                  totalCommitContributions
+                  totalPullRequestContributions
+                  totalIssueContributions
+                  totalRepositoryContributions
+                }
               }
             }
         """.formatted(username);
@@ -609,16 +631,21 @@ public class GithubService {
         queryJson.addProperty("query", graphqlQuery);
         
         var graphqlResponse = webClientToGithubToken.getValue0().post()
-            .uri("https://api.github.com/graphql")
             .bodyValue(gson.toJson(queryJson))
             .retrieve()
             .bodyToMono(String.class)
             .block();
 
-        JsonObject graphqlData = JsonParser.parseString(graphqlResponse)
-            .getAsJsonObject()
-            .getAsJsonObject("data")
-            .getAsJsonObject("user");
+        JsonObject jsonResponse = JsonParser.parseString(graphqlResponse).getAsJsonObject();
+        
+        // Check if we have data and user exists
+        if (!jsonResponse.has("data") || jsonResponse.get("data").isJsonNull() || 
+            !jsonResponse.getAsJsonObject("data").has("user") || 
+            jsonResponse.getAsJsonObject("data").get("user").isJsonNull()) {
+            throw new GithubGeneralException("User not found or data not available");
+        }
+
+        JsonObject graphqlData = jsonResponse.getAsJsonObject("data").getAsJsonObject("user");
         
         String role = "Engineering Manager";
         String bio = "Building OpenFrame - the open-source platform helping MSPs break free from vendor lock-in.";
@@ -636,18 +663,23 @@ public class GithubService {
         List<SocialLink> socialLinks = new ArrayList<>();
         
         // Add social accounts from GraphQL response
-        JsonArray socialAccounts = graphqlData.getAsJsonObject("socialAccounts")
-            .getAsJsonArray("nodes");
-        
-        for (JsonElement account : socialAccounts) {
-            JsonObject accountObj = account.getAsJsonObject();
-            String provider = accountObj.get("provider").getAsString().toLowerCase();
-            String url = accountObj.get("url").getAsString();
-            
-            socialLinks.add(SocialLink.builder()
-                .platform(provider)
-                .url(url)
-                .build());
+        if (graphqlData.has("socialAccounts") && !graphqlData.get("socialAccounts").isJsonNull()) {
+            JsonObject socialAccounts = graphqlData.getAsJsonObject("socialAccounts");
+            if (socialAccounts.has("nodes") && !socialAccounts.get("nodes").isJsonNull()) {
+                JsonArray nodes = socialAccounts.getAsJsonArray("nodes");
+                for (JsonElement account : nodes) {
+                    if (!account.isJsonNull()) {
+                        JsonObject accountObj = account.getAsJsonObject();
+                        String provider = accountObj.get("provider").getAsString().toLowerCase();
+                        String url = accountObj.get("url").getAsString();
+                        
+                        socialLinks.add(SocialLink.builder()
+                            .platform(provider)
+                            .url(url)
+                            .build());
+                    }
+                }
+            }
         }
 
         // Always add GitHub
@@ -664,12 +696,66 @@ public class GithubService {
                 .build());
         }
 
+        // Add Twitter if present
+        if (graphqlData.has("twitterUsername") && !graphqlData.get("twitterUsername").isJsonNull()) {
+            String twitterUsername = graphqlData.get("twitterUsername").getAsString();
+            if (!twitterUsername.isEmpty()) {
+                socialLinks.add(SocialLink.builder()
+                    .platform("twitter")
+                    .url("https://twitter.com/" + twitterUsername)
+                    .build());
+            }
+        }
+
+        // Calculate GitHub stats
+        Map<String, Integer> githubStats = new HashMap<>();
+        
+        if (graphqlData.has("repositories") && !graphqlData.get("repositories").isJsonNull()) {
+            JsonObject repos = graphqlData.getAsJsonObject("repositories");
+            int totalStars = 0;
+            int totalForks = 0;
+            int totalCommits = 0;
+            
+            if (repos.has("nodes") && !repos.get("nodes").isJsonNull()) {
+                JsonArray repoNodes = repos.getAsJsonArray("nodes");
+                for (JsonElement repoElement : repoNodes) {
+                    if (!repoElement.isJsonNull()) {
+                        JsonObject repo = repoElement.getAsJsonObject();
+                        totalStars += repo.get("stargazerCount").getAsInt();
+                        totalForks += repo.get("forkCount").getAsInt();
+                        
+                        if (repo.has("defaultBranchRef") && !repo.get("defaultBranchRef").isJsonNull()) {
+                            JsonObject defaultBranch = repo.getAsJsonObject("defaultBranchRef");
+                            if (defaultBranch.has("target") && !defaultBranch.get("target").isJsonNull()) {
+                                JsonObject target = defaultBranch.getAsJsonObject("target");
+                                if (target.has("history") && !target.get("history").isJsonNull()) {
+                                    totalCommits += target.getAsJsonObject("history").get("totalCount").getAsInt();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            githubStats.put("totalStars", totalStars);
+            githubStats.put("totalForks", totalForks);
+            githubStats.put("totalCommits", totalCommits);
+            githubStats.put("totalRepositories", repos.get("totalCount").getAsInt());
+        }
+        
+        if (graphqlData.has("contributionsCollection") && !graphqlData.get("contributionsCollection").isJsonNull()) {
+            JsonObject contributions = graphqlData.getAsJsonObject("contributionsCollection");
+            githubStats.put("totalPullRequests", contributions.get("totalPullRequestContributions").getAsInt());
+            githubStats.put("totalIssues", contributions.get("totalIssueContributions").getAsInt());
+        }
+
         return HiringManagerProfile.builder()
-            .name(githubProfile.name != null ? githubProfile.name : username)
+            .name(githubProfile.name)
             .avatarUrl(githubProfile.avatar_url)
             .role(role)
             .bio(bio)
             .socialLinks(socialLinks)
+            .githubStats(githubStats)
             .build();
     }
 
