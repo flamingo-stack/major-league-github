@@ -21,6 +21,10 @@ env:
   GH_PAT: ${{ secrets.GH_PAT }}
   GH_API_TOKENS: ${{ secrets.GH_API_TOKENS }}
   
+  # LinkedIn
+  LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
+  LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+  
   # Cluster configuration
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
   CLUSTER_REGION: nyc3
@@ -91,6 +95,14 @@ jobs:
           
           if [ -z "${{ secrets.GH_API_TOKENS }}" ]; then
             missing_secrets+=("GH_API_TOKENS")
+          fi
+          
+          if [ -z "${{ secrets.LINKEDIN_CLIENT_ID }}" ]; then
+            missing_secrets+=("LINKEDIN_CLIENT_ID")
+          fi
+          
+          if [ -z "${{ secrets.LINKEDIN_CLIENT_SECRET }}" ]; then
+            missing_secrets+=("LINKEDIN_CLIENT_SECRET")
           fi
           
           if [ -z "${{ secrets.CLUSTER_NAME }}" ]; then
@@ -652,6 +664,8 @@ jobs:
           if ! kubectl create secret generic app-secrets \
             --namespace=${REGISTRY_NAME} \
             --from-literal=github.tokens="${{ env.GH_API_TOKENS }}" \
+            --from-literal=linkedin.client.id="${{ env.LINKEDIN_CLIENT_ID }}" \
+            --from-literal=linkedin.client.secret="${{ env.LINKEDIN_CLIENT_SECRET }}" \
             --dry-run=client -o yaml | kubectl apply -f -; then
             echo "❌ Error: Failed to create application secrets"
             exit 1

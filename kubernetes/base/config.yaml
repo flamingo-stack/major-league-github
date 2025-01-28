@@ -34,6 +34,8 @@ metadata:
 type: Opaque
 stringData:
   github.tokens: "${GH_API_TOKENS}"
+  linkedin.client.id: "${LINKEDIN_CLIENT_ID}"
+  linkedin.client.secret: "${LINKEDIN_CLIENT_SECRET}"
 ---
 apiVersion: v1
 kind: Secret
