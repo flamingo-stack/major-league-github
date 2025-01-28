@@ -19,8 +19,11 @@ import { LocationInfo } from './LocationInfo';
 import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
+import { useHiring } from '../../../hooks/useHiring';
 
 export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
+    const { hiringManager } = useHiring();
+
     if (isLoading) {
         return <LoadingSpinner message="Loading contributors..." />;
     }
@@ -84,7 +87,9 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                             bgcolor: (theme: Theme) => theme.palette.mode === 'dark' 
                                 ? 'rgba(177, 186, 196, 0.08)' 
                                 : 'rgba(234, 238, 242, 0.5)'
-                        }
+                        },
+                        position: 'relative',
+                        zIndex: 1
                     }}
                 >
                     <Box sx={{ 
@@ -93,17 +98,27 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                         gap: { xs: 2.5, sm: 2 }
                     }}>
                         <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-                            <ContributorInfo contributor={contributor} index={index} />
-                            <Box sx={{ mt: 2 }}>
-                                <LocationInfo contributor={contributor} />
+                            <Box sx={{ 
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 1,
+                                mb: 2
+                            }}>
+                                <ContributorInfo 
+                                    contributor={contributor} 
+                                    index={index}
+                                    hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
+                                />
                             </Box>
+                            <LocationInfo contributor={contributor} />
                         </Box>
                         
                         <Box sx={{ 
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(2, 1fr)',
-                            gap: 1.5,
-                            alignContent: 'flex-start',
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            alignItems: 'center',
                             width: '100%'
                         }}>
                             <StatItem 

@@ -23,8 +23,11 @@ import { LocationInfo } from './LocationInfo';
 import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
+import { useHiring } from '../../../hooks/useHiring';
 
 export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
+    const { hiringManager } = useHiring();
+
     if (isLoading) {
         return <LoadingSpinner message="Loading contributors..." />;
     }
@@ -107,75 +110,161 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
         </Box>
     );
 
-    const ScoreTooltip = ({ contributor }: { contributor: Contributor }) => (
-        <Box sx={{ p: 1.5, maxWidth: 300 }}>
-            <Typography sx={{ 
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                mb: 1 
+    const ScoreTooltip = ({ contributor }: { contributor: Contributor }) => {
+        const [isExpanded, setIsExpanded] = React.useState(false);
+
+        return (
+            <Box sx={{ 
+                width: 320,
+                '& > *': { width: '100%' }
             }}>
-                Score Components
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Box>
+                <Box sx={{ p: 1.5 }}>
                     <Typography sx={{ 
-                        fontSize: '0.75rem',
-                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                        mb: 0.5 
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                        mb: 1 
                     }}>
-                        Activity Score
+                        Score Components
                     </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <CodeIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37' }} />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box>
                             <Typography sx={{ 
                                 fontSize: '0.75rem',
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                mb: 0.5 
                             }}>
-                                {contributor.totalCommits} commits
+                                Activity Score
                             </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <CodeIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37' }} />
+                                    <Typography sx={{ 
+                                        fontSize: '0.75rem',
+                                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                                    }}>
+                                        {contributor.totalCommits} commits
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <StarIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700' }} />
+                                    <Typography sx={{ 
+                                        fontSize: '0.75rem',
+                                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                                    }}>
+                                        {contributor.starsReceived} stars received
+                                    </Typography>
+                                </Box>
+                            </Box>
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <StarIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700' }} />
+                        <Box>
                             <Typography sx={{ 
                                 fontSize: '0.75rem',
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                mb: 0.5 
                             }}>
-                                {contributor.starsReceived} stars received
+                                Recency Multiplier
                             </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <UpdateIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da' }} />
+                                    <Typography sx={{ 
+                                        fontSize: '0.75rem',
+                                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                                    }}>
+                                        Last commit: {new Date(Date.UTC(
+                                            Number(contributor.latestCommitDate[0]),
+                                            Number(contributor.latestCommitDate[1]) - 1,
+                                            Number(contributor.latestCommitDate[2]),
+                                            Number(contributor.latestCommitDate[3]),
+                                            Number(contributor.latestCommitDate[4])
+                                        )).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </Typography>
+                                </Box>
+                            </Box>
                         </Box>
-                    </Box>
-                </Box>
-                <Box>
-                    <Typography sx={{ 
-                        fontSize: '0.75rem',
-                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                        mb: 0.5 
-                    }}>
-                        Recency Multiplier
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <UpdateIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da' }} />
+                        <Box 
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            sx={{ 
+                                mt: 1,
+                                p: 1,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                borderRadius: '6px',
+                                transition: 'background-color 0.2s',
+                                '&:hover': {
+                                    bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.1)' : 'rgba(234, 238, 242, 0.5)'
+                                }
+                            }}
+                        >
+                            <Box sx={{ 
+                                display: 'flex',
+                                alignItems: 'center',
+                                transform: isExpanded ? 'rotate(90deg)' : 'none',
+                                transition: 'transform 0.2s',
+                                color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'
+                            }}>
+                                ›
+                            </Box>
                             <Typography sx={{ 
                                 fontSize: '0.75rem',
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                                color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                fontWeight: 500
                             }}>
-                                Last commit: {new Date(Date.UTC(
-                                    Number(contributor.latestCommitDate[0]),
-                                    Number(contributor.latestCommitDate[1]) - 1,
-                                    Number(contributor.latestCommitDate[2]),
-                                    Number(contributor.latestCommitDate[3]),
-                                    Number(contributor.latestCommitDate[4])
-                                )).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                {isExpanded ? 'How score is calculated?' : 'How score is calculated?'}
                             </Typography>
                         </Box>
+                        {isExpanded && (
+                            <Box sx={{ 
+                                mt: 1,
+                                p: 1.5,
+                                bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(13, 17, 23, 0.6)' : '#f6f8fa',
+                                borderRadius: '6px',
+                                border: '1px solid',
+                                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)',
+                                width: '100%',
+                                boxSizing: 'border-box'
+                            }}>
+                                <Typography sx={{ 
+                                    fontSize: '0.75rem',
+                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                    lineHeight: 1.4,
+                                    mb: 1.5
+                                }}>
+                                    The score reflects both the volume and recency of GitHub activity. A high score indicates both substantial contributions and recent engagement.
+                                </Typography>
+                                <Box sx={{ 
+                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                    fontSize: '0.75rem',
+                                    fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace',
+                                    lineHeight: 1.4
+                                }}>
+                                    1. Base Score = {formatNumber(contributor.totalCommits)} × {formatNumber(Math.max(contributor.starsReceived, 1))}<br/>
+                                    • {formatNumber(contributor.totalCommits)} commits<br/>
+                                    • {formatNumber(contributor.starsReceived)} stars received (min: 1)<br/>
+                                    = {formatNumber(contributor.totalCommits * Math.max(contributor.starsReceived, 1))}<br/>
+                                    <br/>
+                                    2. Recency Factor:<br/>
+                                    • Last commit: {new Date(Date.UTC(
+                                        Number(contributor.latestCommitDate[0]),
+                                        Number(contributor.latestCommitDate[1]) - 1,
+                                        Number(contributor.latestCommitDate[2]),
+                                        Number(contributor.latestCommitDate[3]),
+                                        Number(contributor.latestCommitDate[4])
+                                    )).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br/>
+                                    • Multiplier: {Number(contributor.latestCommitDate[0]) === new Date().getFullYear() ? '2.0' : '1.0'}<br/>
+                                    <br/>
+                                    {formatNumber(contributor.totalCommits * Math.max(contributor.starsReceived, 1))} × {Number(contributor.latestCommitDate[0]) === new Date().getFullYear() ? '2.0' : '1.0'} = {formatNumber(contributor.score)}
+                                </Box>
+                            </Box>
+                        )}
                     </Box>
                 </Box>
             </Box>
-        </Box>
-    );
+        );
+    };
 
     const ActivityTooltip = ({ contributor }: { contributor: Contributor }) => (
         <Box sx={{ p: 1.5, maxWidth: 300 }}>
@@ -350,7 +439,11 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                 borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
                                 py: 1.5 
                             }}>
-                                <ContributorInfo contributor={contributor} index={index} />
+                                <ContributorInfo 
+                                    contributor={contributor} 
+                                    index={index} 
+                                    hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
+                                />
                             </TableCell>
                             <TableCell sx={{ 
                                 borderBottom: '1px solid',
@@ -382,7 +475,9 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                                 borderRadius: '6px',
                                                 boxShadow: theme => theme.palette.mode === 'dark'
                                                     ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)'
+                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)',
+                                                p: 0,
+                                                maxWidth: 'none !important'
                                             }
                                         }
                                     }}

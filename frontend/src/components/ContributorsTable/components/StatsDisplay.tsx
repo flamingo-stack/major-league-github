@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid, Box, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import CodeIcon from '@mui/icons-material/Code';
 import ListAltIcon from '@mui/icons-material/ListAlt';
@@ -54,39 +54,41 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({ contributor }) => {
     ];
 
     return (
-        <>
+        <Box sx={{ 
+            display: 'flex', 
+            flexWrap: 'wrap',
+            gap: 1,
+            alignItems: 'center'
+        }}>
             {stats.map((stat, index) => (
-                <Grid item xs={6} key={stat.label}>
+                <Box key={stat.label} sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    gap: 1.5,
+                    bgcolor: '#161b22',
+                    borderRadius: '2rem',
+                    py: 0.75,
+                    px: 1.5,
+                }}>
                     <Box sx={{ 
-                        display: 'flex', 
+                        display: 'flex',
                         alignItems: 'center',
-                        gap: 1.5,
-                        bgcolor: '#161b22',
-                        borderRadius: '2rem',
-                        py: 0.75,
-                        px: 1.5,
-                        width: 'fit-content'
+                        color: '#7d8590'
                     }}>
-                        <Box sx={{ 
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: '#7d8590'
-                        }}>
-                            {stat.icon}
-                        </Box>
-                        <Typography 
-                            variant="body2"
-                            sx={{ 
-                                fontWeight: 600,
-                                fontSize: '0.875rem',
-                                color: '#e6edf3'
-                            }}
-                        >
-                            {stat.value}
-                        </Typography>
+                        {stat.icon}
                     </Box>
-                </Grid>
+                    <Typography 
+                        variant="body2"
+                        sx={{ 
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            color: '#e6edf3'
+                        }}
+                    >
+                        {stat.value}
+                    </Typography>
+                </Box>
             ))}
-        </>
+        </Box>
     );
 }; 

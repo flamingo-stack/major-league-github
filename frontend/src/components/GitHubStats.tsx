@@ -28,32 +28,32 @@ interface GitHubStatsProps {
 }
 
 const StatItem = ({ icon, value, color }: { icon: React.ReactNode; value: string; color: (theme: Theme) => string }) => (
-  <Box sx={{ 
-    display: 'flex', 
-    alignItems: 'center', 
-    gap: 0.5,
-    borderRadius: '6px',
-    py: 0.25,
-    px: 0.75,
-    minWidth: 0,
-    height: '22px',
-    bgcolor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(13, 17, 23, 0.6)' : '#f6f8fa',
-    border: '1px solid',
-    borderColor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)',
-  }}>
-    {React.cloneElement(icon as React.ReactElement, { 
-      sx: { fontSize: 14, color: (theme: Theme) => color(theme), flexShrink: 0 }
-    })}
-    <Typography sx={{ 
-      fontSize: '0.875rem', 
-      fontWeight: 600, 
-      color: (theme: Theme) => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f', 
-      lineHeight: 1 
+    <Box sx={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: 0.5,
+      borderRadius: '6px',
+      py: 0.25,
+      px: 0.75,
+      minWidth: 0,
+      height: '22px',
+      bgcolor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(13, 17, 23, 0.6)' : '#f6f8fa',
+      border: '1px solid',
+      borderColor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)',
     }}>
-      {value}
-    </Typography>
-  </Box>
-);
+      {React.cloneElement(icon as React.ReactElement, { 
+        sx: { fontSize: 14, color: (theme: Theme) => color(theme), flexShrink: 0 }
+      })}
+      <Typography sx={{ 
+        fontSize: '0.875rem', 
+        fontWeight: 600, 
+        color: (theme: Theme) => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f', 
+        lineHeight: 1 
+      }}>
+        {value}
+      </Typography>
+    </Box>
+  );
 
 export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) => {
   const formatScore = (score: number | undefined) => {
@@ -87,9 +87,10 @@ export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) =
   // Mobile View
   const mobileView = (
     <Box sx={{ 
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: 1.5,
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 1,
+      alignItems: 'center',
       px: 2,
       py: 2,
     }}>
@@ -138,8 +139,8 @@ export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) =
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <EmojiEventsIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da' }} />
         <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-          {formatScore(stats?.score)}
-        </Typography>
+              {formatScore(stats?.score)}
+            </Typography>
       </Box>
 
       {/* Activity */}
