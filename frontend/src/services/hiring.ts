@@ -22,6 +22,7 @@ export const fetchHiringManagerProfile = async (): Promise<HiringManagerProfile>
         url: 'https://twitter.com/michaelassraf',
       },
     ],
+    lastActive: new Date().toISOString(),
   };
 };
 
