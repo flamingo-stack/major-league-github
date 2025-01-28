@@ -47,7 +47,7 @@
             "webRoot": "${workspaceFolder}/frontend",
             "preLaunchTask": "Start Frontend Dev Server",
             "env": {
-                "BACKEND_API_URL": ":8080",
+                "BACKEND_API_URL": "http://localhost:8080",
                 "PORT": "8450",
                 "OG_TITLE": "Major League GitHub",
                 "OG_DESCRIPTION": "GitHub Scouting Report: Major League Edition",

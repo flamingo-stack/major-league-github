@@ -586,7 +586,7 @@ public class GithubService {
 
         GitHubProfile githubProfile = gson.fromJson(response, GitHubProfile.class);
         
-        // Then get social accounts using GraphQL API
+        // Then get detailed stats using the same GraphQL query we use for contributors
         String graphqlQuery = """
             query {
               user(login: "%s") {
@@ -594,34 +594,43 @@ public class GithubService {
                 name
                 bio
                 avatarUrl
+                email
+                websiteUrl
                 twitterUsername
-                socialAccounts(first: 10) {
-                  nodes {
-                    provider
-                    url
-                  }
-                }
-                repositories(first: 100, orderBy: {field: STARGAZERS, direction: DESC}, ownerAffiliations: [OWNER]) {
-                  totalCount
-                  nodes {
-                    stargazerCount
-                    forkCount
-                    defaultBranchRef {
-                      target {
-                        ... on Commit {
-                          history {
-                            totalCount
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
                 contributionsCollection {
                   totalCommitContributions
                   totalPullRequestContributions
                   totalIssueContributions
                   totalRepositoryContributions
+                  contributionCalendar {
+                    weeks {
+                      contributionDays {
+                        contributionCount
+                        date
+                      }
+                    }
+                  }
+                }
+                starredRepositories {
+                  totalCount
+                }
+                forkedRepos: repositories(isFork: true) {
+                  totalCount
+                }
+                originalRepos: repositories(first: 100, isFork: false, orderBy: {field: STARGAZERS, direction: DESC}) {
+                  nodes {
+                    stargazerCount
+                    forkCount
+                    primaryLanguage {
+                      name
+                    }
+                  }
+                }
+                socialAccounts(first: 10) {
+                  nodes {
+                    provider
+                    url
+                  }
                 }
               }
             }
@@ -637,14 +646,6 @@ public class GithubService {
             .block();
 
         JsonObject jsonResponse = JsonParser.parseString(graphqlResponse).getAsJsonObject();
-        
-        // Check if we have data and user exists
-        if (!jsonResponse.has("data") || jsonResponse.get("data").isJsonNull() || 
-            !jsonResponse.getAsJsonObject("data").has("user") || 
-            jsonResponse.getAsJsonObject("data").get("user").isJsonNull()) {
-            throw new GithubGeneralException("User not found or data not available");
-        }
-
         JsonObject graphqlData = jsonResponse.getAsJsonObject("data").getAsJsonObject("user");
         
         String role = "Engineering Manager";
@@ -682,21 +683,22 @@ public class GithubService {
             }
         }
 
-        // Always add GitHub
+        // Add standard social links
         socialLinks.add(SocialLink.builder()
             .platform("github")
             .url(String.format("https://github.com/%s", username))
             .build());
 
-        // Add email if present
-        if (githubProfile.email != null && !githubProfile.email.trim().isEmpty()) {
-            socialLinks.add(SocialLink.builder()
-                .platform("email")
-                .url("mailto:" + githubProfile.email.trim())
-                .build());
+        if (graphqlData.has("email") && !graphqlData.get("email").isJsonNull()) {
+            String email = graphqlData.get("email").getAsString();
+            if (!email.isEmpty()) {
+                socialLinks.add(SocialLink.builder()
+                    .platform("email")
+                    .url("mailto:" + email)
+                    .build());
+            }
         }
 
-        // Add Twitter if present
         if (graphqlData.has("twitterUsername") && !graphqlData.get("twitterUsername").isJsonNull()) {
             String twitterUsername = graphqlData.get("twitterUsername").getAsString();
             if (!twitterUsername.isEmpty()) {
@@ -707,46 +709,43 @@ public class GithubService {
             }
         }
 
-        // Calculate GitHub stats
+        // Calculate stats using the same methods as for contributors
         Map<String, Integer> githubStats = new HashMap<>();
         
-        if (graphqlData.has("repositories") && !graphqlData.get("repositories").isJsonNull()) {
-            JsonObject repos = graphqlData.getAsJsonObject("repositories");
-            int totalStars = 0;
-            int totalForks = 0;
-            int totalCommits = 0;
-            
-            if (repos.has("nodes") && !repos.get("nodes").isJsonNull()) {
-                JsonArray repoNodes = repos.getAsJsonArray("nodes");
-                for (JsonElement repoElement : repoNodes) {
-                    if (!repoElement.isJsonNull()) {
-                        JsonObject repo = repoElement.getAsJsonObject();
-                        totalStars += repo.get("stargazerCount").getAsInt();
-                        totalForks += repo.get("forkCount").getAsInt();
-                        
-                        if (repo.has("defaultBranchRef") && !repo.get("defaultBranchRef").isJsonNull()) {
-                            JsonObject defaultBranch = repo.getAsJsonObject("defaultBranchRef");
-                            if (defaultBranch.has("target") && !defaultBranch.get("target").isJsonNull()) {
-                                JsonObject target = defaultBranch.getAsJsonObject("target");
-                                if (target.has("history") && !target.get("history").isJsonNull()) {
-                                    totalCommits += target.getAsJsonObject("history").get("totalCount").getAsInt();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            githubStats.put("totalStars", totalStars);
-            githubStats.put("totalForks", totalForks);
+        JsonObject reposObj = graphqlData.getAsJsonObject("originalRepos");
+        if (reposObj != null && reposObj.has("nodes")) {
+            JsonArray repositories = reposObj.getAsJsonArray("nodes");
+            int starsReceived = calculateStarsReceived(repositories);
+            int totalForks = calculateTotalForks(repositories);
+            long javaRepos = countJavaRepositories(repositories);
+            int totalCommits = getContributionCount(graphqlData);
+            int starsGiven = getStarsGiven(graphqlData);
+            int forksGiven = getForksGiven(graphqlData);
+            Instant latestCommit = getLatestCommitDate(graphqlData);
+
+            double score = calculateScore(
+                totalCommits,
+                javaRepos,
+                starsReceived,
+                totalForks,
+                starsGiven,
+                forksGiven,
+                latestCommit
+            );
+
+            githubStats.put("score", (int) score);
             githubStats.put("totalCommits", totalCommits);
-            githubStats.put("totalRepositories", repos.get("totalCount").getAsInt());
-        }
-        
-        if (graphqlData.has("contributionsCollection") && !graphqlData.get("contributionsCollection").isJsonNull()) {
-            JsonObject contributions = graphqlData.getAsJsonObject("contributionsCollection");
-            githubStats.put("totalPullRequests", contributions.get("totalPullRequestContributions").getAsInt());
-            githubStats.put("totalIssues", contributions.get("totalIssueContributions").getAsInt());
+            githubStats.put("javaRepos", (int) javaRepos);
+            githubStats.put("starsReceived", starsReceived);
+            githubStats.put("forksReceived", totalForks);
+            githubStats.put("starsGiven", starsGiven);
+            githubStats.put("forksGiven", forksGiven);
+            
+            if (graphqlData.has("contributionsCollection")) {
+                JsonObject contributions = graphqlData.getAsJsonObject("contributionsCollection");
+                githubStats.put("totalPullRequests", contributions.get("totalPullRequestContributions").getAsInt());
+                githubStats.put("totalIssues", contributions.get("totalIssueContributions").getAsInt());
+            }
         }
 
         return HiringManagerProfile.builder()
@@ -756,6 +755,7 @@ public class GithubService {
             .bio(bio)
             .socialLinks(socialLinks)
             .githubStats(githubStats)
+            .lastActive(getLatestCommitDate(graphqlData))
             .build();
     }
 

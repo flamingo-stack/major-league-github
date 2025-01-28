@@ -16,6 +16,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import MergeIcon from '@mui/icons-material/Merge';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import { HiringManagerProfile, JobOpening } from '../types/hiring';
+import { GitHubStats } from './GitHubStats';
 
 interface HiringSectionProps {
   hiringManager: HiringManagerProfile | undefined;
@@ -322,7 +323,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                     <Skeleton variant="rectangular" height={100} />
                   </Box>
                 </Box>
-              ) : hiringManager ? (
+              ) : hiringManager && (
                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
                   {/* Hiring Manager Profile */}
                   <Box sx={{ flex: 1 }}>
@@ -369,56 +370,13 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
 
                     {/* GitHub Stats */}
                     {hiringManager.githubStats && (
-                      <Box sx={{ 
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                        gap: 2,
-                        mb: 2,
-                        p: 2,
-                        borderRadius: '6px',
-                        bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
-                        border: '1px solid',
-                        borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                      }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <StarIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                            {(hiringManager.githubStats?.totalStars || 0).toLocaleString()} Stars
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <ForkRightIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                            {(hiringManager.githubStats?.totalForks || 0).toLocaleString()} Forks
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <CommitIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                            {(hiringManager.githubStats?.totalCommits || 0).toLocaleString()} Commits
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <AccountTreeIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                            {(hiringManager.githubStats?.totalRepositories || 0).toLocaleString()} Repos
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <MergeIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                            {(hiringManager.githubStats?.totalPullRequests || 0).toLocaleString()} PRs
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <BugReportIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                            {(hiringManager.githubStats?.totalIssues || 0).toLocaleString()} Issues
-                            </Typography>
-                          </Box>
-                      </Box>
+                      <GitHubStats 
+                        stats={hiringManager.githubStats} 
+                        lastActive={hiringManager.lastActive} 
+                      />
                     )}
 
+                    {/* Social Links */}
                     <Box sx={{ 
                       display: 'flex', 
                       gap: 1.5,
@@ -527,7 +485,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                     </Box>
                   </Box>
                 </Box>
-              ) : null}
+              )}
             </Box>
           </Paper>
         </Collapse>

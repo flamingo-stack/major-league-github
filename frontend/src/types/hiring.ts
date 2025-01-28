@@ -17,11 +17,15 @@ export interface HiringManagerProfile {
   bio: string;
   socialLinks: SocialLink[];
   githubStats?: {
-    totalStars: number;
-    totalForks: number;
+    score: number;
     totalCommits: number;
-    totalRepositories: number;
+    javaRepos: number;
+    starsReceived: number;
+    forksReceived: number;
+    starsGiven: number;
+    forksGiven: number;
     totalPullRequests: number;
     totalIssues: number;
   };
+  lastActive: string;
 } 
