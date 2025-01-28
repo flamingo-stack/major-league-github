@@ -61,6 +61,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
           flexDirection: 'column',
           gap: 0,
           py: 2,
+          px: { xs: 1, sm: 1.5 },
           bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
           position: 'relative',
           zIndex: 2

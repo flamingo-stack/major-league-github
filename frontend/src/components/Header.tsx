@@ -33,7 +33,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                     justifyContent: 'space-between',
                     gap: { xs: 1, sm: 2 },
                     minHeight: { xs: 64, sm: 72 },
-                    px: { xs: 2, sm: 3 }
+                    px: { xs: 1, sm: 1.5 }
                 }}>
                     <Box sx={{ 
                         display: 'flex', 

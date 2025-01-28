@@ -29,7 +29,7 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
         sx={{ 
           flex: 1,
           py: 4,
-          px: { xs: 2, sm: 3 },
+          px: { xs: 1, sm: 1.5 },
           display: 'flex',
           flexDirection: 'column',
           gap: 3,
@@ -55,7 +55,7 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
             zIndex: 1000,
           }}
         >
-          <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+          <Container maxWidth="lg">
             <HiringSection
               hiringManager={hiringManager}
               jobOpenings={jobOpenings}
