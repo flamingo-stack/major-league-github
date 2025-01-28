@@ -1,5 +1,7 @@
 package cx.flamingo.analysis.config;
 
+import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +15,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
 @Configuration
 public class RedisConfig {
@@ -50,6 +55,27 @@ public class RedisConfig {
     public Gson gson() {
         return new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
+            .registerTypeAdapter(Instant.class, new InstantTypeAdapter())
             .create();
+    }
+
+    private static class InstantTypeAdapter extends TypeAdapter<Instant> {
+        @Override
+        public void write(JsonWriter out, Instant value) throws IOException {
+            if (value == null) {
+                out.nullValue();
+            } else {
+                out.value(value.toString());
+            }
+        }
+
+        @Override
+        public Instant read(JsonReader in) throws IOException {
+            if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
+                in.nextNull();
+                return null;
+            }
+            return Instant.parse(in.nextString());
+        }
     }
 }
