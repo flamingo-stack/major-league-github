@@ -1,7 +1,7 @@
 # Major League GitHub ⚽💻
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/flamingo-cx/major-league-github/main/frontend/public/og-image.png" alt="Major League GitHub Logo" width="150" height="150"/>
+  <img src="https://raw.githubusercontent.com/flamingo-cx/major-league-github/main/frontend/public/og-image.png" alt="Major League GitHub Logo"/>
 </div>
 
 [![Build and Deploy](https://github.com/flamingo-cx/major-league-github/actions/workflows/deploy.yml/badge.svg)](https://github.com/flamingo-cx/major-league-github/actions/workflows/deploy.yml)
