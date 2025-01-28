@@ -19,7 +19,7 @@ export const SoccerTeamDisplay = ({ team }: SoccerTeamDisplayProps) => {
           borderRadius: 0.5,
           '& img': {
             objectFit: 'contain'
-          }
+          } 
         }}
       />
       <Typography variant="body2" color="text.secondary">

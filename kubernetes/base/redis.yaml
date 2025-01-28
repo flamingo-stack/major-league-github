@@ -37,14 +37,14 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 1Gi
+              memory: 2.5Gi
             limits:
               cpu: 200m
-              memory: 2Gi
+              memory: 5Gi
           command:
             - redis-server
             - --maxmemory
-            - "1800mb"
+            - "4500mb"
             - --maxmemory-policy
             - "noeviction"
           livenessProbe:
@@ -64,4 +64,4 @@ spec:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 10Gi 
+            storage: 25Gi 
