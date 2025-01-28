@@ -26,6 +26,14 @@
             "url": "http://localhost:8450",
             "webRoot": "${workspaceFolder}/frontend",
             "preLaunchTask": "Start Frontend Dev Server (Production)",
+            "env": {
+                "OG_TITLE": "Major League GitHub",
+                "OG_DESCRIPTION": "GitHub Scouting Report: Major League Edition",
+                "OG_TYPE": "website",
+                "OG_IMAGE_URL": "/og-image.jpg",
+                "OG_URL": "",
+                "OG_SITE_NAME": "Major League GitHub"
+            },
             "sourceMaps": true,
             "sourceMapPathOverrides": {
                 "webpack:///./*": "${webRoot}/*"
@@ -39,8 +47,14 @@
             "webRoot": "${workspaceFolder}/frontend",
             "preLaunchTask": "Start Frontend Dev Server",
             "env": {
-                "BACKEND_API_URL": "http://localhost:8080",
-                "PORT": "8450"
+                "BACKEND_API_URL": ":8080",
+                "PORT": "8450",
+                "OG_TITLE": "Major League GitHub",
+                "OG_DESCRIPTION": "GitHub Scouting Report: Major League Edition",
+                "OG_TYPE": "website",
+                "OG_IMAGE_URL": "/og-image.jpg",
+                "OG_URL": "",
+                "OG_SITE_NAME": "Major League GitHub"
             },
             "sourceMaps": true,
             "sourceMapPathOverrides": {
