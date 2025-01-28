@@ -69,6 +69,7 @@ export interface Contributor {
     login: string;
     name: string | null;
     avatarUrl: string;
+    url: string;
     bio: string | null;
     location: string | null;
     email: string | null;
@@ -89,4 +90,9 @@ export interface Contributor {
     stateId: string | null;
     regionId: string | null;
     teamId: string | null;
+    // Reference objects
+    city?: City;
+    state?: State;
+    region?: Region;
+    nearestTeam?: SoccerTeam;
 } 
