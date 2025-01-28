@@ -90,7 +90,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                 gap: 0.5,
               }}
             >
-              Made with ❤️ by <span style={{ display: 'inline-flex' }}>🦩</span> in{' '}
+              Made with ❤️ by <span style={{ display: 'inline-flex' }}>🦩 team </span> in{' '}
               <Link
                 href="https://www.google.com/maps/place/Miami+Beach,+FL"
                 target="_blank"
