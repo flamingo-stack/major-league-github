@@ -44,7 +44,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                     }}>
                         <Logo 
                             sx={{ 
-                                fontSize: { xs: 20, sm: 28 },
+                                fontSize: { xs: 24, sm: 28 },
                                 color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                                 flexShrink: 0
                             }}
@@ -53,7 +53,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                             variant="h6" 
                             sx={{ 
                                 fontWeight: 600,
-                                fontSize: { xs: '0.9rem', sm: '1.1rem' },
+                                fontSize: { xs: '1.1rem', sm: '1.1rem' },
                                 letterSpacing: '-0.025em',
                                 color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                                 whiteSpace: 'nowrap',
