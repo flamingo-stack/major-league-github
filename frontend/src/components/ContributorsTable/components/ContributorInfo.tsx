@@ -125,8 +125,8 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             minWidth: 20,
-                                            height: 20,
-                                            borderRadius: '10px',
+                                            height: 24,
+                                            borderRadius: '6px',
                                             bgcolor: theme => {
                                                 if (theme.palette.mode === 'dark') {
                                                     if (index === 0) return 'rgba(255, 215, 0, 0.15)'
@@ -155,8 +155,7 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                                 }
                                             },
                                             px: 0.75,
-                                            flexShrink: 0,
-                                            mb: 0.5
+                                            flexShrink: 0
                                         }}
                                     >
                                         <Typography
@@ -184,46 +183,48 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                     </Box>
                                 </Link>
                             </Box>
-                            {hiringManagerUsername && contributor.login === hiringManagerUsername && (
-                                <Box
-                                    component="button"
-                                    onClick={() => {
-                                        const footer = document.querySelector('[data-testid="footer"]');
-                                        if (footer) {
-                                            footer.scrollIntoView({ behavior: 'smooth' });
-                                        }
-                                    }}
-                                    sx={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: 0.5,
-                                        px: 1,
-                                        height: 24,
-                                        border: '1px solid',
-                                        borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.5)' : 'rgba(9, 105, 218, 0.3)',
-                                        borderRadius: '6px',
-                                        bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.1)' : 'rgba(9, 105, 218, 0.05)',
-                                        color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0969da',
-                                        cursor: 'pointer',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
-                                        transition: 'all 0.2s',
-                                        textTransform: 'none',
-                                        whiteSpace: 'nowrap',
-                                        position: { xs: 'absolute', sm: 'static' },
-                                        right: { xs: 0, sm: 'auto' },
-                                        top: { xs: 0, sm: 'auto' },
-                                        flexShrink: 0,
-                                        '&:hover': {
-                                            bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.2)' : 'rgba(9, 105, 218, 0.1)',
-                                            borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.7)' : 'rgba(9, 105, 218, 0.5)',
-                                        }
-                                    }}
-                                >
-                                    <span role="img" aria-label="rocket" style={{ fontSize: '14px' }}>🚀</span>
-                                    Join my team
-                                </Box>
-                            )}
+                            <Box sx={{ flexShrink: 0 }}>
+                                {hiringManagerUsername && contributor.login === hiringManagerUsername && (
+                                    <Box
+                                        component="button"
+                                        onClick={() => {
+                                            const footer = document.querySelector('[data-testid="footer"]');
+                                            if (footer) {
+                                                footer.scrollIntoView({ behavior: 'smooth' });
+                                            }
+                                        }}
+                                        sx={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 0.5,
+                                            px: 1,
+                                            height: 24,
+                                            border: '1px solid',
+                                            borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.5)' : 'rgba(9, 105, 218, 0.3)',
+                                            borderRadius: '6px',
+                                            bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.1)' : 'rgba(9, 105, 218, 0.05)',
+                                            color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0969da',
+                                            cursor: 'pointer',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            transition: 'all 0.2s',
+                                            textTransform: 'none',
+                                            whiteSpace: 'nowrap',
+                                            position: { xs: 'absolute', sm: 'static' },
+                                            right: { xs: 0, sm: 'auto' },
+                                            top: { xs: 0, sm: 'auto' },
+                                            flexShrink: 0,
+                                            '&:hover': {
+                                                bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.2)' : 'rgba(9, 105, 218, 0.1)',
+                                                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.7)' : 'rgba(9, 105, 218, 0.5)',
+                                            }
+                                        }}
+                                    >
+                                        <span role="img" aria-label="rocket" style={{ fontSize: '14px' }}>🚀</span>
+                                        Join my team
+                                    </Box>
+                                )}
+                            </Box>
                         </Box>
                         {contributor.name && (
                             <Link 
