@@ -426,7 +426,7 @@ jobs:
           source .github/shared-functions.sh
           
           echo "🦩 Building frontend image..."
-          if ! docker build frontend \
+          if ! docker build frontend \ 
             --build-arg BACKEND_API_URL=https://${DOMAIN_NAME}.${DOMAIN_SUFFIX} \
             -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} \
             -t ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
