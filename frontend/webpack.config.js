@@ -24,7 +24,8 @@ module.exports = (env, argv) => {
       path: path.resolve(__dirname, 'dist'),
       filename: '[name].[contenthash].js',
       clean: true,
-      publicPath: '/'
+      publicPath: '/',
+      assetModuleFilename: 'assets/[name][ext]'
     },
     module: {
       rules: [
@@ -44,7 +45,7 @@ module.exports = (env, argv) => {
           use: ['style-loader', 'css-loader'],
         },
         {
-          test: /\.(png|svg|jpg|jpeg|gif)$/i,
+          test: /\.(png|jpg|jpeg|gif)$/i,
           type: 'asset/resource',
         },
         {
@@ -56,25 +57,26 @@ module.exports = (env, argv) => {
         },
         {
           test: /\.svg$/,
-          use: [{
-            loader: '@svgr/webpack',
-            options: {
-              typescript: true,
-              ref: true,
-              svgoConfig: {
-                plugins: [{
-                  name: 'preset-default',
-                  params: {
-                    overrides: {
-                      removeViewBox: false,
-                      removeTitle: false
-                    }
-                  }
-                }]
-              },
-              titleProp: true
+          issuer: /\.[jt]sx?$/,
+          use: [
+            {
+              loader: '@svgr/webpack',
+              options: {
+                svgo: false,
+                ref: true,
+                titleProp: true,
+                memo: true
+              }
             }
-          }]
+          ]
+        },
+        {
+          test: /\.svg$/,
+          issuer: /\.(css|scss)$/,
+          type: 'asset/resource',
+          generator: {
+            filename: 'assets/[name][ext]'
+          }
         }
       ],
     },
