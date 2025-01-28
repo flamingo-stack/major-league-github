@@ -162,7 +162,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                 fontSize: '0.75rem',
                                 color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
                             }}>
-                                Last commit: {new Date(contributor.latestCommitDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                Last commit: {new Date(Date.UTC(
+                                    Number(contributor.latestCommitDate[0]),
+                                    Number(contributor.latestCommitDate[1]) - 1,
+                                    Number(contributor.latestCommitDate[2]),
+                                    Number(contributor.latestCommitDate[3]),
+                                    Number(contributor.latestCommitDate[4])
+                                )).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </Typography>
                         </Box>
                     </Box>
@@ -253,7 +259,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                     fontSize: '0.75rem',
                     color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
                 }}>
-                    Last commit: {new Date(contributor.latestCommitDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    Last commit: {new Date(Date.UTC(
+                        Number(contributor.latestCommitDate[0]),
+                        Number(contributor.latestCommitDate[1]) - 1,
+                        Number(contributor.latestCommitDate[2]),
+                        Number(contributor.latestCommitDate[3]),
+                        Number(contributor.latestCommitDate[4])
+                    )).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </Typography>
             </Box>
         </Box>
@@ -571,7 +583,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                                     lineHeight: 1,
                                                     whiteSpace: 'nowrap'
                                                 }}>
-                                                    {new Date(contributor.latestCommitDate).toLocaleDateString('en-US', {
+                                                    {new Date(Date.UTC(
+                                                        Number(contributor.latestCommitDate[0]),
+                                                        Number(contributor.latestCommitDate[1]) - 1,
+                                                        Number(contributor.latestCommitDate[2]),
+                                                        Number(contributor.latestCommitDate[3]),
+                                                        Number(contributor.latestCommitDate[4])
+                                                    )).toLocaleDateString('en-US', {
                                                         month: 'short',
                                                         day: 'numeric',
                                                         year: 'numeric'

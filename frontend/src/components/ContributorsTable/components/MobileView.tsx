@@ -133,7 +133,13 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                             />
                             <StatItem 
                                 icon={<UpdateIcon />} 
-                                value={new Date(contributor.latestCommitDate).toLocaleDateString('en-US', {
+                                value={new Date(Date.UTC(
+                                    Number(contributor.latestCommitDate[0]),
+                                    Number(contributor.latestCommitDate[1]) - 1,
+                                    Number(contributor.latestCommitDate[2]),
+                                    Number(contributor.latestCommitDate[3]),
+                                    Number(contributor.latestCommitDate[4])
+                                )).toLocaleDateString('en-US', {
                                     month: 'short',
                                     day: 'numeric',
                                     year: 'numeric'
