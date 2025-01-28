@@ -441,16 +441,16 @@ jobs:
           source .github/shared-functions.sh
           
           echo "🦩 Building frontend image..."
-          if ! docker build frontend \ 
-            --build-arg BACKEND_API_URL=https://${DOMAIN_NAME}.${DOMAIN_SUFFIX} \
+          if ! docker build frontend \
+            --build-arg BACKEND_API_URL="https://${DOMAIN_NAME}.${DOMAIN_SUFFIX}" \
             --build-arg OG_TITLE="${OG_TITLE}" \
             --build-arg OG_DESCRIPTION="${OG_DESCRIPTION}" \
             --build-arg OG_TYPE="${OG_TYPE}" \
             --build-arg OG_IMAGE_URL="${OG_IMAGE_URL}" \
             --build-arg OG_URL="https://${DOMAIN_NAME}.${DOMAIN_SUFFIX}" \
             --build-arg OG_SITE_NAME="${OG_SITE_NAME}" \
-            -t ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION} \
-            -t ${REGISTRY}/${REGISTRY_NAME}/frontend:latest; then
+            -t "${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}" \
+            -t "${REGISTRY}/${REGISTRY_NAME}/frontend:latest"; then
             echo "❌ Error: Failed to build frontend image"
             exit 1
           fi
