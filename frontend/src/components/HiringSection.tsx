@@ -54,13 +54,16 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
 
   return (
     <Box>
-      {/* Preview Bar */}
+      {/* Preview Bar - Fixed */}
       <Box 
         sx={{ 
           display: 'flex',
           flexDirection: 'column',
           gap: 0,
           py: 2,
+          bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+          position: 'relative',
+          zIndex: 2
         }}
       >
         {/* First Row */}
@@ -268,232 +271,263 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
           <Paper
             elevation={0}
             sx={{
-              p: 3,
               border: '1px solid',
               borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
               borderRadius: '6px',
               bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
-              mb: 2
+              mb: 2,
+              position: 'relative',
+              maxHeight: { xs: 'calc(100vh - 200px)', sm: 'none' },
+              overflowY: { xs: 'auto', sm: 'visible' }
             }}
           >
-            {isLoading ? (
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-                <Box sx={{ flex: 1 }}>
-                  <Skeleton variant="text" width="60%" height={32} />
-                  <Skeleton variant="text" width="90%" />
-                  <Skeleton variant="text" width="75%" />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Skeleton variant="text" width="40%" height={32} />
-                  <Skeleton variant="rectangular" height={100} />
-                </Box>
-              </Box>
-            ) : hiringManager ? (
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-                {/* Hiring Manager Profile */}
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Avatar
-                      src={hiringManager.avatarUrl}
-                      alt={hiringManager.name}
-                      sx={{ 
-                        width: 64, 
-                        height: 64,
-                        border: '2px solid',
-                        borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                      }}
-                    />
-                    <Box>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {hiringManager.name}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                        }}
-                      >
-                        {hiringManager.role}
-                      </Typography>
-                    </Box>
+            {/* Mobile Close Button */}
+            <Box sx={{ 
+              display: { xs: 'block', sm: 'none' },
+              position: 'sticky',
+              top: 0,
+              bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+              borderBottom: '1px solid',
+              borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+              p: 2,
+              textAlign: 'right',
+              zIndex: 1
+            }}>
+              <IconButton
+                onClick={() => setIsExpanded(false)}
+                size="small"
+                sx={{
+                  color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                  '&:hover': {
+                    bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.12)' : 'rgba(234, 238, 242, 0.5)'
+                  }
+                }}
+              >
+                <ExpandLessIcon />
+              </IconButton>
+            </Box>
+
+            {/* Scrollable Content */}
+            <Box sx={{ p: 3, pt: { xs: 2, sm: 3 } }}>
+              {isLoading ? (
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton variant="text" width="60%" height={32} />
+                    <Skeleton variant="text" width="90%" />
+                    <Skeleton variant="text" width="75%" />
                   </Box>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                      mb: 2,
-                    }}
-                  >
-                    {hiringManager.bio}
-                  </Typography>
-
-                  {/* GitHub Stats */}
-                  {hiringManager.githubStats && (
-                    <Box sx={{ 
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                      gap: 2,
-                      mb: 2,
-                      p: 2,
-                      borderRadius: '6px',
-                      bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
-                      border: '1px solid',
-                      borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                    }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <StarIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                          <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                          {(hiringManager.githubStats?.totalStars || 0).toLocaleString()} Stars
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <ForkRightIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                          <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                          {(hiringManager.githubStats?.totalForks || 0).toLocaleString()} Forks
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CommitIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                          <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                          {(hiringManager.githubStats?.totalCommits || 0).toLocaleString()} Commits
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <AccountTreeIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                          <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                          {(hiringManager.githubStats?.totalRepositories || 0).toLocaleString()} Repos
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <MergeIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                          <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                          {(hiringManager.githubStats?.totalPullRequests || 0).toLocaleString()} PRs
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <BugReportIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
-                          <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
-                          {(hiringManager.githubStats?.totalIssues || 0).toLocaleString()} Issues
-                          </Typography>
-                        </Box>
-                    </Box>
-                  )}
-
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: 1.5,
-                    '& a': {
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 32,
-                      height: 32,
-                      borderRadius: '6px',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(83, 155, 245, 0.1)' : 'rgba(9, 105, 218, 0.1)',
-                      }
-                    }
-                  }}>
-                    {hiringManager.socialLinks
-                      .filter((link, index, self) => 
-                        index === self.findIndex((l) => l.platform === link.platform)
-                      )
-                      .map((link, index) => (
-                      <Link
-                        key={`${link.platform}-${index}`}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}
-                        sx={{
-                          color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                          '&:hover': {
-                            color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                          },
-                        }}
-                      >
-                        {getSocialIcon(link.platform)}
-                      </Link>
-                    ))}
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton variant="text" width="40%" height={32} />
+                    <Skeleton variant="rectangular" height={100} />
                   </Box>
                 </Box>
-
-                {/* Job Openings */}
-                <Box sx={{ 
-                  flex: 1,
-                  borderLeft: { xs: 'none', md: '1px solid' },
-                  borderTop: { xs: '1px solid', md: 'none' },
-                  borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                  pl: { xs: 0, md: 3 },
-                  pt: { xs: 3, md: 0 }
-                }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                      fontWeight: 600,
-                      mb: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                    }}
-                  >
-                    <WorkIcon /> Open Positions
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {jobOpenings.map((job) => (
-                      <Paper
-                        key={job.id}
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          border: '1px solid',
+              ) : hiringManager ? (
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+                  {/* Hiring Manager Profile */}
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <Avatar
+                        src={hiringManager.avatarUrl}
+                        alt={hiringManager.name}
+                        sx={{ 
+                          width: 64, 
+                          height: 64,
+                          border: '2px solid',
                           borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                          borderRadius: '6px',
-                          bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
-                          '&:hover': {
-                            borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                          },
                         }}
-                      >
+                      />
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {hiringManager.name}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                          }}
+                        >
+                          {hiringManager.role}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                        mb: 2,
+                      }}
+                    >
+                      {hiringManager.bio}
+                    </Typography>
+
+                    {/* GitHub Stats */}
+                    {hiringManager.githubStats && (
+                      <Box sx={{ 
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                        gap: 2,
+                        mb: 2,
+                        p: 2,
+                        borderRadius: '6px',
+                        bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
+                        border: '1px solid',
+                        borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                      }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <StarIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
+                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
+                            {(hiringManager.githubStats?.totalStars || 0).toLocaleString()} Stars
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <ForkRightIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
+                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
+                            {(hiringManager.githubStats?.totalForks || 0).toLocaleString()} Forks
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <CommitIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
+                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
+                            {(hiringManager.githubStats?.totalCommits || 0).toLocaleString()} Commits
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <AccountTreeIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
+                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
+                            {(hiringManager.githubStats?.totalRepositories || 0).toLocaleString()} Repos
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <MergeIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
+                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
+                            {(hiringManager.githubStats?.totalPullRequests || 0).toLocaleString()} PRs
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <BugReportIcon sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' }} />
+                            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
+                            {(hiringManager.githubStats?.totalIssues || 0).toLocaleString()} Issues
+                            </Typography>
+                          </Box>
+                      </Box>
+                    )}
+
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: 1.5,
+                      '& a': {
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 32,
+                        height: 32,
+                        borderRadius: '6px',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(83, 155, 245, 0.1)' : 'rgba(9, 105, 218, 0.1)',
+                        }
+                      }
+                    }}>
+                      {hiringManager.socialLinks
+                        .filter((link, index, self) => 
+                          index === self.findIndex((l) => l.platform === link.platform)
+                        )
+                        .map((link, index) => (
                         <Link
-                          href={job.url}
+                          key={`${link.platform}-${index}`}
+                          href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          sx={{ textDecoration: 'none' }}
+                          title={link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}
+                          sx={{
+                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                            '&:hover': {
+                              color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                            },
+                          }}
                         >
-                          <Typography
-                            variant="subtitle1"
-                            sx={{
-                              color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                              fontWeight: 600,
-                              mb: 1,
-                            }}
-                          >
-                            {job.title}
-                          </Typography>
-                          <Chip
-                            label={job.location}
-                            size="small"
-                            sx={{
-                              bgcolor: theme => theme.palette.mode === 'dark' ? '#30363d' : '#eaeef2',
-                              color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                            }}
-                          />
+                          {getSocialIcon(link.platform)}
                         </Link>
-                      </Paper>
-                    ))}
+                      ))}
+                    </Box>
+                  </Box>
+
+                  {/* Job Openings */}
+                  <Box sx={{ 
+                    flex: 1,
+                    borderLeft: { xs: 'none', md: '1px solid' },
+                    borderTop: { xs: '1px solid', md: 'none' },
+                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                    pl: { xs: 0, md: 3 },
+                    pt: { xs: 3, md: 0 }
+                  }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                        fontWeight: 600,
+                        mb: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                      }}
+                    >
+                      <WorkIcon /> Open Positions
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {jobOpenings.map((job) => (
+                        <Paper
+                          key={job.id}
+                          elevation={0}
+                          sx={{
+                            p: 2,
+                            border: '1px solid',
+                            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                            borderRadius: '6px',
+                            bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
+                            '&:hover': {
+                              borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                            },
+                          }}
+                        >
+                          <Link
+                            href={job.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ textDecoration: 'none' }}
+                          >
+                            <Typography
+                              variant="subtitle1"
+                              sx={{
+                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                fontWeight: 600,
+                                mb: 1,
+                              }}
+                            >
+                              {job.title}
+                            </Typography>
+                            <Chip
+                              label={job.location}
+                              size="small"
+                              sx={{
+                                bgcolor: theme => theme.palette.mode === 'dark' ? '#30363d' : '#eaeef2',
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                              }}
+                            />
+                          </Link>
+                        </Paper>
+                      ))}
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
-            ) : null}
+              ) : null}
+            </Box>
           </Paper>
         </Collapse>
       )}
