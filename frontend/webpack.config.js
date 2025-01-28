@@ -19,7 +19,7 @@ module.exports = (env, argv) => {
 
   return {
     mode: isProduction ? 'production' : 'development',
-    entry: './src/index.tsx',
+    entry: './src/main.tsx',
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: '[name].[contenthash].js',

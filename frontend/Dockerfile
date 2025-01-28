@@ -1,8 +1,12 @@
 FROM node:20-alpine as build
 
 WORKDIR /app
+
+# Copy package files first for better caching
 COPY package*.json ./
 RUN npm install
+
+# Copy the rest of the application
 COPY . .
 
 # Add build arguments for environment variables
@@ -26,17 +30,15 @@ ENV OG_SITE_NAME=${OG_SITE_NAME}
 ENV NODE_ENV=${NODE_ENV}
 ENV GENERATE_SOURCEMAP=false
 
-# Build the application with explicit environment passing
-RUN BACKEND_API_URL=${BACKEND_API_URL} \
-    OG_TITLE=${OG_TITLE} \
-    OG_DESCRIPTION=${OG_DESCRIPTION} \
-    OG_TYPE=${OG_TYPE} \
-    OG_IMAGE_URL=${OG_IMAGE_URL} \
-    OG_URL=${OG_URL} \
-    OG_SITE_NAME=${OG_SITE_NAME} \
-    NODE_ENV=${NODE_ENV} \
-    npm run build
+# Verify the source files exist
+RUN ls -la /app/src && \
+    echo "Main entry file:" && \
+    ls -la /app/src/main.tsx
 
+# Build the application with explicit environment passing
+RUN npm run build
+
+# Production image
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
