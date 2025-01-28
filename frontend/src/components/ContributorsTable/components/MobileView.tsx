@@ -100,10 +100,10 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                         </Box>
                         
                         <Box sx={{ 
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(2, 1fr)',
-                            gap: 1.5,
-                            alignContent: 'flex-start',
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            alignItems: 'center',
                             width: '100%'
                         }}>
                             <StatItem 
