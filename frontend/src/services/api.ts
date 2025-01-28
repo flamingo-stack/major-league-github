@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { City, Region, State, Language, SoccerTeam, ApiResponse, Contributor } from '../types/api';
+import { HiringManagerProfile, JobOpening } from '../types/hiring';
 
 // Configure axios to use the backend URL from environment
 const BACKEND_API_URL = process.env.BACKEND_API_URL || '/';
@@ -179,4 +180,15 @@ export const getTeamById = async (id: string): Promise<SoccerTeam> => {
     throw new Error(response.data.message);
   }
   return response.data.data;
+};
+
+// Hiring endpoints
+export const getHiringManagerProfile = async (): Promise<HiringManagerProfile> => {
+  const response = await axios.get<HiringManagerProfile>('/api/hiring/manager');
+  return response.data;
+};
+
+export const getJobOpenings = async (): Promise<JobOpening[]> => {
+  const response = await axios.get<JobOpening[]>('/api/hiring/jobs');
+  return response.data;
 }; 

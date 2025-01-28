@@ -65,10 +65,19 @@ export interface SoccerTeam {
 }
 
 export interface Contributor {
+    id: string;
     login: string;
-    name: string;
-    url: string;
+    name: string | null;
     avatarUrl: string;
+    bio: string | null;
+    location: string | null;
+    email: string | null;
+    company: string | null;
+    blog: string | null;
+    twitterUsername: string | null;
+    followers: number;
+    following: number;
+    score: number;
     totalCommits: number;
     javaRepos: number;
     starsReceived: number;
@@ -76,9 +85,8 @@ export interface Contributor {
     forksReceived: number;
     forksGiven: number;
     latestCommitDate: string;
-    score: number;
-    cityId: string;
-    nearestTeamId?: string;
-    city: City;
-    nearestTeam?: SoccerTeam;
+    cityId: string | null;
+    stateId: string | null;
+    regionId: string | null;
+    teamId: string | null;
 } 
