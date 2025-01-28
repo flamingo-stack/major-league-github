@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Paper, Typography, Link, Avatar, Chip, useTheme, IconButton, Collapse } from '@mui/material';
+import { Box, Paper, Typography, Link, Avatar, Chip, useTheme, IconButton, Collapse, Stack } from '@mui/material';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -38,102 +38,89 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
       {/* Preview Bar */}
       <Box 
         sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0,
           py: 2,
         }}
       >
-        {/* Left side - Team message */}
-        <Box 
-          sx={{ 
-            display: 'flex', 
+        {/* First Row */}
+        <Box sx={{ 
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 24,
+        }}>
+          <Box sx={{
+            display: { xs: 'none', sm: 'flex' },
             alignItems: 'center',
-            gap: { xs: 0.75, sm: 1 },
-            flexWrap: 'wrap'
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-              fontSize: { xs: '0.8125rem', sm: '0.875rem' },
-              whiteSpace: 'nowrap'
-            }}
-          >
-            Made with ❤️ by <span style={{ display: 'inline-flex', marginLeft: '1px' }}>🦩</span>
-          </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-              fontSize: { xs: '0.8125rem', sm: '0.875rem' }
-            }}
-          > in 
-            <Link
-              href="https://www.google.com/maps/place/Miami+Beach,+FL"
-              target="_blank"
-              rel="noopener noreferrer"
+            gap: 1,
+          }}>
+            <Typography
+              component="div"
               sx={{
-                color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-                '&:hover': {
-                  textDecoration: 'underline',
-                }
+                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                fontSize: '0.875rem',
+                lineHeight: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
               }}
             >
-              Miami Beach
-            </Link>
+              Made with ❤️ by <span style={{ display: 'inline-flex' }}>🦩</span> in{' '}
+              <Link
+                href="https://www.google.com/maps/place/Miami+Beach,+FL"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                  }
+                }}
+              >
+                Miami Beach
+              </Link>
+            </Typography>
           </Box>
-        </Box>
 
-        {/* Right side - CTA and expand button */}
-        <Box 
-          onClick={() => setIsExpanded(!isExpanded)}
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'flex-start',
-            gap: { xs: 0.25, sm: 0.5 },
-            cursor: 'pointer',
-            flexWrap: 'wrap',
-            justifyContent: 'flex-end',
-            textAlign: 'right',
-            maxWidth: '100%'
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              whiteSpace: 'nowrap'
-            }}
-          >
+          <Box sx={{
+            display: { xs: 'block', sm: 'none' },
+          }}>
+            <Typography
+              component="div"
+              sx={{
+                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                fontSize: '0.875rem',
+                lineHeight: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
+              Made with ❤️ by <span style={{ display: 'inline-flex' }}>🦩</span>
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Avatar
               src={hiringManager.avatarUrl}
               alt={hiringManager.name}
               sx={{ 
-                width: { xs: 24, sm: 28 }, 
-                height: { xs: 24, sm: 28 },
+                width: 24,
+                height: 24,
                 border: '2px solid',
                 borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
               }}
             />
             <Typography
-              variant="body2"
+              component="div"
               sx={{
                 color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                 fontWeight: 500,
-                transition: 'color 0.2s',
-                fontSize: { xs: '0.8125rem', sm: '0.875rem' },
-                '&:hover': {
-                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                }
+                fontSize: '0.875rem',
+                lineHeight: '24px',
               }}
             >
               Come work with us
@@ -146,28 +133,75 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               }}
               sx={{ 
                 color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                p: { xs: 0.25, sm: 0.5 },
+                p: 0,
+                width: 24,
+                height: 24,
+                minWidth: 24,
+                minHeight: 24,
               }}
             >
               {isExpanded ? 
-                <ExpandLessIcon sx={{ fontSize: { xs: '1rem', sm: '1.1rem' } }} /> : 
-                <ExpandMoreIcon sx={{ fontSize: { xs: '1rem', sm: '1.1rem' } }} />
+                <ExpandLessIcon sx={{ fontSize: '1rem' }} /> : 
+                <ExpandMoreIcon sx={{ fontSize: '1rem' }} />
               }
             </IconButton>
           </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-              fontSize: { xs: '0.8125rem', sm: '0.875rem' },
-              width: '100%',
-              justifyContent: 'flex-end',
-              mt: { xs: -0.5, sm: -0.25 }
-            }}
-          >
-            {jobOpenings.length} open position{jobOpenings.length !== 1 ? 's' : ''}
+        </Box>
+
+        {/* Second Row */}
+        <Box sx={{ 
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 24,
+        }}>
+          <Box sx={{
+            display: { xs: 'block', sm: 'none' },
+          }}>
+            <Typography
+              component="div"
+              sx={{
+                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                fontSize: '0.875rem',
+                lineHeight: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
+              in{' '}
+              <Link
+                href="https://www.google.com/maps/place/Miami+Beach,+FL"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                  }
+                }}
+              >
+                Miami Beach
+              </Link>
+            </Typography>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            flex: 1,
+            justifyContent: 'flex-end'
+          }}>
+            <Typography
+              component="div"
+              sx={{
+                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                fontSize: '0.875rem',
+                lineHeight: '24px',
+              }}
+            >
+              {jobOpenings.length} open position{jobOpenings.length !== 1 ? 's' : ''}
+            </Typography>
           </Box>
         </Box>
       </Box>

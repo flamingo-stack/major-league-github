@@ -1,19 +1,16 @@
 import React from 'react';
 import { Box, Container, useTheme } from '@mui/material';
-import { FiltersPanel } from './FiltersPanel';
-import { ContributorsTable } from './ContributorsTable';
 import { HiringSection } from './HiringSection';
-import { useContributors } from '../hooks/useContributors/index';
 import { useHiring } from '../hooks/useHiring';
 import Header from './Header';
 
 interface LayoutProps {
   onToggleTheme: () => void;
+  children: React.ReactNode;
 }
 
-export const Layout = ({ onToggleTheme }: LayoutProps) => {
+export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
   const theme = useTheme();
-  const { contributors = [], isLoading: isLoadingContributors, error: contributorsError } = useContributors();
   const { hiringManager, jobOpenings, isLoading: isLoadingHiring } = useHiring();
 
   return (
@@ -39,12 +36,7 @@ export const Layout = ({ onToggleTheme }: LayoutProps) => {
           mb: '200px' // Add space for the sticky footer
         }}
       >
-        <FiltersPanel />
-        <ContributorsTable
-          contributors={contributors}
-          isLoading={isLoadingContributors}
-          error={contributorsError}
-        />
+        {children}
       </Container>
       {!isLoadingHiring && hiringManager && jobOpenings && (
         <Box

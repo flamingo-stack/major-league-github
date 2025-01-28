@@ -1,6 +1,6 @@
 package cx.flamingo.analysis.service;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -16,10 +16,11 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class HiringService {
-    
+
     private final GithubService githubService;
+    private final LinkedInService linkedInService;
     private final CacheServiceAbs cacheService;
-    
+
     @Value("${github.username}")
     private String githubUsername;
 
@@ -31,38 +32,38 @@ public class HiringService {
     private static final String JOBS_KEY = "job_openings";
 
     public HiringManagerProfile getHiringManagerProfile() {
-        return cacheService.get(CACHE_PATH, PROFILE_KEY, new TypeToken<HiringManagerProfile>() {}, refreshInterval)
-            .orElseGet(() -> {
-                HiringManagerProfile profile = githubService.fetchUserProfile(githubUsername);
-                cacheService.put(CACHE_PATH, PROFILE_KEY, profile);
-                return profile;
-            });
+        return cacheService.get(CACHE_PATH, PROFILE_KEY, new TypeToken<HiringManagerProfile>() {
+        }, refreshInterval)
+                .orElseGet(() -> {
+                    HiringManagerProfile profile = githubService.fetchUserProfile(githubUsername);
+                    cacheService.put(CACHE_PATH, PROFILE_KEY, profile);
+                    return profile;
+                });
     }
 
     public List<JobOpening> getJobOpenings() {
         return cacheService.get(CACHE_PATH, JOBS_KEY, new TypeToken<List<JobOpening>>() {}, refreshInterval)
             .orElseGet(() -> {
-                List<JobOpening> jobs = fetchJobOpenings();
+                List<JobOpening> jobs = linkedInService.getCompanyJobPostings();
+                if (jobs == null || jobs.isEmpty()) {
+                    // Fallback to default jobs if LinkedIn API fails
+                    jobs = List.of(
+                        JobOpening.builder()
+                            .id("founding-engineer-1")
+                            .title("Founding Engineer")
+                            .location("Miami, FL")
+                            .url("https://www.linkedin.com/jobs/view/4116487922")
+                            .build(),
+                        JobOpening.builder()
+                            .id("founding-engineer-2")
+                            .title("Founding Engineer")
+                            .location("Miami, FL")
+                            .url("https://www.linkedin.com/jobs/view/4116487922")
+                            .build()
+                    );
+                }
                 cacheService.put(CACHE_PATH, JOBS_KEY, jobs);
                 return jobs;
             });
     }
-
-    private List<JobOpening> fetchJobOpenings() {
-        // TODO: Integrate with actual job posting system or database
-        return Arrays.asList(
-            JobOpening.builder()
-                .id("1")
-                .title("Senior Full Stack Engineer")
-                .location("Remote")
-                .url("https://www.linkedin.com/jobs/view/xxx")
-                .build(),
-            JobOpening.builder()
-                .id("2")
-                .title("Senior Frontend Engineer")
-                .location("Remote")
-                .url("https://www.linkedin.com/jobs/view/yyy")
-                .build()
-        );
-    }
-} 
+}

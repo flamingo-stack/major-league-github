@@ -8,7 +8,16 @@ export const useHiring = () => {
     error: profileError
   } = useQuery({
     queryKey: ['hiringManager'],
-    queryFn: fetchHiringManagerProfile
+    queryFn: fetchHiringManagerProfile,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: (failureCount, error) => {
+      // Don't retry if we got a clear error message
+      if (error instanceof Error && error.message.includes('Failed to fetch')) {
+        return false;
+      }
+      // Retry up to 3 times for other errors
+      return failureCount < 3;
+    }
   });
 
   const {
@@ -17,7 +26,16 @@ export const useHiring = () => {
     error: jobsError
   } = useQuery({
     queryKey: ['jobOpenings'],
-    queryFn: fetchJobOpenings
+    queryFn: fetchJobOpenings,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: (failureCount, error) => {
+      // Don't retry if we got a clear error message
+      if (error instanceof Error && error.message.includes('Failed to fetch')) {
+        return false;
+      }
+      // Retry up to 3 times for other errors
+      return failureCount < 3;
+    }
   });
 
   return {

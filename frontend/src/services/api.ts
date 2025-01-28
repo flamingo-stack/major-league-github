@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { City, Region, State, Language, SoccerTeam, ApiResponse, Contributor } from '../types/api';
+import { HiringManagerProfile, JobOpening } from '../types/hiring';
 
 // Configure axios to use the backend URL from environment
 const BACKEND_API_URL = process.env.BACKEND_API_URL || '/';
@@ -175,6 +176,23 @@ export const getLanguageById = async (id: string): Promise<Language> => {
 
 export const getTeamById = async (id: string): Promise<SoccerTeam> => {
   const response = await axios.get<ApiResponse<SoccerTeam>>(`/api/entities/teams/${id}`);
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
+};
+
+// Hiring endpoints
+export const getHiringManagerProfile = async (): Promise<HiringManagerProfile> => {
+  const response = await axios.get<ApiResponse<HiringManagerProfile>>('/api/hiring/manager');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
+};
+
+export const getJobOpenings = async (): Promise<JobOpening[]> => {
+  const response = await axios.get<ApiResponse<JobOpening[]>>('/api/hiring/jobs');
   if (response.data.status !== 'success') {
     throw new Error(response.data.message);
   }
