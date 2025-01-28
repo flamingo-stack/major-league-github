@@ -1,5 +1,3 @@
-# Major League GitHub ⚽💻
-
 <div align="center">
   <img src="https://raw.githubusercontent.com/flamingo-cx/major-league-github/main/frontend/public/og-image-transparent.png" alt="Major League GitHub Logo"/>
 </div>
