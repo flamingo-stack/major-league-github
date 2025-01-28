@@ -13,6 +13,7 @@ ARG OG_TYPE
 ARG OG_IMAGE_URL
 ARG OG_URL
 ARG OG_SITE_NAME
+ARG NODE_ENV=production
 
 # Set environment variables
 ENV BACKEND_API_URL=${BACKEND_API_URL}
@@ -22,8 +23,11 @@ ENV OG_TYPE=${OG_TYPE}
 ENV OG_IMAGE_URL=${OG_IMAGE_URL}
 ENV OG_URL=${OG_URL}
 ENV OG_SITE_NAME=${OG_SITE_NAME}
+ENV NODE_ENV=${NODE_ENV}
+ENV GENERATE_SOURCEMAP=false
 
-RUN npm run build
+# Build the application
+RUN NODE_ENV=production npm run build
 
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html

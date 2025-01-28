@@ -442,6 +442,7 @@ jobs:
           
           echo "🦩 Building frontend image..."
           if ! docker build frontend \
+            --build-arg NODE_ENV=production \
             --build-arg BACKEND_API_URL="https://${DOMAIN_NAME}.${DOMAIN_SUFFIX}" \
             --build-arg OG_TITLE="${OG_TITLE}" \
             --build-arg OG_DESCRIPTION="${OG_DESCRIPTION}" \
