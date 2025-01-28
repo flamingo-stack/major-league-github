@@ -148,13 +148,6 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                             />
                         </Box>
                     </Box>
-                    {index < contributors.length - 1 && (
-                        <Divider sx={{ 
-                            borderColor: theme => theme.palette.mode === 'dark' 
-                                ? '#30363d' 
-                                : 'rgba(27, 31, 36, 0.15)'
-                        }} />
-                    )}
                 </Card>
             ))}
         </Stack>
