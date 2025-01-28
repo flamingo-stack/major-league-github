@@ -6,6 +6,18 @@
     <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Major League GitHub</title>
+    
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="<%= process.env.OG_TITLE %>" />
+    <meta property="og:description" content="<%= process.env.OG_DESCRIPTION %>" />
+    <meta property="og:type" content="<%= process.env.OG_TYPE %>" />
+    <meta property="og:image" content="<%= process.env.OG_IMAGE_URL %>" />
+    <meta property="og:url" content="<%= process.env.OG_URL %>" />
+    <meta property="og:site_name" content="<%= process.env.OG_SITE_NAME %>" />
+    
+    <!-- Additional Meta Tags for SEO -->
+    <meta name="description" content="<%= process.env.OG_DESCRIPTION %>" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>

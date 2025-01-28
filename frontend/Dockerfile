@@ -5,9 +5,23 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-# Add build argument for backend API URL
+# Add build arguments for environment variables
 ARG BACKEND_API_URL
+ARG OG_TITLE
+ARG OG_DESCRIPTION
+ARG OG_TYPE
+ARG OG_IMAGE_URL
+ARG OG_URL
+ARG OG_SITE_NAME
+
+# Set environment variables
 ENV BACKEND_API_URL=${BACKEND_API_URL}
+ENV OG_TITLE=${OG_TITLE}
+ENV OG_DESCRIPTION=${OG_DESCRIPTION}
+ENV OG_TYPE=${OG_TYPE}
+ENV OG_IMAGE_URL=${OG_IMAGE_URL}
+ENV OG_URL=${OG_URL}
+ENV OG_SITE_NAME=${OG_SITE_NAME}
 
 RUN npm run build
 
