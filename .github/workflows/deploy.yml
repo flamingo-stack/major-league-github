@@ -349,11 +349,11 @@ jobs:
       - name: Set OG Meta Tags Environment Variables 🎨
         run: |
           # Set OG Meta Tags environment variables
-          echo "OG_TITLE='Major League GitHub'" >> $GITHUB_ENV
-          echo "OG_DESCRIPTION='GitHub Scouting Report: Major League Edition'" >> $GITHUB_ENV
-          echo "OG_TYPE='website'" >> $GITHUB_ENV
-          echo "OG_IMAGE_URL='/og-image.jpg'" >> $GITHUB_ENV
-          echo "OG_SITE_NAME='Major League GitHub'" >> $GITHUB_ENV
+          echo "OG_TITLE=Major League GitHub" >> $GITHUB_ENV
+          echo "OG_DESCRIPTION=GitHub Scouting Report: Major League Edition" >> $GITHUB_ENV
+          echo "OG_TYPE=website" >> $GITHUB_ENV
+          echo "OG_IMAGE_URL=/og-image.png" >> $GITHUB_ENV
+          echo "OG_SITE_NAME=Major League GitHub" >> $GITHUB_ENV
 
       - name: Setup common functions 🛠️
         run: |

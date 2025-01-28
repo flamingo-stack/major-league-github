@@ -38,7 +38,13 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({ contributor }) => {
         },
         {
             icon: <UpdateIcon sx={{ fontSize: 16 }} />,
-            value: new Date(contributor.latestCommitDate).toLocaleDateString('en-US', {
+            value: new Date(Date.UTC(
+                Number(contributor.latestCommitDate[0]),
+                Number(contributor.latestCommitDate[1]) - 1,
+                Number(contributor.latestCommitDate[2]),
+                Number(contributor.latestCommitDate[3]),
+                Number(contributor.latestCommitDate[4])
+            )).toLocaleDateString('en-US', {
                 month: 'numeric',
                 day: 'numeric',
                 year: 'numeric'
