@@ -87,7 +87,9 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                             bgcolor: (theme: Theme) => theme.palette.mode === 'dark' 
                                 ? 'rgba(177, 186, 196, 0.08)' 
                                 : 'rgba(234, 238, 242, 0.5)'
-                        }
+                        },
+                        position: 'relative',
+                        zIndex: 1
                     }}
                 >
                     <Box sx={{ 
@@ -96,14 +98,20 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                         gap: { xs: 2.5, sm: 2 }
                     }}>
                         <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-                            <ContributorInfo 
-                                contributor={contributor} 
-                                index={index}
-                                hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
-                            />
-                            <Box sx={{ mt: 2 }}>
-                                <LocationInfo contributor={contributor} />
+                            <Box sx={{ 
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 1,
+                                mb: 2
+                            }}>
+                                <ContributorInfo 
+                                    contributor={contributor} 
+                                    index={index}
+                                    hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
+                                />
                             </Box>
+                            <LocationInfo contributor={contributor} />
                         </Box>
                         
                         <Box sx={{ 

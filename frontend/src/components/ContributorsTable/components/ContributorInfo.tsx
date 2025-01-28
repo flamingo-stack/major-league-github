@@ -88,7 +88,7 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                 alignItems: 'center',
                                 minWidth: 0,
                                 flex: 1,
-                                pr: { xs: '90px', sm: 0 }  // Space for mobile button
+                                pr: 0  // Remove padding that was making space for absolute positioning
                             }}>
                                 <Link 
                                     href={contributor.url}
@@ -119,67 +119,67 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                     >
                                         {contributor.name || contributor.login}
                                     </Typography>
-                                    <Box
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        minWidth: 20,
+                                        height: 24,
+                                        borderRadius: '6px',
+                                        bgcolor: theme => {
+                                            if (theme.palette.mode === 'dark') {
+                                                if (index === 0) return 'rgba(255, 215, 0, 0.15)'
+                                                if (index === 1) return 'rgba(192, 192, 192, 0.15)'
+                                                if (index === 2) return 'rgba(205, 127, 50, 0.15)'
+                                                return 'rgba(99, 110, 123, 0.1)'
+                                            } else {
+                                                if (index === 0) return 'rgba(255, 215, 0, 0.1)'
+                                                if (index === 1) return 'rgba(192, 192, 192, 0.1)'
+                                                if (index === 2) return 'rgba(205, 127, 50, 0.1)'
+                                                return 'rgba(234, 238, 242, 0.5)'
+                                            }
+                                        },
+                                        border: '1px solid',
+                                        borderColor: theme => {
+                                            if (theme.palette.mode === 'dark') {
+                                                if (index === 0) return 'rgba(255, 215, 0, 0.3)'
+                                                if (index === 1) return 'rgba(192, 192, 192, 0.3)'
+                                                if (index === 2) return 'rgba(205, 127, 50, 0.3)'
+                                                return 'rgba(99, 110, 123, 0.25)'
+                                            } else {
+                                                if (index === 0) return 'rgba(255, 215, 0, 0.4)'
+                                                if (index === 1) return 'rgba(192, 192, 192, 0.4)'
+                                                if (index === 2) return 'rgba(205, 127, 50, 0.4)'
+                                                return 'rgba(31, 35, 40, 0.15)'
+                                            }
+                                        },
+                                        px: 0.75,
+                                        flexShrink: 0
+                                    }}
+                                >
+                                    <Typography
                                         sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            minWidth: 20,
-                                            height: 24,
-                                            borderRadius: '6px',
-                                            bgcolor: theme => {
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            color: theme => {
                                                 if (theme.palette.mode === 'dark') {
-                                                    if (index === 0) return 'rgba(255, 215, 0, 0.15)'
-                                                    if (index === 1) return 'rgba(192, 192, 192, 0.15)'
-                                                    if (index === 2) return 'rgba(205, 127, 50, 0.15)'
-                                                    return 'rgba(99, 110, 123, 0.1)'
+                                                    if (index === 0) return 'rgba(255, 215, 0, 0.9)'
+                                                    if (index === 1) return 'rgba(192, 192, 192, 0.9)'
+                                                    if (index === 2) return 'rgba(205, 127, 50, 0.9)'
+                                                    return '#7d8590'
                                                 } else {
-                                                    if (index === 0) return 'rgba(255, 215, 0, 0.1)'
-                                                    if (index === 1) return 'rgba(192, 192, 192, 0.1)'
-                                                    if (index === 2) return 'rgba(205, 127, 50, 0.1)'
-                                                    return 'rgba(234, 238, 242, 0.5)'
+                                                    if (index === 0) return '#856404'
+                                                    if (index === 1) return '#666666'
+                                                    if (index === 2) return '#8B4513'
+                                                    return '#57606a'
                                                 }
                                             },
-                                            border: '1px solid',
-                                            borderColor: theme => {
-                                                if (theme.palette.mode === 'dark') {
-                                                    if (index === 0) return 'rgba(255, 215, 0, 0.3)'
-                                                    if (index === 1) return 'rgba(192, 192, 192, 0.3)'
-                                                    if (index === 2) return 'rgba(205, 127, 50, 0.3)'
-                                                    return 'rgba(99, 110, 123, 0.25)'
-                                                } else {
-                                                    if (index === 0) return 'rgba(255, 215, 0, 0.4)'
-                                                    if (index === 1) return 'rgba(192, 192, 192, 0.4)'
-                                                    if (index === 2) return 'rgba(205, 127, 50, 0.4)'
-                                                    return 'rgba(31, 35, 40, 0.15)'
-                                                }
-                                            },
-                                            px: 0.75,
-                                            flexShrink: 0
+                                            lineHeight: 1
                                         }}
                                     >
-                                        <Typography
-                                            sx={{
-                                                fontSize: '0.75rem',
-                                                fontWeight: 600,
-                                                color: theme => {
-                                                    if (theme.palette.mode === 'dark') {
-                                                        if (index === 0) return 'rgba(255, 215, 0, 0.9)'
-                                                        if (index === 1) return 'rgba(192, 192, 192, 0.9)'
-                                                        if (index === 2) return 'rgba(205, 127, 50, 0.9)'
-                                                        return '#7d8590'
-                                                    } else {
-                                                        if (index === 0) return '#856404'
-                                                        if (index === 1) return '#666666'
-                                                        if (index === 2) return '#8B4513'
-                                                        return '#57606a'
-                                                    }
-                                                },
-                                                lineHeight: 1
-                                            }}
-                                        >
-                                            #{index + 1}
-                                        </Typography>
+                                        #{index + 1}
+                                    </Typography>
                                     </Box>
                                 </Link>
                             </Box>
@@ -190,7 +190,15 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                         onClick={() => {
                                             const footer = document.querySelector('[data-testid="footer"]');
                                             if (footer) {
-                                                footer.scrollIntoView({ behavior: 'smooth' });
+                                                // Find and click the expand button in the footer
+                                                const expandButton = footer.querySelector('[data-testid="expand-footer"]');
+                                                if (expandButton && !footer.classList.contains('expanded')) {
+                                                    (expandButton as HTMLElement).click();
+                                                }
+                                                // Scroll to footer after a small delay to allow expansion
+                                                setTimeout(() => {
+                                                    footer.scrollIntoView({ behavior: 'smooth' });
+                                                }, 100);
                                             }
                                         }}
                                         sx={{
@@ -210,9 +218,9 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                             transition: 'all 0.2s',
                                             textTransform: 'none',
                                             whiteSpace: 'nowrap',
-                                            position: { xs: 'absolute', sm: 'static' },
-                                            right: { xs: 0, sm: 'auto' },
-                                            top: { xs: 0, sm: 'auto' },
+                                            position: 'static', // Remove absolute positioning
+                                            right: 'auto',
+                                            top: 'auto',
                                             flexShrink: 0,
                                             '&:hover': {
                                                 bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.2)' : 'rgba(9, 105, 218, 0.1)',

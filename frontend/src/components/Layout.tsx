@@ -40,6 +40,7 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
       </Container>
       {!isLoadingHiring && hiringManager && jobOpenings && (
         <Box
+          data-testid="footer"
           sx={{
             position: 'fixed',
             bottom: 0,
@@ -52,7 +53,7 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
               ? '0 -4px 12px rgba(0, 0, 0, 0.3)'
               : '0 -4px 12px rgba(0, 0, 0, 0.1)',
             transition: 'transform 0.3s ease-in-out',
-            zIndex: 1000,
+            zIndex: 2000,
           }}
         >
           <Container maxWidth="lg">

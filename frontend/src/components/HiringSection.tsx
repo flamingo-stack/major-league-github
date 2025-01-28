@@ -140,6 +140,8 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               }
             }}
             onClick={() => setIsExpanded(!isExpanded)}
+            data-testid="expand-footer"
+            className={isExpanded ? 'expanded' : ''}
           >
             {isLoading ? (
               <Skeleton variant="circular" width={24} height={24} />
