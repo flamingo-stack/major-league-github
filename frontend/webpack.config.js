@@ -45,8 +45,11 @@ module.exports = (env, argv) => {
           use: ['style-loader', 'css-loader'],
         },
         {
-          test: /\.(png|jpg|jpeg|gif)$/i,
+          test: /\.(ico|png|jpg|jpeg|gif)$/i,
           type: 'asset/resource',
+          generator: {
+            filename: 'assets/[name][ext]'
+          }
         },
         {
           test: /\.(woff|woff2|eot|ttf|otf)$/i,
@@ -57,26 +60,28 @@ module.exports = (env, argv) => {
         },
         {
           test: /\.svg$/,
-          issuer: /\.[jt]sx?$/,
-          use: [
+          oneOf: [
             {
-              loader: '@svgr/webpack',
-              options: {
-                svgo: false,
-                ref: true,
-                titleProp: true,
-                memo: true
+              issuer: /\.[jt]sx?$/,
+              use: [
+                {
+                  loader: '@svgr/webpack',
+                  options: {
+                    svgo: false,
+                    ref: true,
+                    titleProp: true,
+                    memo: true
+                  }
+                }
+              ]
+            },
+            {
+              type: 'asset/resource',
+              generator: {
+                filename: 'assets/[name][ext]'
               }
             }
           ]
-        },
-        {
-          test: /\.svg$/,
-          issuer: /\.(css|scss)$/,
-          type: 'asset/resource',
-          generator: {
-            filename: 'assets/[name][ext]'
-          }
         }
       ],
     },
@@ -93,6 +98,7 @@ module.exports = (env, argv) => {
       }),
       new HtmlWebpackPlugin({
         template: 'index.html',
+        favicon: 'public/favicon.svg',
         templateParameters: {
           process: {
             env: {
