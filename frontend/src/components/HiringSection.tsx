@@ -116,7 +116,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               component="div"
               sx={{
                 color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                fontSize: '0.875rem',
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 lineHeight: '24px',
                 display: 'flex',
                 alignItems: 'center',
@@ -171,7 +171,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               sx={{
                 color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
                 fontWeight: 500,
-                fontSize: '0.875rem',
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 lineHeight: '24px',
                 transition: 'color 0.2s',
               }}
@@ -211,7 +211,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               component="div"
               sx={{
                 color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                fontSize: '0.875rem',
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 lineHeight: '24px',
                 display: 'flex',
                 alignItems: 'center',
@@ -257,7 +257,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                 component="div"
                 sx={{
                   color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                  fontSize: '0.875rem',
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
                   lineHeight: '24px',
                   transition: 'color 0.2s',
                 }}

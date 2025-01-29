@@ -38,6 +38,10 @@ spec:
               value: "https://${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
             - name: OG_SITE_NAME
               value: "${OG_SITE_NAME}"
+            - name: WEBAPP_EXTRA_BUTTON_LINK
+              value: "${WEBAPP_EXTRA_BUTTON_LINK}"
+            - name: WEBAPP_EXTRA_BUTTON_TEXT
+              value: "${WEBAPP_EXTRA_BUTTON_TEXT}"
           envFrom:
             - configMapRef:
                 name: app-config

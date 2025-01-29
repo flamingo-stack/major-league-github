@@ -32,7 +32,9 @@
                 "OG_TYPE": "website",
                 "OG_IMAGE_URL": "/og-image.png",
                 "OG_URL": "",
-                "OG_SITE_NAME": "Major League GitHub"
+                "OG_SITE_NAME": "Major League GitHub",
+                "REACT_APP_BLOG_LINK": "/blog/why-we-built-mlg",
+                "REACT_APP_BLOG_TEXT": "Why MLG?"
             },
             "sourceMaps": true,
             "sourceMapPathOverrides": {
@@ -54,7 +56,9 @@
                 "OG_TYPE": "website",
                 "OG_IMAGE_URL": "/og-image.png",
                 "OG_URL": "",
-                "OG_SITE_NAME": "Major League GitHub"
+                "OG_SITE_NAME": "Major League GitHub",
+                "WEBAPP_EXTRA_BUTTON_LINK": "/blog/why-we-built-mlg",
+                "WEBAPP_EXTRA_BUTTON_TEXT": "Why MLG?"
             },
             "sourceMaps": true,
             "sourceMapPathOverrides": {

@@ -346,7 +346,7 @@ jobs:
           
           echo "✅ Configuration completed successfully"
 
-      - name: Set OG Meta Tags Environment Variables 🎨
+      - name: Set Webapp Environment Variables 🎨
         run: |
           # Set OG Meta Tags environment variables
           echo "OG_TITLE=Major League GitHub" >> $GITHUB_ENV
@@ -354,6 +354,10 @@ jobs:
           echo "OG_TYPE=website" >> $GITHUB_ENV
           echo "OG_IMAGE_URL=/og-image.png" >> $GITHUB_ENV
           echo "OG_SITE_NAME=Major League GitHub" >> $GITHUB_ENV
+          
+          # Set Extra Button environment variables
+          echo "WEBAPP_EXTRA_BUTTON_LINK=https://medium.com/@michaelassraf/major-league-github-the-open-source-talent-leaderboard-ca2c6d7dcbeb" >> $GITHUB_ENV
+          echo "WEBAPP_EXTRA_BUTTON_TEXT=Why MLG?" >> $GITHUB_ENV
 
       - name: Setup common functions 🛠️
         run: |
@@ -437,6 +441,8 @@ jobs:
           OG_TYPE: ${{ env.OG_TYPE }}
           OG_IMAGE_URL: ${{ env.OG_IMAGE_URL }}
           OG_SITE_NAME: ${{ env.OG_SITE_NAME }}
+          WEBAPP_EXTRA_BUTTON_LINK: ${{ env.WEBAPP_EXTRA_BUTTON_LINK }}
+          WEBAPP_EXTRA_BUTTON_TEXT: ${{ env.WEBAPP_EXTRA_BUTTON_TEXT }}
         run: |
           source .github/shared-functions.sh
           
@@ -450,6 +456,8 @@ jobs:
             --build-arg OG_IMAGE_URL="${OG_IMAGE_URL}" \
             --build-arg OG_URL="https://${DOMAIN_NAME}.${DOMAIN_SUFFIX}" \
             --build-arg OG_SITE_NAME="${OG_SITE_NAME}" \
+            --build-arg WEBAPP_EXTRA_BUTTON_LINK="${WEBAPP_EXTRA_BUTTON_LINK}" \
+            --build-arg WEBAPP_EXTRA_BUTTON_TEXT="${WEBAPP_EXTRA_BUTTON_TEXT}" \
             -t "${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}" \
             -t "${REGISTRY}/${REGISTRY_NAME}/frontend:latest"; then
             echo "❌ Error: Failed to build frontend image"

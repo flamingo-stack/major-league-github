@@ -2,12 +2,15 @@ import React from 'react';
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 import { Box, Typography, Link, IconButton, Container } from '@mui/material';
-import { LightMode, DarkMode } from '@mui/icons-material';
+import { LightMode, DarkMode, GitHub } from '@mui/icons-material';
 import { Logo } from './Logo';
 
 interface HeaderProps {
     onToggleTheme: () => void;
 }
+
+const BLOG_LINK = process.env.WEBAPP_EXTRA_BUTTON_LINK || '/blog/why-we-built-mlg';
+const BLOG_TEXT = process.env.WEBAPP_EXTRA_BUTTON_TEXT || 'Why MLG?';
 
 const Header = ({ onToggleTheme }: HeaderProps) => {
     const theme = useTheme();
@@ -71,11 +74,14 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                         flexShrink: 0 
                     }}>
                         <Link
-                            href="https://github.com/flamingo-cx/major-league-github"
+                            href={BLOG_LINK}
                             target="_blank"
                             rel="noopener noreferrer"
                             sx={{
                                 display: 'flex',
+                                '@media (max-width:450px)': {
+                                    display: 'none'
+                                },
                                 alignItems: 'center',
                                 gap: 1,
                                 px: { xs: 1.5, sm: 2 },
@@ -96,7 +102,39 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                                 }
                             }}
                         >
-                            View on GitHub
+                            {BLOG_TEXT}
+                        </Link>
+                        <Link
+                            href="https://github.com/flamingo-cx/major-league-github"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{
+                                display: 'flex',
+                                '@media (max-width:420px)': {
+                                    display: 'none'
+                                },
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 1,
+                                px: { xs: 1.5, sm: 1.5 },
+                                py: { xs: 0.75, sm: 1 },
+                                borderRadius: '6px',
+                                border: '1px solid',
+                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                                minWidth: { xs: 32, sm: 36 },
+                                height: { xs: 32, sm: 36 },
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                    borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                }
+                            }}
+                        >
+                            <GitHub sx={{ fontSize: '1.25rem' }} />
                         </Link>
                         <IconButton 
                             onClick={onToggleTheme}

@@ -121,7 +121,9 @@ module.exports = (env, argv) => {
               OG_URL: process.env.OG_URL || '',
               OG_SITE_NAME: process.env.OG_SITE_NAME || 'Major League GitHub',
               BACKEND_API_URL: process.env.BACKEND_API_URL || 'http://localhost:8080',
-              NODE_ENV: process.env.NODE_ENV || 'development'
+              NODE_ENV: process.env.NODE_ENV || 'development',
+              WEBAPP_EXTRA_BUTTON_LINK: process.env.WEBAPP_EXTRA_BUTTON_LINK || '/blog/why-we-built-mlg',
+              WEBAPP_EXTRA_BUTTON_TEXT: process.env.WEBAPP_EXTRA_BUTTON_TEXT || 'Why MLG?'
             }
           }
         },
