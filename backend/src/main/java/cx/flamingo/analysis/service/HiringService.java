@@ -52,13 +52,13 @@ public class HiringService {
                             .id("founding-engineer-1")
                             .title("Founding Engineer")
                             .location("Miami, FL")
-                            .url("https://www.linkedin.com/jobs/view/4116487922")
+                            .url("https://www.linkedin.com/jobs/view/4138405825")
                             .build(),
                         JobOpening.builder()
                             .id("founding-engineer-2")
                             .title("Founding Engineer")
                             .location("Miami, FL")
-                            .url("https://www.linkedin.com/jobs/view/4116487922")
+                            .url("https://www.linkedin.com/jobs/view/4138405825")
                             .build()
                     );
                 }
