@@ -461,12 +461,18 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                             href={job.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            sx={{ textDecoration: 'none' }}
+                            sx={{ 
+                                textDecoration: 'none',
+                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                '&:hover': {
+                                    textDecoration: 'none'
+                                }
+                            }}
                           >
                             <Typography
                               variant="subtitle1"
                               sx={{
-                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                color: 'inherit',
                                 fontWeight: 600,
                                 mb: 1,
                               }}
