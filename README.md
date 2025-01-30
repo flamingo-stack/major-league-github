@@ -9,6 +9,8 @@
 ## Overview
 Major League GitHub brings the excitement of soccer to the open-source world by showcasing top GitHub contributors based on programming language, location, and engagement. With soccer-themed filters, this project bridges communities and highlights local open-source talent.
 
+🌐 **Live Demo**: [major-league-github.flamingo.cx](https://major-league-github.flamingo.cx/)
+
 ## Features 🚀
 - **Filter by Soccer Teams**: Discover top contributors near MLS stadiums, connecting coding and soccer fans.
 - **Programming Language Leaderboards**: Focus on specific languages (e.g., Java) to find standout developers.
@@ -23,6 +25,10 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 - Spring Boot 3.4
 - Spring WebFlux for reactive programming
 - Maven for dependency management
+- Microservice Architecture:
+  - Web Service: Handles API requests and data serving
+  - Cache Updater: Background service for maintaining GitHub data freshness
+- Redis for distributed caching
 
 ### Frontend
 - React 18
@@ -36,12 +42,38 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 - Kubernetes for orchestration
 - Nginx for frontend serving
 
+## Architecture
+```mermaid
+graph TD
+    subgraph "Frontend"
+        UI[React UI]
+    end
+
+    subgraph "Backend Services"
+        WS[Web Service]
+        CU[Cache Updater]
+        RC[(Redis Cache)]
+    end
+
+    subgraph "External Services"
+        GH[GitHub API]
+        LI[LinkedIn API]
+    end
+
+    UI --> |HTTP/REST| WS
+    WS --> |Read| RC
+    CU --> |Write| RC
+    CU --> |Fetch Data| GH
+    WS --> |Fetch Jobs| LI
+```
+
 ## Prerequisites
 - Java Development Kit (JDK) 21
 - Node.js 18+ and npm
 - Docker and Docker Compose
 - Kubernetes cluster (for deployment)
 - GitHub API tokens
+- Redis instance
 
 ## Getting Started
 
@@ -49,7 +81,12 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 ```bash
 cd backend
 ./mvnw clean install
-./mvnw spring-boot:run
+
+# Run Web Service
+./mvnw spring-boot:run -Pwebservice
+
+# Run Cache Updater (in a separate terminal)
+./mvnw spring-boot:run -Pcache-updater
 ```
 
 ### Frontend Setup
@@ -64,13 +101,19 @@ npm run build  # For production build
 1. Create a `.env` file in the backend directory:
 ```env
 GITHUB_TOKENS=token_1,token_2
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
+LINKEDIN_ORG_ID=your_organization_id
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
 ### Docker Build
 ```bash
-# Build backend
+# Build backend services
 cd backend
-docker build -t major-league-github-backend .
+docker build -t major-league-github-webservice --build-arg PROFILE=web-service .
+docker build -t major-league-github-cache-updater --build-arg PROFILE=cache-updater .
 
 # Build frontend
 cd frontend
@@ -84,8 +127,10 @@ kubectl apply -k .
 ```
 
 ## Development
-- Backend runs on `http://localhost:8450` (configurable via PORT environment variable)
+- Backend Web Service runs on `http://localhost:8450`
+- Backend Cache Updater runs on `http://localhost:8451`
 - Frontend development server runs on `http://localhost:3000`
+- Redis should be running on `localhost:6379`
 
 ## Why Major League GitHub?
 1. **Attract Talent**: Showcase top open-source contributors and connect with experienced engineers.
@@ -93,9 +138,11 @@ kubectl apply -k .
 3. **Celebrate Open Source**: Engage with developers passionate about collaboration and innovation.
 
 ## How It Works 🛠️
-1. **Data Collection**: Leveraging the GitHub API to fetch contributor activity.
-2. **Mapping with Teams**: Contributors are matched to nearby MLS teams based on location.
-3. **Interactive UI**: A sleek interface allows filtering by language, region, city, and team.
+1. **Data Collection**: The Cache Updater service continuously fetches and updates contributor data from GitHub API
+2. **Data Storage**: Redis serves as a distributed cache for storing contributor data and API responses
+3. **Web Service**: Handles API requests, data filtering, and serving content to the frontend
+4. **Mapping with Teams**: Contributors are matched to nearby MLS teams based on location
+5. **Interactive UI**: A sleek interface allows filtering by language, region, city, and team
 
 ## Contributing 🤝
 We welcome contributions from the community! To contribute:
