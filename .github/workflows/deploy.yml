@@ -624,6 +624,7 @@ jobs:
           if ! helm install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx \
             --create-namespace \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-size-unit-type"=global \
             --set controller.service.annotations."kubernetes\.digitalocean\.com/load-balancer-id"=${lb_id:-""} \
             --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-hostname"=${FULL_DOMAIN_NAME} \
             --set controller.service.annotations."service\.beta\.kubernetes\.io/do-loadbalancer-name"=${LB_NAME} \
