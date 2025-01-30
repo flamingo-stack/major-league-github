@@ -42,6 +42,10 @@ spec:
               value: redis
             - name: SPRING_REDIS_PORT
               value: "6379"
+            - name: JAVA_MIN_HEAP
+              value: "${JAVA_MIN_HEAP}"
+            - name: JAVA_MAX_HEAP
+              value: "${JAVA_MAX_HEAP}"
           resources:
             requests:
               memory: ${BACKEND_REQUEST_MEMORY}

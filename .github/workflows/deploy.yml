@@ -39,7 +39,7 @@ env:
   # Backend resources
   BACKEND_REQUEST_MEMORY: 512Mi
   BACKEND_REQUEST_CPU: 200m
-  BACKEND_LIMIT_MEMORY: 1Gi
+  BACKEND_LIMIT_MEMORY: 1.375Gi
   BACKEND_LIMIT_CPU: 500m
   
   # Frontend resources
@@ -49,7 +49,7 @@ env:
   FRONTEND_LIMIT_CPU: 200m
   
   # Java settings
-  JAVA_MAX_HEAP: 896m
+  JAVA_MAX_HEAP: 1200m
   JAVA_MIN_HEAP: 512m
 
 jobs:
