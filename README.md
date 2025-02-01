@@ -110,8 +110,8 @@ REDIS_PORT=6379
 
 2. For the frontend, set up the following environment variables:
 ```env
-# Google Tag Manager
-GTM_ID=your_gtm_container_id  # e.g., GTM-XXXXXXX
+# Google Tag Manager (Container ID)
+GTM_ID=GTM-XXXXXXX  # Your GTM container ID (without the 'G-' prefix)
 
 # Open Graph Meta Tags
 OG_TITLE=Major League GitHub
