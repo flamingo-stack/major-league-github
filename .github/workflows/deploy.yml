@@ -112,6 +112,10 @@ jobs:
             missing_secrets+=("CLUSTER_NAME")
           fi
           
+          if [ -z "${{ secrets.GTM_ID }}" ]; then
+            missing_secrets+=("GTM_ID")
+          fi
+          
           if [ ${#missing_secrets[@]} -ne 0 ]; then
             echo "❌ Error: Missing required secrets: ${missing_secrets[*]}"
             exit 1
@@ -453,6 +457,7 @@ jobs:
           if ! docker build frontend \
             --build-arg NODE_ENV=production \
             --build-arg BACKEND_API_URL="https://${DOMAIN_NAME}.${DOMAIN_SUFFIX}" \
+            --build-arg GTM_ID="${GTM_ID}" \
             --build-arg OG_TITLE="${OG_TITLE}" \
             --build-arg OG_DESCRIPTION="${OG_DESCRIPTION}" \
             --build-arg OG_TYPE="${OG_TYPE}" \
