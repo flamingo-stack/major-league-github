@@ -10,6 +10,9 @@ env:
   VERSION: v1.0.${{ github.run_number }}
   ENVIRONMENT: production
   
+  # Google Tag Manager
+  GTM_ID: ${{ secrets.GTM_ID }}
+  
   # DigitalOcean
   REGISTRY: ${{ secrets.REGISTRY }}
   REGISTRY_NAME: ${{ secrets.REGISTRY_NAME }}
