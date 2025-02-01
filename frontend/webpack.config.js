@@ -136,7 +136,19 @@ module.exports = (env, argv) => {
           removeEmptyAttributes: true,
           removeStyleLinkTypeAttributes: true,
           keepClosingSlash: true,
-          minifyJS: true,
+          minifyJS: {
+            compress: {
+              drop_console: true,
+              drop_debugger: true,
+              pure_funcs: ['console.log']
+            },
+            format: {
+              comments: false
+            },
+            mangle: {
+              reserved: ['process']
+            }
+          },
           minifyCSS: true,
           minifyURLs: true,
         } : false
