@@ -106,11 +106,11 @@ public class GithubService {
 
                             for (Contributor contributor : contributors) {
                                 if (contributor.getSocialLinks() == null || contributor.getSocialLinks().isEmpty()) {
-                                    log.info("No social links found for contributor: {}", contributor.getLogin());  
+                                    log.debug("No social links found for contributor: {}", contributor.getLogin());  
                                     continue;
                                 }
                                 for (SocialLink socialLink : contributor.getSocialLinks()) {
-                                    log.info("Social Link: {}", socialLink.getUrl());
+                                    log.debug("Social Link: {}", socialLink.getUrl());
                                 }
                             }
                             return contributors;
@@ -362,7 +362,7 @@ public class GithubService {
                 .language(language.getName())
                 .cursor(cursor)
                 .build();
-        log.info("Generated GitHub query for city {}: {}", city.getName(), query);
+        log.debug("Generated GitHub query for city {}: {}", city.getName(), query);
         return query;
     }
 
