@@ -1,4 +1,4 @@
-import { Box, Typography, Autocomplete, TextField, TextFieldProps, InputAdornment, ChipTypeMap } from '@mui/material';
+import { Box, Typography, Autocomplete, TextField, TextFieldProps, InputAdornment, ChipTypeMap, SxProps, Theme } from '@mui/material';
 
 export interface BaseEntity {
   id: string;
@@ -18,6 +18,7 @@ export interface BaseAutocompleteProps<T extends BaseEntity> {
   getOptionLabel: (option: T) => string;
   renderIcon?: (option: T) => string | undefined;
   renderOptionContent?: (option: T) => React.ReactNode;
+  sx?: SxProps<Theme>;
 }
 
 export const BaseAutocomplete = <T extends BaseEntity>({
@@ -29,7 +30,8 @@ export const BaseAutocomplete = <T extends BaseEntity>({
   placeholder,
   getOptionLabel,
   renderIcon = (option) => option.iconUrl || option.logoUrl,
-  renderOptionContent
+  renderOptionContent,
+  sx
 }: BaseAutocompleteProps<T>) => {
   return (
     <Autocomplete<T, false, false, true, ChipTypeMap['defaultComponent']>
@@ -48,6 +50,7 @@ export const BaseAutocomplete = <T extends BaseEntity>({
       getOptionLabel={(option: any) => typeof option === 'string' ? option : getOptionLabel(option)}
       fullWidth
       freeSolo
+      sx={sx}
       onBlur={() => {
         if (value) {
           onInputChange(getOptionLabel(value));

@@ -35,11 +35,34 @@ export async function getContributors({
     if (languageId) params.set('languageId', languageId);
     if (maxResults) params.set('maxResults', maxResults.toString());
 
-    const response = await axios.get<ApiResponse<Contributor[]>>(`/api/contributors?${params.toString()}`, { signal });
+    const response = await axios.get<ApiResponse<Contributor[]>>(`/api/contributors/search?${params.toString()}`, { signal });
     if (response.data.status !== 'success') {
         throw new Error(response.data.message);
     }
     return response.data.data;
+}
+
+export function downloadContributors({
+    cityId,
+    regionId,
+    stateId,
+    teamId,
+    languageId
+}: Omit<GetContributorsParams, 'maxResults' | 'signal'>) {
+    const params = new URLSearchParams();
+    if (cityId) params.set('cityId', cityId);
+    if (regionId) params.set('regionId', regionId);
+    if (stateId) params.set('stateId', stateId);
+    if (teamId) params.set('teamId', teamId);
+    if (languageId) params.set('languageId', languageId);
+
+    // Create a hidden link and click it to trigger the download
+    const link = document.createElement('a');
+    link.href = `${BACKEND_API_URL}/api/contributors/export?${params.toString()}`;
+    link.download = 'contributors.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // Autocomplete endpoints
