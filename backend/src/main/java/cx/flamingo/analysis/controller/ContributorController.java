@@ -63,73 +63,7 @@ public class ContributorController {
         }
 
         return cacheService.getHttpResponse(cityId, regionId, stateId, teamId, languageId, maxResults, () -> {
-            Map<String, City> targetCities = new HashMap<>();
-            boolean isFirstSet = true;
-
-            // Start with specific city if provided
-            if (cityId != null) {
-                log.info("Intersecting with city ID: {}", cityId);
-                City city = cityService.getCityById(cityId);
-                if (city != null) {
-                    if (isFirstSet) {
-                        targetCities.put(city.getId(), city);
-                        isFirstSet = false;
-                    } else {
-                        targetCities.keySet().retainAll(List.of(city.getId()));
-                    }
-                }
-            }
-
-            // Intersect with team cities if provided
-            if (teamId != null) {
-                log.info("Intersecting with team ID: {}", teamId);
-                List<City> teamCities = cityService.getCitiesByNearestTeamId(teamId);
-                if (isFirstSet) {
-                    teamCities.forEach(city -> targetCities.put(city.getId(), city));
-                    isFirstSet = false;
-                } else {
-                    Set<String> teamCityIds = teamCities.stream()
-                        .map(City::getId)
-                        .collect(Collectors.toSet());
-                    targetCities.keySet().retainAll(teamCityIds);
-                }
-            }
-
-            // Intersect with region cities if provided
-            if (regionId != null) {
-                log.info("Intersecting with region ID: {}", regionId);
-                List<City> regionCities = cityService.getCitiesByRegionId(regionId);
-                if (isFirstSet) {
-                    regionCities.forEach(city -> targetCities.put(city.getId(), city));
-                    isFirstSet = false;
-                } else {
-                    Set<String> regionCityIds = regionCities.stream()
-                        .map(City::getId)
-                        .collect(Collectors.toSet());
-                    targetCities.keySet().retainAll(regionCityIds);
-                }
-            }
-
-            // Intersect with state cities if provided
-            if (stateId != null) {
-                log.info("Intersecting with state ID: {}", stateId);
-                List<City> stateCities = cityService.getCitiesByStateId(stateId);
-                if (isFirstSet) {
-                    stateCities.forEach(city -> targetCities.put(city.getId(), city));
-                    isFirstSet = false;
-                } else {
-                    Set<String> stateCityIds = stateCities.stream()
-                        .map(City::getId)
-                        .collect(Collectors.toSet());
-                    targetCities.keySet().retainAll(stateCityIds);
-                }
-            }
-
-            // If no parameters were provided, use all cities
-            if (isFirstSet) {
-                cityService.autocompleteCities(null, null, null, null)
-                    .forEach(city -> targetCities.put(city.getId(), city));
-            }
+            List<City> targetCities = githubService.getTargetCities(cityId, regionId, stateId, teamId);
 
             Language selectedLanguage = languageId != null ? languageService.getLanguageById(languageId) : languageService.getDefaultLanguage();
             if (selectedLanguage == null) {
@@ -137,7 +71,7 @@ public class ContributorController {
                 selectedLanguage = languageService.getDefaultLanguage();
             }
 
-            return githubService.getTopContributorsIn(new ArrayList<>(targetCities.values()), selectedLanguage, maxResults, priority);
+            return githubService.getTopContributorsIn(targetCities, selectedLanguage, maxResults, priority);
         }).map(contributors -> {
             String message = String.format("Found %d contributors matching the criteria", contributors.size());
             return ApiResponse.success(contributors, message);
@@ -154,14 +88,30 @@ public class ContributorController {
             @RequestParam(required = false) String stateId,
             @RequestParam(required = false) String teamId,
             @RequestParam(required = false) String languageId,
-            @RequestParam(defaultValue = "15") int maxResults) {
+            @RequestParam(defaultValue = "15") int maxResults,
+            @RequestParam(required = false, defaultValue = "High") GithubService.GithubApiPriority priority) {
         
         if (!cacheService.isCacheReady()) {
             return ResponseEntity.badRequest().body("Cache is still being populated");
         }
 
-        List<Contributor> contributors = getContributors(cityId, regionId, stateId, teamId, languageId, maxResults, GithubService.GithubApiPriority.High)
-            .getData();
+        var contributorsResponse = cacheService.getHttpResponse(cityId, regionId, stateId, teamId, languageId, maxResults, () -> {
+            List<City> targetCities = githubService.getTargetCities(cityId, regionId, stateId, teamId);
+
+            Language selectedLanguage = languageId != null ? languageService.getLanguageById(languageId) : languageService.getDefaultLanguage();
+            if (selectedLanguage == null) {
+                log.warn("Language not found with ID: {}, using default language", languageId);
+                selectedLanguage = languageService.getDefaultLanguage();
+            }
+
+            return githubService.getTopContributorsIn(targetCities, selectedLanguage, maxResults, priority);
+        });
+
+        if (!contributorsResponse.isPresent()) {
+            return ResponseEntity.internalServerError().body("Failed to fetch contributors");
+        }
+
+        List<Contributor> contributors = contributorsResponse.get();
 
         StringWriter stringWriter = new StringWriter();
         CSVFormat csvFormat = CSVFormat.DEFAULT.builder()

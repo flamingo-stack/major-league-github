@@ -5,8 +5,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
@@ -106,7 +108,7 @@ public class GithubService {
 
                             for (Contributor contributor : contributors) {
                                 if (contributor.getSocialLinks() == null || contributor.getSocialLinks().isEmpty()) {
-                                    log.debug("No social links found for contributor: {}", contributor.getLogin());  
+                                    log.debug("No social links found for contributor: {}", contributor.getLogin());
                                     continue;
                                 }
                                 for (SocialLink socialLink : contributor.getSocialLinks()) {
@@ -372,19 +374,18 @@ public class GithubService {
                 JsonObject user = userElement.getAsJsonObject();
                 try {
                     Contributor contributor = fetchUserProfile(
-                        getStringOrDefault(user, "login", ""),
-                        Contributor.Role.CONTRIBUTOR,
-                        user
-                    );
-                    
+                            getStringOrDefault(user, "login", ""),
+                            Contributor.Role.CONTRIBUTOR,
+                            user);
+
                     // Override location-specific fields since we know them
                     contributor = contributor.toBuilder()
-                        .cityId(city.getId())
-                        .nearestTeamId(soccerTeamService.findNearestTeamId(city))
-                        .city(city)
-                        .nearestTeam(soccerTeamService.getTeamById(soccerTeamService.findNearestTeamId(city)))
-                        .build();
-                    
+                            .cityId(city.getId())
+                            .nearestTeamId(soccerTeamService.findNearestTeamId(city))
+                            .city(city)
+                            .nearestTeam(soccerTeamService.getTeamById(soccerTeamService.findNearestTeamId(city)))
+                            .build();
+
                     contributors.add(contributor);
                 } catch (Exception e) {
                     log.error("Failed to process user: {}", e.getMessage());
@@ -466,7 +467,7 @@ public class GithubService {
             return null;
         }
         JsonObject contributions = user.getAsJsonObject("contributionsCollection");
-        
+
         if (!contributions.has("contributionCalendar")) {
             return null;
         }
@@ -507,127 +508,76 @@ public class GithubService {
         return 0;
     }
 
-    public record GitHubProfile(
-        String login,
-        String id,
-        String node_id,
-        String avatar_url,
-        String gravatar_id,
-        String url,
-        String html_url,
-        String followers_url,
-        String following_url,
-        String gists_url,
-        String starred_url,
-        String subscriptions_url,
-        String organizations_url,
-        String repos_url,
-        String events_url,
-        String received_events_url,
-        String type,
-        String user_view_type,
-        boolean site_admin,
-        String name,
-        String company,
-        String blog,
-        String location,
-        String email,
-        Boolean hireable,
-        String bio,
-        String twitter_username,
-        int public_repos,
-        int public_gists,
-        int followers,
-        int following,
-        String created_at,
-        String updated_at,
-        int private_gists,
-        int total_private_repos,
-        int owned_private_repos,
-        int disk_usage,
-        int collaborators,
-        boolean two_factor_authentication
-    ) {}
-
     public Contributor fetchUserProfile(String username, Contributor.Role role, JsonObject existingData) {
-        JsonObject userData;
-        
-        if (existingData != null) {
-            // Use existing data (from bulk query)
-            userData = existingData;
-        } else {
-            // Make new API calls only if we don't have existing data
-            // First get the basic profile info using REST API
-            String githubApiUrl = String.format("https://api.github.com/users/%s", username);
-            
-            Pair<WebClient, GithubToken> webClientToGithubToken = githubTokenRateManager.getBestAvailableClient();
-            var response = webClientToGithubToken.getValue0().get()
-                .uri(githubApiUrl)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+        JsonObject userData = existingData;
 
-            GitHubProfile githubProfile = gson.fromJson(response, GitHubProfile.class);
-            
+        fetchUserDataFromGithubAPI: {
+            if (userData != null) {
+                break fetchUserDataFromGithubAPI;
+            }
+            // Make new API calls only if we don't have existing data
+            Pair<WebClient, GithubToken> webClientToGithubToken = githubTokenRateManager.getBestAvailableClient();
+
             // Then get detailed stats using GraphQL
             String graphqlQuery = """
-                query {
-                  user(login: "%s") {
-                    login
-                    name
-                    bio
-                    avatarUrl
-                    email
-                    websiteUrl
-                    twitterUsername
-                    location
-                    contributionsCollection {
-                      totalCommitContributions
-                      totalPullRequestContributions
-                      totalIssueContributions
-                      totalRepositoryContributions
-                      contributionCalendar {
-                        weeks {
-                          contributionDays {
-                            contributionCount
-                            date
+                        query {
+                          user(login: "%s") {
+                            login
+                            name
+                            bio
+                            avatarUrl
+                            email
+                            websiteUrl
+                            twitterUsername
+                            location
+                            contributionsCollection {
+                              totalCommitContributions
+                              totalPullRequestContributions
+                              totalIssueContributions
+                              totalRepositoryContributions
+                              contributionCalendar {
+                                weeks {
+                                  contributionDays {
+                                    contributionCount
+                                    date
+                                  }
+                                }
+                              }
+                            }
+                            starredRepositories {
+                              totalCount
+                            }
+                            forkedRepos: repositories(isFork: true) {
+                              totalCount
+                            }
+                            originalRepos: repositories(first: 100, isFork: false, orderBy: {field: STARGAZERS, direction: DESC}) {
+                              nodes {
+                                stargazerCount
+                                forkCount
+                                primaryLanguage {
+                                  name
+                                }
+                              }
+                            }
+                            socialAccounts(first: 10) {
+                              nodes {
+                                provider
+                                url
+                              }
+                            }
                           }
                         }
-                      }
-                    }
-                    starredRepositories {
-                      totalCount
-                    }
-                    forkedRepos: repositories(isFork: true) {
-                      totalCount
-                    }
-                    originalRepos: repositories(first: 100, isFork: false, orderBy: {field: STARGAZERS, direction: DESC}) {
-                      nodes {
-                        stargazerCount
-                        forkCount
-                        primaryLanguage {
-                          name
-                        }
-                      }
-                    }
-                    socialAccounts(first: 10) {
-                      nodes {
-                        provider
-                        url
-                      }
-                    }
-                  }
-                }
-            """.formatted(username);
+                    """
+                    .formatted(username);
 
             JsonObject queryJson = new JsonObject();
             queryJson.addProperty("query", graphqlQuery);
-            
+
             var graphqlResponse = webClientToGithubToken.getValue0().post()
-                .bodyValue(gson.toJson(queryJson))
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+                    .bodyValue(gson.toJson(queryJson))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
 
             JsonObject jsonResponse = JsonParser.parseString(graphqlResponse).getAsJsonObject();
             userData = jsonResponse.getAsJsonObject("data").getAsJsonObject("user");
@@ -635,11 +585,11 @@ public class GithubService {
 
         // Process the data using shared logic
         JsonObject reposObj = userData.getAsJsonObject("originalRepos");
-        if (reposObj == null || !reposObj.has("nodes")) {
-            throw new IllegalStateException("No repository data available for user: " + username);
+        JsonArray repositories = new JsonArray();
+        if (reposObj != null && reposObj.has("nodes")) {
+            repositories = reposObj.getAsJsonArray("nodes");
         }
 
-        JsonArray repositories = reposObj.getAsJsonArray("nodes");
         long javaRepos = countJavaRepositories(repositories);
         int starsGiven = getStarsGiven(userData);
         int forksGiven = getForksGiven(userData);
@@ -672,20 +622,20 @@ public class GithubService {
 
         // Build social links
         List<SocialLink> socialLinks = new ArrayList<>();
-        
+
         // Add GitHub profile link
         socialLinks.add(SocialLink.builder()
-            .platform("github")
-            .url("https://github.com/" + getStringOrDefault(userData, "login", ""))
-            .build());
-        
+                .platform("github")
+                .url("https://github.com/" + getStringOrDefault(userData, "login", ""))
+                .build());
+
         // Add email if available
         String email = getStringOrDefault(userData, "email", "");
         if (!email.isEmpty()) {
             socialLinks.add(SocialLink.builder()
-                .platform("email")
-                .url("mailto:" + email)
-                .build());
+                    .platform("email")
+                    .url("mailto:" + email)
+                    .build());
         }
 
         // Add website if available
@@ -693,18 +643,18 @@ public class GithubService {
         if (!website.isEmpty()) {
             String platform = determineWebsitePlatform(website);
             socialLinks.add(SocialLink.builder()
-                .platform(platform)
-                .url(website)
-                .build());
+                    .platform(platform)
+                    .url(website)
+                    .build());
         }
 
         // Add Twitter if available
         String twitterUsername = getStringOrDefault(userData, "twitterUsername", "");
         if (!twitterUsername.isEmpty()) {
             socialLinks.add(SocialLink.builder()
-                .platform("twitter")
-                .url("https://twitter.com/" + twitterUsername)
-                .build());
+                    .platform("twitter")
+                    .url("https://twitter.com/" + twitterUsername)
+                    .build());
         }
 
         // Add social accounts from GitHub API
@@ -717,11 +667,11 @@ public class GithubService {
                         JsonObject accountObj = account.getAsJsonObject();
                         String provider = accountObj.get("provider").getAsString().toLowerCase();
                         String url = accountObj.get("url").getAsString();
-                        
+
                         socialLinks.add(SocialLink.builder()
-                            .platform(provider)
-                            .url(url)
-                            .build());
+                                .platform(provider)
+                                .url(url)
+                                .build());
                     }
                 }
             }
@@ -735,26 +685,26 @@ public class GithubService {
             String location = userData.get("location").getAsString();
             List<City> cities = cityService.autocompleteCities(location, null, null, null);
             if (!cities.isEmpty()) {
-                city = cities.get(0);  // Use the first matching city
+                city = cities.get(0); // Use the first matching city
                 cityId = city.getId();
                 nearestTeamId = soccerTeamService.findNearestTeamId(city);
             }
         }
 
         Contributor.ContributorBuilder builder = Contributor.builder()
-            .type(role)
-            .login(getStringOrDefault(userData, "login", ""))
-            .name(getStringOrDefault(userData, "name", "Unknown"))
-            .avatarUrl(getStringOrDefault(userData, "avatarUrl", ""))
-            .url(getStringOrDefault(userData, "url", ""))
-            .email(email)
-            .role(jobRole)
-            .bio(bio)
-            .socialLinks(socialLinks)
-            .cityId(cityId)
-            .nearestTeamId(nearestTeamId)
-            .city(city)
-            .nearestTeam(nearestTeamId != null ? soccerTeamService.getTeamById(nearestTeamId) : null);
+                .type(role)
+                .login(getStringOrDefault(userData, "login", ""))
+                .name(getStringOrDefault(userData, "name", "Unknown"))
+                .avatarUrl(getStringOrDefault(userData, "avatarUrl", ""))
+                .url(getStringOrDefault(userData, "url", ""))
+                .email(email)
+                .role(jobRole)
+                .bio(bio)
+                .socialLinks(socialLinks)
+                .cityId(cityId)
+                .nearestTeamId(nearestTeamId)
+                .city(city)
+                .nearestTeam(nearestTeamId != null ? soccerTeamService.getTeamById(nearestTeamId) : null);
 
         // Set stats based on role
         if (role == Contributor.Role.HIRING_MANAGER) {
@@ -766,24 +716,24 @@ public class GithubService {
             stats.put("forksReceived", totalForks);
             stats.put("starsGiven", starsGiven);
             stats.put("forksGiven", forksGiven);
-            
+
             if (userData.has("contributionsCollection")) {
                 JsonObject contributions = userData.getAsJsonObject("contributionsCollection");
                 stats.put("totalPullRequests", contributions.get("totalPullRequestContributions").getAsInt());
                 stats.put("totalIssues", contributions.get("totalIssueContributions").getAsInt());
             }
-            
+
             builder.githubStats(stats)
-                  .lastActive(latestCommit);
+                    .lastActive(latestCommit);
         } else {
             builder.totalCommits(totalCommits)
-                  .javaRepos((int) javaRepos)
-                  .starsReceived(starsReceived)
-                  .forksReceived(totalForks)
-                  .starsGiven(starsGiven)
-                  .forksGiven(forksGiven)
-                  .score((int) score)
-                  .lastActive(latestCommit);
+                    .javaRepos((int) javaRepos)
+                    .starsReceived(starsReceived)
+                    .forksReceived(totalForks)
+                    .starsGiven(starsGiven)
+                    .forksGiven(forksGiven)
+                    .score((int) score)
+                    .lastActive(latestCommit);
         }
 
         return builder.build();
@@ -796,11 +746,88 @@ public class GithubService {
 
     private String determineWebsitePlatform(String url) {
         url = url.toLowerCase();
-        if (url.contains("linkedin.com")) return "linkedin";
-        if (url.contains("instagram.com")) return "instagram";
-        if (url.contains("twitter.com") || url.contains("x.com")) return "twitter";
-        if (url.contains("facebook.com")) return "facebook";
-        if (url.contains("github.com")) return "github";
+        if (url.contains("linkedin.com"))
+            return "linkedin";
+        if (url.contains("instagram.com"))
+            return "instagram";
+        if (url.contains("twitter.com") || url.contains("x.com"))
+            return "twitter";
+        if (url.contains("facebook.com"))
+            return "facebook";
+        if (url.contains("github.com"))
+            return "github";
         return "website";
+    }
+
+    public List<City> getTargetCities(String cityId, String regionId, String stateId, String teamId) {
+        Map<String, City> targetCities = new HashMap<>();
+        boolean isFirstSet = true;
+
+        // Start with specific city if provided
+        if (cityId != null) {
+            log.info("Intersecting with city ID: {}", cityId);
+            City city = cityService.getCityById(cityId);
+            if (city != null) {
+                if (isFirstSet) {
+                    targetCities.put(city.getId(), city);
+                    isFirstSet = false;
+                } else {
+                    targetCities.keySet().retainAll(List.of(city.getId()));
+                }
+            }
+        }
+
+        // Intersect with team cities if provided
+        if (teamId != null) {
+            log.info("Intersecting with team ID: {}", teamId);
+            List<City> teamCities = cityService.getCitiesByNearestTeamId(teamId);
+            if (isFirstSet) {
+                teamCities.forEach(city -> targetCities.put(city.getId(), city));
+                isFirstSet = false;
+            } else {
+                Set<String> teamCityIds = teamCities.stream()
+                        .map(City::getId)
+                        .collect(Collectors.toSet());
+                targetCities.keySet().retainAll(teamCityIds);
+            }
+        }
+
+        // Intersect with region cities if provided
+        if (regionId != null) {
+            log.info("Intersecting with region ID: {}", regionId);
+            List<City> regionCities = cityService.getCitiesByRegionId(regionId);
+            if (isFirstSet) {
+                regionCities.forEach(city -> targetCities.put(city.getId(), city));
+                isFirstSet = false;
+            } else {
+                Set<String> regionCityIds = regionCities.stream()
+                        .map(City::getId)
+                        .collect(Collectors.toSet());
+                targetCities.keySet().retainAll(regionCityIds);
+            }
+        }
+
+        // Intersect with state cities if provided
+        if (stateId != null) {
+            log.info("Intersecting with state ID: {}", stateId);
+            List<City> stateCities = cityService.getCitiesByStateId(stateId);
+            if (isFirstSet) {
+                stateCities.forEach(city -> targetCities.put(city.getId(), city));
+                isFirstSet = false;
+            } else {
+                Set<String> stateCityIds = stateCities.stream()
+                        .map(City::getId)
+                        .collect(Collectors.toSet());
+                targetCities.keySet().retainAll(stateCityIds);
+            }
+        }
+
+        // If no parameters were provided, use all cities
+        if (isFirstSet) {
+            cityService.autocompleteCities(null, null, null, null)
+                    .forEach(city -> targetCities.put(city.getId(), city));
+        }
+
+        return new ArrayList<>(targetCities.values());
     }
 }
