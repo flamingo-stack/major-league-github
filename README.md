@@ -108,6 +108,19 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
+2. For the frontend, set up the following environment variables:
+```env
+# Google Tag Manager (Container ID)
+GTM_ID=GTM-XXXXXXX  # Your GTM container ID (without the 'G-' prefix)
+
+# Open Graph Meta Tags
+OG_TITLE=Major League GitHub
+OG_DESCRIPTION=GitHub Scouting Report: Major League Edition
+OG_TYPE=website
+OG_IMAGE_URL=/og-image.png
+OG_SITE_NAME=Major League GitHub
+```
+
 ### Docker Build
 ```bash
 # Build backend services

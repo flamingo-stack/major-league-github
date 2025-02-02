@@ -42,6 +42,8 @@ spec:
               value: "${WEBAPP_EXTRA_BUTTON_LINK}"
             - name: WEBAPP_EXTRA_BUTTON_TEXT
               value: "${WEBAPP_EXTRA_BUTTON_TEXT}"
+            - name: GTM_ID
+              value: "${GTM_ID}"
           envFrom:
             - configMapRef:
                 name: app-config

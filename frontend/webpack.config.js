@@ -114,6 +114,7 @@ module.exports = (env, argv) => {
         templateParameters: {
           process: {
             env: {
+              GTM_ID: process.env.GTM_ID || '',
               OG_TITLE: process.env.OG_TITLE || 'Major League GitHub',
               OG_DESCRIPTION: process.env.OG_DESCRIPTION || 'GitHub Scouting Report: Major League Edition',
               OG_TYPE: process.env.OG_TYPE || 'website',
@@ -135,7 +136,10 @@ module.exports = (env, argv) => {
           removeEmptyAttributes: true,
           removeStyleLinkTypeAttributes: true,
           keepClosingSlash: true,
-          minifyJS: true,
+          minifyJS: {
+            compress: false,
+            mangle: false
+          },
           minifyCSS: true,
           minifyURLs: true,
         } : false

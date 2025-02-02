@@ -11,6 +11,7 @@ COPY . .
 
 # Add build arguments for environment variables
 ARG BACKEND_API_URL
+ARG GTM_ID
 ARG OG_TITLE
 ARG OG_DESCRIPTION
 ARG OG_TYPE
@@ -23,6 +24,7 @@ ARG NODE_ENV=production
 
 # Set environment variables for the build
 ENV BACKEND_API_URL=${BACKEND_API_URL}
+ENV GTM_ID=${GTM_ID}
 ENV OG_TITLE=${OG_TITLE}
 ENV OG_DESCRIPTION=${OG_DESCRIPTION}
 ENV OG_TYPE=${OG_TYPE}
