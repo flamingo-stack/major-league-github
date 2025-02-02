@@ -32,6 +32,7 @@ import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
 import { useHiring } from '../../../hooks/useHiring';
+import { formatDate, formatDateRelative } from '../../../utils/date';
 
 const getSocialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -52,23 +53,6 @@ const getSocialIcon = (platform: string) => {
         default:
             return null;
     }
-};
-
-const formatDate = (date: [number, number, number, number, number] | null): string => {
-    if (!date || !Array.isArray(date) || date.length < 5) {
-        return 'N/A';
-    }
-    return new Date(Date.UTC(
-        date[0],
-        date[1] - 1,
-        date[2],
-        date[3],
-        date[4]
-    )).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
 };
 
 export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
@@ -255,7 +239,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                         fontSize: '0.75rem',
                                         color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
                                     }}>
-                                        Last commit: {formatDate(contributor.latestCommitDate)}
+                                        Last active: {formatDate(contributor.lastActive)}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -324,10 +308,10 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                     = {formatNumber(contributor.totalCommits * Math.max(contributor.starsReceived, 1))}<br/>
                                     <br/>
                                     2. Recency Factor:<br/>
-                                    • Last commit: {formatDate(contributor.latestCommitDate)}<br/>
-                                    • Multiplier: {Number(contributor.latestCommitDate[0]) === new Date().getFullYear() ? '2.0' : '1.0'}<br/>
+                                    • Last active: {formatDate(contributor.lastActive)}<br/>
+                                    • Multiplier: {new Date(contributor.lastActive * 1000).getFullYear() === new Date().getFullYear() ? '2.0' : '1.0'}<br/>
                                     <br/>
-                                    {formatNumber(contributor.totalCommits * Math.max(contributor.starsReceived, 1))} × {Number(contributor.latestCommitDate[0]) === new Date().getFullYear() ? '2.0' : '1.0'} = {formatNumber(contributor.score)}
+                                    {formatNumber(contributor.totalCommits * Math.max(contributor.starsReceived, 1))} × {new Date(contributor.lastActive * 1000).getFullYear() === new Date().getFullYear() ? '2.0' : '1.0'} = {formatNumber(contributor.score)}
                                 </Box>
                             </Box>
                         )}
@@ -404,24 +388,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
     );
 
     const LastActivityTooltip = ({ contributor }: { contributor: Contributor }) => (
-        <Box sx={{ p: 1.5, maxWidth: 300 }}>
-            <Typography sx={{ 
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                mb: 1 
-            }}>
-                Last Activity
+        <Box>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                Last Active: {formatDate(contributor.lastActive)}
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <UpdateIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da' }} />
-                <Typography sx={{ 
-                    fontSize: '0.75rem',
-                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
-                }}>
-                    Last commit: {formatDate(contributor.latestCommitDate)}
-                </Typography>
-            </Box>
+            <Typography variant="body2" color="text.secondary">
+                {formatDateRelative(contributor.lastActive)}
+            </Typography>
         </Box>
     );
 
@@ -773,7 +746,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                                     lineHeight: 1,
                                                     whiteSpace: 'nowrap'
                                                 }}>
-                                                    {formatDate(contributor.latestCommitDate)}
+                                                    {formatDate(contributor.lastActive)}
                                                 </Typography>
                                             </Box>
                                         </StatPill>

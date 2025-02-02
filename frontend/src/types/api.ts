@@ -90,7 +90,7 @@ export interface Contributor {
         forksGiven: number;
         javaRepos: number;
     };
-    lastActive: number;
+    lastActive: number;  // Unix timestamp in seconds
     totalCommits: number;
     javaRepos: number;
     starsReceived: number;
@@ -98,5 +98,4 @@ export interface Contributor {
     starsGiven: number;
     forksGiven: number;
     score: number;
-    latestCommitDate: [number, number, number, number, number];
 } 

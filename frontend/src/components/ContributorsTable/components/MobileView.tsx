@@ -28,6 +28,7 @@ import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
 import { useHiring } from '../../../hooks/useHiring';
+import { formatDate, formatDateRelative } from '../../../utils/date';
 
 const getSocialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -48,23 +49,6 @@ const getSocialIcon = (platform: string) => {
         default:
             return null;
     }
-};
-
-const formatDate = (date: [number, number, number, number, number] | null): string => {
-    if (!date || !Array.isArray(date) || date.length < 5) {
-        return 'N/A';
-    }
-    return new Date(Date.UTC(
-        date[0],
-        date[1] - 1,
-        date[2],
-        date[3],
-        date[4]
-    )).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
 };
 
 export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
@@ -207,7 +191,7 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                             />
                             <StatItem 
                                 icon={<UpdateIcon />} 
-                                value={formatDate(contributor.latestCommitDate)}
+                                value={formatDate(contributor.lastActive)}
                                 color={(theme: Theme) => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'}
                             />
                         </Box>
