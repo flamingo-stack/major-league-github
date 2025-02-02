@@ -151,21 +151,16 @@ public class GitHubQueryBuilder {
             starred.withArgs("first: 15")
                   .addField("totalCount");
 
-            // Forked repositories
-            Field forkedRepos = user.addField("repositories");
-            forkedRepos.withAlias("forkedRepos")
-                      .withArgs("first: 1, isFork: true")
-                      .addField("totalCount");
-
-            // Original repositories
-            Field originalRepos = user.addField("repositories");
-            originalRepos.withAlias("originalRepos")
-                        .withArgs("first: 15, isFork: false, orderBy: {field: PUSHED_AT, direction: DESC}");
+            // All repositories (both original and forked)
+            Field allRepos = user.addField("repositories");
+            allRepos.withAlias("allRepos")
+                    .withArgs("first: 100, orderBy: {field: STARGAZERS, direction: DESC}");
             
-            Field repoNodes = originalRepos.addField("nodes");
+            Field repoNodes = allRepos.addField("nodes");
             repoNodes.addField("name");
             repoNodes.addField("stargazerCount");
             repoNodes.addField("forkCount");
+            repoNodes.addField("isFork");
             
             Field lang = repoNodes.addField("primaryLanguage");
             lang.addField("name");
