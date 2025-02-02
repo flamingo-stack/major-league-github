@@ -1,3 +1,5 @@
+import { SocialLink } from './hiring';
+
 export interface ApiResponse<T> {
     status: string;
     message: string;
@@ -70,29 +72,31 @@ export interface Contributor {
     name: string | null;
     avatarUrl: string;
     url: string;
-    bio: string | null;
-    location: string | null;
     email: string | null;
-    company: string | null;
-    blog: string | null;
-    twitterUsername: string | null;
-    followers: number;
-    following: number;
-    score: number;
+    role: string;
+    bio: string;
+    type: 'CONTRIBUTOR' | 'HIRING_MANAGER';
+    socialLinks: SocialLink[];
+    cityId: string;
+    nearestTeamId: string;
+    city: City;
+    nearestTeam: SoccerTeam | null;
+    githubStats: {
+        score: number;
+        totalCommits: number;
+        starsGiven: number;
+        starsReceived: number;
+        forksReceived: number;
+        forksGiven: number;
+        javaRepos: number;
+    };
+    lastActive: number;
     totalCommits: number;
     javaRepos: number;
     starsReceived: number;
-    starsGiven: number;
     forksReceived: number;
+    starsGiven: number;
     forksGiven: number;
-    latestCommitDate: string;
-    cityId: string | null;
-    stateId: string | null;
-    regionId: string | null;
-    teamId: string | null;
-    // Reference objects
-    city?: City;
-    state?: State;
-    region?: Region;
-    nearestTeam?: SoccerTeam;
+    score: number;
+    latestCommitDate: [number, number, number, number, number];
 } 

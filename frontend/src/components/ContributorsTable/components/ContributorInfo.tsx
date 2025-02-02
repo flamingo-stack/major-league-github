@@ -6,8 +6,36 @@ import {
     Typography,
     Tooltip
 } from '@mui/material';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import EmailIcon from '@mui/icons-material/Email';
+import LanguageIcon from '@mui/icons-material/Language';
 import { ContributorInfoProps } from '../types';
 import { ContributorTooltipContent } from './tooltips/ContributorTooltip';
+
+const getSocialIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+        case 'linkedin':
+            return <LinkedInIcon fontSize="small" />;
+        case 'twitter':
+            return <TwitterIcon fontSize="small" />;
+        case 'github':
+            return <GitHubIcon fontSize="small" />;
+        case 'facebook':
+            return <FacebookIcon fontSize="small" />;
+        case 'instagram':
+            return <InstagramIcon fontSize="small" />;
+        case 'email':
+            return <EmailIcon fontSize="small" />;
+        case 'website':
+            return <LanguageIcon fontSize="small" />;
+        default:
+            return null;
+    }
+};
 
 interface Props extends ContributorInfoProps {
     hiringManagerUsername?: string;
@@ -15,8 +43,8 @@ interface Props extends ContributorInfoProps {
 
 export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringManagerUsername }) => {
     return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
                 <Link 
                     href={contributor.url} 
                     target="_blank" 
@@ -27,9 +55,9 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                         src={contributor.avatarUrl}
                         alt={contributor.name || contributor.login}
                         sx={{ 
-                            width: { xs: 48, sm: 40 }, 
-                            height: { xs: 48, sm: 40 },
-                            borderRadius: '50%'
+                            width: { xs: 96, sm: 84 }, 
+                            height: { xs: 96, sm: 84 },
+                            borderRadius: '6px'
                         }}
                     />
                 </Link>
@@ -79,16 +107,14 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                     <Box sx={{ minWidth: 0 }}>
                         <Box sx={{ 
                             display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 1,
-                            position: 'relative'
+                            flexDirection: 'column',
+                            gap: 0.5
                         }}>
                             <Box sx={{ 
                                 display: 'flex',
                                 alignItems: 'center',
-                                minWidth: 0,
-                                flex: 1,
-                                pr: 0  // Remove padding that was making space for absolute positioning
+                                gap: 1,
+                                mb: 0.5
                             }}>
                                 <Link 
                                     href={contributor.url}
@@ -109,7 +135,6 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                         variant="subtitle1" 
                                         sx={{ 
                                             fontWeight: 600, 
-                                            mb: 0.5,
                                             color: 'inherit',
                                             fontSize: { xs: '1.1rem', sm: '1rem' },
                                             overflow: 'hidden',
@@ -119,83 +144,80 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                     >
                                         {contributor.name || contributor.login}
                                     </Typography>
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        minWidth: 20,
-                                        height: 24,
-                                        borderRadius: '6px',
-                                        bgcolor: theme => {
-                                            if (theme.palette.mode === 'dark') {
-                                                if (index === 0) return 'rgba(255, 215, 0, 0.15)'
-                                                if (index === 1) return 'rgba(192, 192, 192, 0.15)'
-                                                if (index === 2) return 'rgba(205, 127, 50, 0.15)'
-                                                return 'rgba(99, 110, 123, 0.1)'
-                                            } else {
-                                                if (index === 0) return 'rgba(255, 215, 0, 0.1)'
-                                                if (index === 1) return 'rgba(192, 192, 192, 0.1)'
-                                                if (index === 2) return 'rgba(205, 127, 50, 0.1)'
-                                                return 'rgba(234, 238, 242, 0.5)'
-                                            }
-                                        },
-                                        border: '1px solid',
-                                        borderColor: theme => {
-                                            if (theme.palette.mode === 'dark') {
-                                                if (index === 0) return 'rgba(255, 215, 0, 0.3)'
-                                                if (index === 1) return 'rgba(192, 192, 192, 0.3)'
-                                                if (index === 2) return 'rgba(205, 127, 50, 0.3)'
-                                                return 'rgba(99, 110, 123, 0.25)'
-                                            } else {
-                                                if (index === 0) return 'rgba(255, 215, 0, 0.4)'
-                                                if (index === 1) return 'rgba(192, 192, 192, 0.4)'
-                                                if (index === 2) return 'rgba(205, 127, 50, 0.4)'
-                                                return 'rgba(31, 35, 40, 0.15)'
-                                            }
-                                        },
-                                        px: 0.75,
-                                        flexShrink: 0
-                                    }}
-                                >
-                                    <Typography
+                                    <Box
                                         sx={{
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            color: theme => {
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            minWidth: 20,
+                                            height: 24,
+                                            borderRadius: '6px',
+                                            bgcolor: theme => {
                                                 if (theme.palette.mode === 'dark') {
-                                                    if (index === 0) return 'rgba(255, 215, 0, 0.9)'
-                                                    if (index === 1) return 'rgba(192, 192, 192, 0.9)'
-                                                    if (index === 2) return 'rgba(205, 127, 50, 0.9)'
-                                                    return '#7d8590'
+                                                    if (index === 0) return 'rgba(255, 215, 0, 0.15)'
+                                                    if (index === 1) return 'rgba(192, 192, 192, 0.15)'
+                                                    if (index === 2) return 'rgba(205, 127, 50, 0.15)'
+                                                    return 'rgba(99, 110, 123, 0.1)'
                                                 } else {
-                                                    if (index === 0) return '#856404'
-                                                    if (index === 1) return '#666666'
-                                                    if (index === 2) return '#8B4513'
-                                                    return '#57606a'
+                                                    if (index === 0) return 'rgba(255, 215, 0, 0.1)'
+                                                    if (index === 1) return 'rgba(192, 192, 192, 0.1)'
+                                                    if (index === 2) return 'rgba(205, 127, 50, 0.1)'
+                                                    return 'rgba(234, 238, 242, 0.5)'
                                                 }
                                             },
-                                            lineHeight: 1
+                                            border: '1px solid',
+                                            borderColor: theme => {
+                                                if (theme.palette.mode === 'dark') {
+                                                    if (index === 0) return 'rgba(255, 215, 0, 0.3)'
+                                                    if (index === 1) return 'rgba(192, 192, 192, 0.3)'
+                                                    if (index === 2) return 'rgba(205, 127, 50, 0.3)'
+                                                    return 'rgba(99, 110, 123, 0.25)'
+                                                } else {
+                                                    if (index === 0) return 'rgba(255, 215, 0, 0.4)'
+                                                    if (index === 1) return 'rgba(192, 192, 192, 0.4)'
+                                                    if (index === 2) return 'rgba(205, 127, 50, 0.4)'
+                                                    return 'rgba(31, 35, 40, 0.15)'
+                                                }
+                                            },
+                                            px: 0.75,
+                                            flexShrink: 0
                                         }}
                                     >
-                                        #{index + 1}
-                                    </Typography>
+                                        <Typography
+                                            sx={{
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                color: theme => {
+                                                    if (theme.palette.mode === 'dark') {
+                                                        if (index === 0) return 'rgba(255, 215, 0, 0.9)'
+                                                        if (index === 1) return 'rgba(192, 192, 192, 0.9)'
+                                                        if (index === 2) return 'rgba(205, 127, 50, 0.9)'
+                                                        return '#7d8590'
+                                                    } else {
+                                                        if (index === 0) return '#856404'
+                                                        if (index === 1) return '#666666'
+                                                        if (index === 2) return '#8B4513'
+                                                        return '#57606a'
+                                                    }
+                                                },
+                                                lineHeight: 1
+                                            }}
+                                        >
+                                            #{index + 1}
+                                        </Typography>
                                     </Box>
                                 </Link>
-                            </Box>
-                            <Box sx={{ flexShrink: 0 }}>
                                 {hiringManagerUsername && contributor.login === hiringManagerUsername && (
                                     <Box
                                         component="button"
+                                        className="join-team-button"
                                         onClick={() => {
                                             const footer = document.querySelector('[data-testid="footer"]');
                                             if (footer) {
-                                                // Find and click the expand button in the footer
                                                 const expandButton = footer.querySelector('[data-testid="expand-footer"]');
                                                 if (expandButton && !footer.classList.contains('expanded')) {
                                                     (expandButton as HTMLElement).click();
                                                 }
-                                                // Scroll to footer after a small delay to allow expansion
                                                 setTimeout(() => {
                                                     footer.scrollIntoView({ behavior: 'smooth' });
                                                 }, 100);
@@ -218,9 +240,6 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                             transition: 'all 0.2s',
                                             textTransform: 'none',
                                             whiteSpace: 'nowrap',
-                                            position: 'static', // Remove absolute positioning
-                                            right: 'auto',
-                                            top: 'auto',
                                             flexShrink: 0,
                                             '&:hover': {
                                                 bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.2)' : 'rgba(9, 105, 218, 0.1)',
@@ -233,29 +252,66 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                     </Box>
                                 )}
                             </Box>
-                        </Box>
-                        {contributor.name && (
-                            <Link 
-                                href={contributor.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                sx={{ 
-                                    textDecoration: 'none',
-                                    '&:hover': { textDecoration: 'underline' }
-                                }}
-                            >
-                                <Typography 
-                                    variant="body2" 
+                            {contributor.name && (
+                                <Link 
+                                    href={contributor.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     sx={{ 
-                                        color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0969da',
-                                        fontWeight: 600,
-                                        fontSize: { xs: '0.9375rem', sm: '0.875rem' }
+                                        textDecoration: 'none',
+                                        '&:hover': { textDecoration: 'underline' }
                                     }}
                                 >
-                                    {contributor.login}
-                                </Typography>
-                            </Link>
-                        )}
+                                    <Typography 
+                                        variant="body2" 
+                                        sx={{ 
+                                            color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0969da',
+                                            fontWeight: 600,
+                                            fontSize: { xs: '0.9375rem', sm: '0.875rem' }
+                                        }}
+                                    >
+                                        {contributor.login}
+                                    </Typography>
+                                </Link>
+                            )}
+                            {contributor.socialLinks && contributor.socialLinks.length > 0 && (
+                                <Box sx={{ 
+                                    display: 'flex', 
+                                    gap: 1,
+                                    mt: 0.5,
+                                    '& a': {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: '6px',
+                                        transition: 'all 0.2s',
+                                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                        '&:hover': {
+                                            bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(83, 155, 245, 0.1)' : 'rgba(9, 105, 218, 0.1)',
+                                            color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                        }
+                                    }
+                                }}>
+                                    {contributor.socialLinks
+                                        .filter((link, index, self) => 
+                                            index === self.findIndex((l) => l.platform === link.platform)
+                                        )
+                                        .map((link, index) => (
+                                            <Link
+                                                key={`${link.platform}-${index}`}
+                                                href={link.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                title={link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}
+                                            >
+                                                {getSocialIcon(link.platform)}
+                                            </Link>
+                                        ))}
+                                </Box>
+                            )}
+                        </Box>
                     </Box>
                 </Tooltip>
             </Box>

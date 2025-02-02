@@ -5,7 +5,8 @@ import {
     Card,
     Stack,
     Theme,
-    Divider
+    Divider,
+    Link
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import CodeIcon from '@mui/icons-material/Code';
@@ -13,6 +14,13 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import StarIcon from '@mui/icons-material/Star';
 import ForkRightIcon from '@mui/icons-material/ForkRight';
 import UpdateIcon from '@mui/icons-material/Update';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import EmailIcon from '@mui/icons-material/Email';
+import LanguageIcon from '@mui/icons-material/Language';
 import { ContributorsTableProps } from '../types';
 import { ContributorInfo } from './ContributorInfo';
 import { LocationInfo } from './LocationInfo';
@@ -20,6 +28,44 @@ import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
 import { useHiring } from '../../../hooks/useHiring';
+
+const getSocialIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+        case 'linkedin':
+            return <LinkedInIcon fontSize="small" />;
+        case 'twitter':
+            return <TwitterIcon fontSize="small" />;
+        case 'github':
+            return <GitHubIcon fontSize="small" />;
+        case 'facebook':
+            return <FacebookIcon fontSize="small" />;
+        case 'instagram':
+            return <InstagramIcon fontSize="small" />;
+        case 'email':
+            return <EmailIcon fontSize="small" />;
+        case 'website':
+            return <LanguageIcon fontSize="small" />;
+        default:
+            return null;
+    }
+};
+
+const formatDate = (date: [number, number, number, number, number] | null): string => {
+    if (!date || !Array.isArray(date) || date.length < 5) {
+        return 'N/A';
+    }
+    return new Date(Date.UTC(
+        date[0],
+        date[1] - 1,
+        date[2],
+        date[3],
+        date[4]
+    )).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+};
 
 export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
     const { hiringManager } = useHiring();
@@ -100,18 +146,31 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                         <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
                             <Box sx={{ 
                                 display: 'flex',
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                gap: 1,
-                                mb: 2
+                                flexDirection: 'column',
+                                gap: 1
                             }}>
-                                <ContributorInfo 
-                                    contributor={contributor} 
-                                    index={index}
-                                    hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
-                                />
+                                <Box sx={{ 
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    alignItems: 'flex-start',
+                                    gap: 2,
+                                    mb: 2,
+                                    '@media (max-width: 440px)': {
+                                        '& .join-team-button': {
+                                            display: 'none !important'
+                                        }
+                                    }
+                                }}>
+                                    <ContributorInfo 
+                                        contributor={contributor} 
+                                        index={index}
+                                        hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
+                                    />
+                                </Box>
+                                <Box sx={{ py: 0.5 }}>
+                                    <LocationInfo contributor={contributor} />
+                                </Box>
                             </Box>
-                            <LocationInfo contributor={contributor} />
                         </Box>
                         
                         <Box sx={{ 
@@ -148,17 +207,7 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                             />
                             <StatItem 
                                 icon={<UpdateIcon />} 
-                                value={new Date(Date.UTC(
-                                    Number(contributor.latestCommitDate[0]),
-                                    Number(contributor.latestCommitDate[1]) - 1,
-                                    Number(contributor.latestCommitDate[2]),
-                                    Number(contributor.latestCommitDate[3]),
-                                    Number(contributor.latestCommitDate[4])
-                                )).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                })}
+                                value={formatDate(contributor.latestCommitDate)}
                                 color={(theme: Theme) => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'}
                             />
                         </Box>

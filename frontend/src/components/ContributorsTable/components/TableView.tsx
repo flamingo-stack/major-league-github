@@ -9,6 +9,7 @@ import {
     Box,
     Typography,
     Tooltip,
+    Link
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import CodeIcon from '@mui/icons-material/Code';
@@ -16,6 +17,13 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import StarIcon from '@mui/icons-material/Star';
 import ForkRightIcon from '@mui/icons-material/ForkRight';
 import UpdateIcon from '@mui/icons-material/Update';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import EmailIcon from '@mui/icons-material/Email';
+import LanguageIcon from '@mui/icons-material/Language';
 import { Contributor } from '../../../types/api';
 import { ContributorsTableProps } from '../types';
 import { ContributorInfo } from './ContributorInfo';
@@ -24,6 +32,44 @@ import { formatNumber } from '../utils';
 import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
 import { useHiring } from '../../../hooks/useHiring';
+
+const getSocialIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+        case 'linkedin':
+            return <LinkedInIcon fontSize="small" />;
+        case 'twitter':
+            return <TwitterIcon fontSize="small" />;
+        case 'github':
+            return <GitHubIcon fontSize="small" />;
+        case 'facebook':
+            return <FacebookIcon fontSize="small" />;
+        case 'instagram':
+            return <InstagramIcon fontSize="small" />;
+        case 'email':
+            return <EmailIcon fontSize="small" />;
+        case 'website':
+            return <LanguageIcon fontSize="small" />;
+        default:
+            return null;
+    }
+};
+
+const formatDate = (date: [number, number, number, number, number] | null): string => {
+    if (!date || !Array.isArray(date) || date.length < 5) {
+        return 'N/A';
+    }
+    return new Date(Date.UTC(
+        date[0],
+        date[1] - 1,
+        date[2],
+        date[3],
+        date[4]
+    )).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+};
 
 export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
     const { hiringManager } = useHiring();
@@ -127,6 +173,43 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                     }}>
                         Score Components
                     </Typography>
+                    {contributor.socialLinks && contributor.socialLinks.length > 0 && (
+                        <Box sx={{ 
+                            display: 'flex', 
+                            gap: 1,
+                            mb: 2,
+                            '& a': {
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 32,
+                                height: 32,
+                                borderRadius: '6px',
+                                transition: 'all 0.2s',
+                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                '&:hover': {
+                                    bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(83, 155, 245, 0.1)' : 'rgba(9, 105, 218, 0.1)',
+                                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                }
+                            }
+                        }}>
+                            {contributor.socialLinks
+                                .filter((link, index, self) => 
+                                    index === self.findIndex((l) => l.platform === link.platform)
+                                )
+                                .map((link, index) => (
+                                    <Link
+                                        key={`${link.platform}-${index}`}
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title={link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}
+                                    >
+                                        {getSocialIcon(link.platform)}
+                                    </Link>
+                                ))}
+                        </Box>
+                    )}
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <Box>
                             <Typography sx={{ 
@@ -172,13 +255,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                         fontSize: '0.75rem',
                                         color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
                                     }}>
-                                        Last commit: {new Date(Date.UTC(
-                                            Number(contributor.latestCommitDate[0]),
-                                            Number(contributor.latestCommitDate[1]) - 1,
-                                            Number(contributor.latestCommitDate[2]),
-                                            Number(contributor.latestCommitDate[3]),
-                                            Number(contributor.latestCommitDate[4])
-                                        )).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        Last commit: {formatDate(contributor.latestCommitDate)}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -247,13 +324,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                     = {formatNumber(contributor.totalCommits * Math.max(contributor.starsReceived, 1))}<br/>
                                     <br/>
                                     2. Recency Factor:<br/>
-                                    • Last commit: {new Date(Date.UTC(
-                                        Number(contributor.latestCommitDate[0]),
-                                        Number(contributor.latestCommitDate[1]) - 1,
-                                        Number(contributor.latestCommitDate[2]),
-                                        Number(contributor.latestCommitDate[3]),
-                                        Number(contributor.latestCommitDate[4])
-                                    )).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br/>
+                                    • Last commit: {formatDate(contributor.latestCommitDate)}<br/>
                                     • Multiplier: {Number(contributor.latestCommitDate[0]) === new Date().getFullYear() ? '2.0' : '1.0'}<br/>
                                     <br/>
                                     {formatNumber(contributor.totalCommits * Math.max(contributor.starsReceived, 1))} × {Number(contributor.latestCommitDate[0]) === new Date().getFullYear() ? '2.0' : '1.0'} = {formatNumber(contributor.score)}
@@ -348,13 +419,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                     fontSize: '0.75rem',
                     color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
                 }}>
-                    Last commit: {new Date(Date.UTC(
-                        Number(contributor.latestCommitDate[0]),
-                        Number(contributor.latestCommitDate[1]) - 1,
-                        Number(contributor.latestCommitDate[2]),
-                        Number(contributor.latestCommitDate[3]),
-                        Number(contributor.latestCommitDate[4])
-                    )).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    Last commit: {formatDate(contributor.latestCommitDate)}
                 </Typography>
             </Box>
         </Box>
@@ -434,23 +499,53 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                 }
                             }}
                         >
-                            <TableCell sx={{ 
-                                borderBottom: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
-                                py: 1.5 
-                            }}>
-                                <ContributorInfo 
-                                    contributor={contributor} 
-                                    index={index} 
-                                    hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
-                                />
+                            <TableCell 
+                                key={columns[0].id}
+                                align={columns[0].align}
+                                sx={{ 
+                                    width: columns[0].width,
+                                    py: 2,
+                                    px: 3,
+                                    borderBottom: '1px solid',
+                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                    '&:first-of-type': {
+                                        pl: 3
+                                    },
+                                    '&:last-of-type': {
+                                        pr: 3
+                                    }
+                                }}
+                            >
+                                {columns[0].id === 'contributor' && (
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                        <ContributorInfo 
+                                            contributor={contributor} 
+                                            index={index}
+                                            hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
+                                        />
+                                    </Box>
+                                )}
                             </TableCell>
-                            <TableCell sx={{ 
-                                borderBottom: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
-                                py: 1.5 
-                            }}>
-                                <LocationInfo contributor={contributor} />
+                            <TableCell 
+                                key={columns[1].id}
+                                align={columns[1].align}
+                                sx={{ 
+                                    width: columns[1].width,
+                                    py: 2,
+                                    px: 3,
+                                    borderBottom: '1px solid',
+                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                    '&:first-of-type': {
+                                        pl: 3
+                                    },
+                                    '&:last-of-type': {
+                                        pr: 3
+                                    }
+                                }}
+                            >
+                                {columns[1].id === 'location' && (
+                                    <LocationInfo contributor={contributor} />
+                                )}
                             </TableCell>
                             <TableCell align="right" sx={{ 
                                 borderBottom: '1px solid',
@@ -678,17 +773,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                                     lineHeight: 1,
                                                     whiteSpace: 'nowrap'
                                                 }}>
-                                                    {new Date(Date.UTC(
-                                                        Number(contributor.latestCommitDate[0]),
-                                                        Number(contributor.latestCommitDate[1]) - 1,
-                                                        Number(contributor.latestCommitDate[2]),
-                                                        Number(contributor.latestCommitDate[3]),
-                                                        Number(contributor.latestCommitDate[4])
-                                                    )).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        year: 'numeric'
-                                                    })}
+                                                    {formatDate(contributor.latestCommitDate)}
                                                 </Typography>
                                             </Box>
                                         </StatPill>
