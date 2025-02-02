@@ -44,10 +44,10 @@ public class ContributorController {
             @RequestParam(defaultValue = "15") int maxResults,
             @RequestParam(required = false, defaultValue = "High") GithubService.GithubApiPriority priority) {
 
-        if (!cacheService.isCacheReady()) {
-            log.warn("Cache is still being populated, returning empty list");
-            return ApiResponse.error("Cache is still being populated");
-        }
+        // if (!cacheService.isCacheReady()) {
+        //     log.warn("Cache is still being populated, returning empty list");
+        //     return ApiResponse.error("Cache is still being populated");
+        // }
 
         return cacheService.getHttpResponse(cityId, regionId, stateId, teamId, languageId, maxResults, () -> {
             Map<String, City> targetCities = new HashMap<>();

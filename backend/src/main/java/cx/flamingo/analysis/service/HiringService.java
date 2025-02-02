@@ -1,7 +1,8 @@
 package cx.flamingo.analysis.service;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.google.gson.reflect.TypeToken;
 
 import cx.flamingo.analysis.cache.CacheServiceAbs;
+import cx.flamingo.analysis.model.Contributor;
 import cx.flamingo.analysis.model.HiringManagerProfile;
 import cx.flamingo.analysis.model.JobOpening;
 import lombok.RequiredArgsConstructor;
@@ -31,14 +33,29 @@ public class HiringService {
     private static final String PROFILE_KEY = "manager_profile";
     private static final String JOBS_KEY = "job_openings";
 
-    public HiringManagerProfile getHiringManagerProfile() {
-        return cacheService.get(CACHE_PATH, PROFILE_KEY, new TypeToken<HiringManagerProfile>() {
+    public Map<String, Object> getHiringManagerProfile() {
+        Map<String, Object> response = new HashMap<>();
+        HiringManagerProfile profile = cacheService.get(CACHE_PATH, PROFILE_KEY, new TypeToken<HiringManagerProfile>() {
         }, refreshInterval)
                 .orElseGet(() -> {
-                    HiringManagerProfile profile = githubService.fetchUserProfile(githubUsername);
-                    cacheService.put(CACHE_PATH, PROFILE_KEY, profile);
-                    return profile;
+                    Contributor contributor = githubService.fetchUserProfile(githubUsername, Contributor.Role.HIRING_MANAGER);
+                    HiringManagerProfile newProfile = HiringManagerProfile.builder()
+                        .name(contributor.getName())
+                        .avatarUrl(contributor.getAvatarUrl())
+                        .role(contributor.getRole())
+                        .bio(contributor.getBio())
+                        .socialLinks(contributor.getSocialLinks())
+                        .githubStats(contributor.getGithubStats())
+                        .lastActive(contributor.getLastActive())
+                        .build();
+                    cacheService.put(CACHE_PATH, PROFILE_KEY, newProfile);
+                    return newProfile;
                 });
+        
+        response.put("status", "success");
+        response.put("message", "Hiring manager profile retrieved successfully");
+        response.put("data", profile);
+        return response;
     }
 
     public List<JobOpening> getJobOpenings() {
