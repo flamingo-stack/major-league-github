@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme, useMediaQuery, IconButton, Collapse } from '@mui/material';
+import { Box, Typography, useTheme, useMediaQuery, IconButton, Collapse, Button, Link } from '@mui/material';
 import { useQueryClient } from '@tanstack/react-query';
 import { City, Region, State, SoccerTeam, Language } from '../types/api';
 import { useUrlState } from '../hooks/useUrlState';
@@ -11,6 +11,8 @@ import { useEffect, useState } from 'react';
 import { getLanguageById, getTeamById, getRegionById, getStateById, getCityById, autocompleteLanguages } from '../services/api';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import DownloadIcon from '@mui/icons-material/Download';
+import { downloadContributors } from '../services/api';
 
 // Utility function to dismiss keyboard
 const dismissKeyboard = () => {
@@ -233,6 +235,16 @@ export const FiltersPanel = () => {
     if (isMobile) dismissKeyboard();
   };
 
+  const handleDownload = () => {
+    downloadContributors({
+      cityId: urlState.selectedCityId || undefined,
+      regionId: urlState.selectedRegionId || undefined,
+      stateId: urlState.stateId || undefined,
+      languageId: urlState.languageId || undefined,
+      teamId: urlState.teamId || undefined
+    });
+  };
+
   return (
     <Box sx={{ 
       display: 'flex', 
@@ -243,58 +255,56 @@ export const FiltersPanel = () => {
       pb: 1,
       width: '100%'
     }}>
-      {/* First Row - Language and Team (Desktop) / Language (Mobile) */}
       <Box sx={{ 
         display: 'flex', 
         flexDirection: { xs: 'column', sm: 'row' },
         gap: { xs: 0.5, sm: 2 },
-        width: '100%'
+        alignItems: { sm: 'center' },
+        justifyContent: 'space-between'
       }}>
         <Box sx={{ 
-          flex: { xs: '1 1 100%', sm: 1 },
-          width: '100%'
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 0.5, sm: 2 },
+          flex: 1
         }}>
-          <Typography 
-            variant="subtitle2" 
-            sx={{ 
-              mb: 1,
-              fontWeight: 600,
-              color: 'text.primary',
-              display: { xs: 'none', sm: 'block' }
-            }}
-          >
-            Programming Language
-          </Typography>
           <LanguageAutocomplete
             value={selectedLanguage}
-            onChange={handleLanguageChange}
             inputValue={languageInput}
+            onChange={handleLanguageChange}
             onInputChange={handleLanguageInputChange}
+            sx={{ flex: 1 }}
           />
+          {!isMobile && (
+            <TeamAutocomplete
+              value={selectedTeam}
+              inputValue={teamInput}
+              onChange={handleTeamChange}
+              onInputChange={setTeamInput}
+              sx={{ flex: 1 }}
+            />
+          )}
         </Box>
-        <Box sx={{ 
-          flex: { xs: '1 1 100%', sm: 1 },
-          width: '100%',
-          display: { xs: 'none', sm: 'block' }
-        }}>
-          <Typography 
-            variant="subtitle2" 
-            sx={{ 
-              mb: 1,
-              fontWeight: 600,
-              color: 'text.primary',
-              display: { xs: 'none', sm: 'block' }
-            }}
-          >
-            Soccer Team
-          </Typography>
-          <TeamAutocomplete
-            value={selectedTeam}
-            onChange={handleTeamChange}
-            inputValue={teamInput}
-            onInputChange={setTeamInput}
-          />
-        </Box>
+        {!isMobile && (
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Link
+              component="button"
+              onClick={handleDownload}
+              sx={{
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(36, 41, 47, 0.8)',
+                textDecoration: 'none',
+                '&:hover': {
+                  textDecoration: 'underline',
+                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'
+                }
+              }}
+            >
+              Download CSV
+            </Link>
+          </Box>
+        )}
       </Box>
 
       {/* Second Row - Region, State, City (Desktop) */}

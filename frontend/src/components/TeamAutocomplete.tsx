@@ -3,19 +3,22 @@ import { useQuery } from '@tanstack/react-query';
 import { SoccerTeam } from '../types/api';
 import { autocompleteTeams } from '../services/api';
 import { BaseAutocomplete } from './BaseAutocomplete';
+import { SxProps, Theme } from '@mui/material';
 
 interface TeamAutocompleteProps {
   value: SoccerTeam | null;
   onChange: (team: SoccerTeam | null) => void;
   inputValue: string;
   onInputChange: (value: string) => void;
+  sx?: SxProps<Theme>;
 }
 
 export const TeamAutocomplete = ({
   value,
   onChange,
   inputValue,
-  onInputChange
+  onInputChange,
+  sx
 }: TeamAutocompleteProps) => {
   const { data: teams = [] } = useQuery({
     queryKey: ['teams', inputValue],
@@ -54,6 +57,7 @@ export const TeamAutocomplete = ({
           </Typography>
         </Box>
       )}
+      sx={sx}
     />
   );
 }; 

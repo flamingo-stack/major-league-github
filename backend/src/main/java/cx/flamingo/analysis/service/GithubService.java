@@ -33,9 +33,8 @@ import cx.flamingo.analysis.exception.GithubTooFastException;
 import cx.flamingo.analysis.graphql.GitHubQueryBuilder;
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Contributor;
-import cx.flamingo.analysis.model.HiringManagerProfile;
-import cx.flamingo.analysis.model.HiringManagerProfile.SocialLink;
 import cx.flamingo.analysis.model.Language;
+import cx.flamingo.analysis.model.SocialLink;
 import cx.flamingo.analysis.rate.GithubToken;
 import cx.flamingo.analysis.rate.GithubTokenRateManager;
 import lombok.extern.slf4j.Slf4j;
@@ -104,6 +103,16 @@ public class GithubService {
                             List<Contributor> contributors = getContributorsForCity(city, language, maxResults);
                             log.info("Found {} {} contributors for city: {}", contributors.size(), language.getName(),
                                     city.getName());
+
+                            for (Contributor contributor : contributors) {
+                                if (contributor.getSocialLinks() == null || contributor.getSocialLinks().isEmpty()) {
+                                    log.debug("No social links found for contributor: {}", contributor.getLogin());  
+                                    continue;
+                                }
+                                for (SocialLink socialLink : contributor.getSocialLinks()) {
+                                    log.debug("Social Link: {}", socialLink.getUrl());
+                                }
+                            }
                             return contributors;
                         } catch (Exception e) {
                             log.error("Failed to fetch contributors for city {}: {}", city.getName(), e.getMessage());
@@ -348,72 +357,38 @@ public class GithubService {
 
     private String buildGitHubQuery(String cursor, City city, Language language, Integer numberOfUsers) {
         GitHubQueryBuilder builder = new GitHubQueryBuilder();
-        return builder.searchUsers(numberOfUsers)
+        String query = builder.searchUsers(numberOfUsers)
                 .location(city.getName())
                 .language(language.getName())
                 .cursor(cursor)
                 .build();
+        log.debug("Generated GitHub query for city {}: {}", city.getName(), query);
+        return query;
     }
 
     private void processUsers(JsonArray users, List<Contributor> contributors, City city) {
         for (JsonElement userElement : users) {
-            JsonObject user = userElement.getAsJsonObject();
-            JsonObject reposObj = user.getAsJsonObject("originalRepos");
-            if (reposObj == null || !reposObj.has("nodes")) {
-                continue;
-            }
-
-            JsonArray repositories = reposObj.getAsJsonArray("nodes");
-            long javaRepos = countJavaRepositories(repositories);
-            if (javaRepos > 0) {
-                int starsGiven = getStarsGiven(user);
-                int forksGiven = getForksGiven(user);
-                int starsReceived = calculateStarsReceived(repositories);
-                int totalCommits = getContributionCount(user);
-                int totalForks = calculateTotalForks(repositories);
-                Instant latestCommit = getLatestCommitDate(user);
-
-                // Skip users with no activity or no Java activity
-                if (totalCommits == 0 || javaRepos == 0) {
-                    continue;
-                }
-
-                double score = calculateScore(
-                        totalCommits,
-                        javaRepos,
-                        starsReceived,
-                        totalForks,
-                        starsGiven,
-                        forksGiven,
-                        latestCommit);
-
-                // Find nearest team
-                String nearestTeamId = soccerTeamService.findNearestTeamId(city);
-
-                contributors.add(Contributor.builder()
-                        .login(getStringOrDefault(user, "login", ""))
-                        .name(getStringOrDefault(user, "name", "Unknown"))
-                        .url(getStringOrDefault(user, "url", ""))
-                        .email(getStringOrDefault(user, "email", ""))
-                        .website(getStringOrDefault(user, "websiteUrl", ""))
-                        .avatarUrl(getStringOrDefault(user, "avatarUrl", ""))
-                        .totalCommits(totalCommits)
-                        .javaRepos((int) javaRepos)
-                        .starsReceived(starsReceived)
-                        .forksReceived(totalForks)
-                        .totalStars(calculateTotalStars(repositories))
-                        .totalForks(totalForks)
-                        .latestCommitDate(
-                                latestCommit != null ? latestCommit.atZone(java.time.ZoneOffset.UTC).toLocalDateTime()
-                                        : null)
-                        .starsGiven(starsGiven)
-                        .forksGiven(forksGiven)
-                        .score((int) score)
+            if (!userElement.isJsonNull()) {
+                JsonObject user = userElement.getAsJsonObject();
+                try {
+                    Contributor contributor = fetchUserProfile(
+                        getStringOrDefault(user, "login", ""),
+                        Contributor.Role.CONTRIBUTOR,
+                        user
+                    );
+                    
+                    // Override location-specific fields since we know them
+                    contributor = contributor.toBuilder()
                         .cityId(city.getId())
-                        .nearestTeamId(nearestTeamId)
+                        .nearestTeamId(soccerTeamService.findNearestTeamId(city))
                         .city(city)
-                        .nearestTeam(nearestTeamId != null ? soccerTeamService.getTeamById(nearestTeamId) : null)
-                        .build());
+                        .nearestTeam(soccerTeamService.getTeamById(soccerTeamService.findNearestTeamId(city)))
+                        .build();
+                    
+                    contributors.add(contributor);
+                } catch (Exception e) {
+                    log.error("Failed to process user: {}", e.getMessage());
+                }
             }
         }
     }
@@ -491,6 +466,7 @@ public class GithubService {
             return null;
         }
         JsonObject contributions = user.getAsJsonObject("contributionsCollection");
+        
         if (!contributions.has("contributionCalendar")) {
             return null;
         }
@@ -573,99 +549,167 @@ public class GithubService {
         boolean two_factor_authentication
     ) {}
 
-    public HiringManagerProfile fetchUserProfile(String username) {
-        // First get the basic profile info using REST API
-        String githubApiUrl = String.format("https://api.github.com/users/%s", username);
+    public Contributor fetchUserProfile(String username, Contributor.Role role, JsonObject existingData) {
+        JsonObject userData;
         
-        Pair<WebClient, GithubToken> webClientToGithubToken = githubTokenRateManager.getBestAvailableClient();
-        var response = webClientToGithubToken.getValue0().get()
-            .uri(githubApiUrl)
-            .retrieve()
-            .bodyToMono(String.class)
-            .block();
+        if (existingData != null) {
+            // Use existing data (from bulk query)
+            userData = existingData;
+        } else {
+            // Make new API calls only if we don't have existing data
+            // First get the basic profile info using REST API
+            String githubApiUrl = String.format("https://api.github.com/users/%s", username);
+            
+            Pair<WebClient, GithubToken> webClientToGithubToken = githubTokenRateManager.getBestAvailableClient();
+            var response = webClientToGithubToken.getValue0().get()
+                .uri(githubApiUrl)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
 
-        GitHubProfile githubProfile = gson.fromJson(response, GitHubProfile.class);
-        
-        // Then get detailed stats using the same GraphQL query we use for contributors
-        String graphqlQuery = """
-            query {
-              user(login: "%s") {
-                login
-                name
-                bio
-                avatarUrl
-                email
-                websiteUrl
-                twitterUsername
-                contributionsCollection {
-                  totalCommitContributions
-                  totalPullRequestContributions
-                  totalIssueContributions
-                  totalRepositoryContributions
-                  contributionCalendar {
-                    weeks {
-                      contributionDays {
-                        contributionCount
-                        date
+            GitHubProfile githubProfile = gson.fromJson(response, GitHubProfile.class);
+            
+            // Then get detailed stats using GraphQL
+            String graphqlQuery = """
+                query {
+                  user(login: "%s") {
+                    login
+                    name
+                    bio
+                    avatarUrl
+                    email
+                    websiteUrl
+                    twitterUsername
+                    location
+                    contributionsCollection {
+                      totalCommitContributions
+                      totalPullRequestContributions
+                      totalIssueContributions
+                      totalRepositoryContributions
+                      contributionCalendar {
+                        weeks {
+                          contributionDays {
+                            contributionCount
+                            date
+                          }
+                        }
+                      }
+                    }
+                    starredRepositories {
+                      totalCount
+                    }
+                    forkedRepos: repositories(isFork: true) {
+                      totalCount
+                    }
+                    originalRepos: repositories(first: 100, isFork: false, orderBy: {field: STARGAZERS, direction: DESC}) {
+                      nodes {
+                        stargazerCount
+                        forkCount
+                        primaryLanguage {
+                          name
+                        }
+                      }
+                    }
+                    socialAccounts(first: 10) {
+                      nodes {
+                        provider
+                        url
                       }
                     }
                   }
                 }
-                starredRepositories {
-                  totalCount
-                }
-                forkedRepos: repositories(isFork: true) {
-                  totalCount
-                }
-                originalRepos: repositories(first: 100, isFork: false, orderBy: {field: STARGAZERS, direction: DESC}) {
-                  nodes {
-                    stargazerCount
-                    forkCount
-                    primaryLanguage {
-                      name
-                    }
-                  }
-                }
-                socialAccounts(first: 10) {
-                  nodes {
-                    provider
-                    url
-                  }
-                }
-              }
-            }
-        """.formatted(username);
+            """.formatted(username);
 
-        JsonObject queryJson = new JsonObject();
-        queryJson.addProperty("query", graphqlQuery);
-        
-        var graphqlResponse = webClientToGithubToken.getValue0().post()
-            .bodyValue(gson.toJson(queryJson))
-            .retrieve()
-            .bodyToMono(String.class)
-            .block();
+            JsonObject queryJson = new JsonObject();
+            queryJson.addProperty("query", graphqlQuery);
+            
+            var graphqlResponse = webClientToGithubToken.getValue0().post()
+                .bodyValue(gson.toJson(queryJson))
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
 
-        JsonObject jsonResponse = JsonParser.parseString(graphqlResponse).getAsJsonObject();
-        JsonObject graphqlData = jsonResponse.getAsJsonObject("data").getAsJsonObject("user");
-        
-        String role = "Engineering Manager";
-        String bio = "Building OpenFrame - the open-source platform helping MSPs break free from vendor lock-in.";
-        
-        if (githubProfile.bio != null && !githubProfile.bio.isEmpty()) {
-            String[] bioLines = githubProfile.bio.split("\n", 2);
+            JsonObject jsonResponse = JsonParser.parseString(graphqlResponse).getAsJsonObject();
+            userData = jsonResponse.getAsJsonObject("data").getAsJsonObject("user");
+        }
+
+        // Process the data using shared logic
+        JsonObject reposObj = userData.getAsJsonObject("originalRepos");
+        if (reposObj == null || !reposObj.has("nodes")) {
+            throw new IllegalStateException("No repository data available for user: " + username);
+        }
+
+        JsonArray repositories = reposObj.getAsJsonArray("nodes");
+        long javaRepos = countJavaRepositories(repositories);
+        int starsGiven = getStarsGiven(userData);
+        int forksGiven = getForksGiven(userData);
+        int starsReceived = calculateStarsReceived(repositories);
+        int totalCommits = getContributionCount(userData);
+        int totalForks = calculateTotalForks(repositories);
+        Instant latestCommit = getLatestCommitDate(userData);
+
+        double score = calculateScore(
+                totalCommits,
+                javaRepos,
+                starsReceived,
+                totalForks,
+                starsGiven,
+                forksGiven,
+                latestCommit);
+
+        // Extract bio and job role
+        String bio = getStringOrDefault(userData, "bio", "");
+        String jobRole = "Software Engineer";
+        if (!bio.isEmpty()) {
+            String[] bioLines = bio.split("\n", 2);
             if (bioLines.length > 0) {
-                role = bioLines[0].trim();
+                jobRole = bioLines[0].trim();
                 if (bioLines.length > 1) {
                     bio = bioLines[1].trim();
                 }
             }
         }
 
+        // Build social links
         List<SocialLink> socialLinks = new ArrayList<>();
         
-        // Add social accounts from GraphQL response
-        if (graphqlData.has("socialAccounts") && !graphqlData.get("socialAccounts").isJsonNull()) {
-            JsonObject socialAccounts = graphqlData.getAsJsonObject("socialAccounts");
+        // Add GitHub profile link
+        socialLinks.add(SocialLink.builder()
+            .platform("github")
+            .url("https://github.com/" + getStringOrDefault(userData, "login", ""))
+            .build());
+        
+        // Add email if available
+        String email = getStringOrDefault(userData, "email", "");
+        if (!email.isEmpty()) {
+            socialLinks.add(SocialLink.builder()
+                .platform("email")
+                .url("mailto:" + email)
+                .build());
+        }
+
+        // Add website if available
+        String website = getStringOrDefault(userData, "websiteUrl", "");
+        if (!website.isEmpty()) {
+            String platform = determineWebsitePlatform(website);
+            socialLinks.add(SocialLink.builder()
+                .platform(platform)
+                .url(website)
+                .build());
+        }
+
+        // Add Twitter if available
+        String twitterUsername = getStringOrDefault(userData, "twitterUsername", "");
+        if (!twitterUsername.isEmpty()) {
+            socialLinks.add(SocialLink.builder()
+                .platform("twitter")
+                .url("https://twitter.com/" + twitterUsername)
+                .build());
+        }
+
+        // Add social accounts from GitHub API
+        if (userData.has("socialAccounts") && !userData.get("socialAccounts").isJsonNull()) {
+            JsonObject socialAccounts = userData.getAsJsonObject("socialAccounts");
             if (socialAccounts.has("nodes") && !socialAccounts.get("nodes").isJsonNull()) {
                 JsonArray nodes = socialAccounts.getAsJsonArray("nodes");
                 for (JsonElement account : nodes) {
@@ -683,80 +727,71 @@ public class GithubService {
             }
         }
 
-        // Add standard social links
-        socialLinks.add(SocialLink.builder()
-            .platform("github")
-            .url(String.format("https://github.com/%s", username))
-            .build());
-
-        if (graphqlData.has("email") && !graphqlData.get("email").isJsonNull()) {
-            String email = graphqlData.get("email").getAsString();
-            if (!email.isEmpty()) {
-                socialLinks.add(SocialLink.builder()
-                    .platform("email")
-                    .url("mailto:" + email)
-                    .build());
+        // Try to find city based on location
+        City city = null;
+        String cityId = null;
+        String nearestTeamId = null;
+        if (userData.has("location") && !userData.get("location").isJsonNull()) {
+            String location = userData.get("location").getAsString();
+            List<City> cities = cityService.autocompleteCities(location, null, null, null);
+            if (!cities.isEmpty()) {
+                city = cities.get(0);  // Use the first matching city
+                cityId = city.getId();
+                nearestTeamId = soccerTeamService.findNearestTeamId(city);
             }
         }
 
-        if (graphqlData.has("twitterUsername") && !graphqlData.get("twitterUsername").isJsonNull()) {
-            String twitterUsername = graphqlData.get("twitterUsername").getAsString();
-            if (!twitterUsername.isEmpty()) {
-                socialLinks.add(SocialLink.builder()
-                    .platform("twitter")
-                    .url("https://twitter.com/" + twitterUsername)
-                    .build());
-            }
-        }
-
-        // Calculate stats using the same methods as for contributors
-        Map<String, Integer> githubStats = new HashMap<>();
-        
-        JsonObject reposObj = graphqlData.getAsJsonObject("originalRepos");
-        if (reposObj != null && reposObj.has("nodes")) {
-            JsonArray repositories = reposObj.getAsJsonArray("nodes");
-            int starsReceived = calculateStarsReceived(repositories);
-            int totalForks = calculateTotalForks(repositories);
-            long javaRepos = countJavaRepositories(repositories);
-            int totalCommits = getContributionCount(graphqlData);
-            int starsGiven = getStarsGiven(graphqlData);
-            int forksGiven = getForksGiven(graphqlData);
-            Instant latestCommit = getLatestCommitDate(graphqlData);
-
-            double score = calculateScore(
-                totalCommits,
-                javaRepos,
-                starsReceived,
-                totalForks,
-                starsGiven,
-                forksGiven,
-                latestCommit
-            );
-
-            githubStats.put("score", (int) score);
-            githubStats.put("totalCommits", totalCommits);
-            githubStats.put("javaRepos", (int) javaRepos);
-            githubStats.put("starsReceived", starsReceived);
-            githubStats.put("forksReceived", totalForks);
-            githubStats.put("starsGiven", starsGiven);
-            githubStats.put("forksGiven", forksGiven);
-            
-            if (graphqlData.has("contributionsCollection")) {
-                JsonObject contributions = graphqlData.getAsJsonObject("contributionsCollection");
-                githubStats.put("totalPullRequests", contributions.get("totalPullRequestContributions").getAsInt());
-                githubStats.put("totalIssues", contributions.get("totalIssueContributions").getAsInt());
-            }
-        }
-
-        return HiringManagerProfile.builder()
-            .name(githubProfile.name)
-            .avatarUrl(githubProfile.avatar_url)
-            .role(role)
+        Contributor.ContributorBuilder builder = Contributor.builder()
+            .type(role)
+            .login(getStringOrDefault(userData, "login", ""))
+            .name(getStringOrDefault(userData, "name", "Unknown"))
+            .avatarUrl(getStringOrDefault(userData, "avatarUrl", ""))
+            .url(getStringOrDefault(userData, "url", ""))
+            .email(email)
+            .role(jobRole)
             .bio(bio)
             .socialLinks(socialLinks)
-            .githubStats(githubStats)
-            .lastActive(getLatestCommitDate(graphqlData))
-            .build();
+            .cityId(cityId)
+            .nearestTeamId(nearestTeamId)
+            .city(city)
+            .nearestTeam(nearestTeamId != null ? soccerTeamService.getTeamById(nearestTeamId) : null);
+
+        // Set stats based on role
+        if (role == Contributor.Role.HIRING_MANAGER) {
+            Map<String, Integer> stats = new HashMap<>();
+            stats.put("score", (int) score);
+            stats.put("totalCommits", totalCommits);
+            stats.put("javaRepos", (int) javaRepos);
+            stats.put("starsReceived", starsReceived);
+            stats.put("forksReceived", totalForks);
+            stats.put("starsGiven", starsGiven);
+            stats.put("forksGiven", forksGiven);
+            
+            if (userData.has("contributionsCollection")) {
+                JsonObject contributions = userData.getAsJsonObject("contributionsCollection");
+                stats.put("totalPullRequests", contributions.get("totalPullRequestContributions").getAsInt());
+                stats.put("totalIssues", contributions.get("totalIssueContributions").getAsInt());
+            }
+            
+            builder.githubStats(stats)
+                  .lastActive(latestCommit);
+        } else {
+            builder.totalCommits(totalCommits)
+                  .javaRepos((int) javaRepos)
+                  .starsReceived(starsReceived)
+                  .forksReceived(totalForks)
+                  .starsGiven(starsGiven)
+                  .forksGiven(forksGiven)
+                  .score((int) score)
+                  .lastActive(latestCommit);
+        }
+
+        return builder.build();
+    }
+
+    // Update the old method to use the new one
+    public Contributor fetchUserProfile(String username, Contributor.Role role) {
+        return fetchUserProfile(username, role, null);
     }
 
     private String determineWebsitePlatform(String url) {

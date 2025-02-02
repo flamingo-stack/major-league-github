@@ -48,7 +48,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                         variant="body2" 
                         sx={{ 
                             color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                            fontSize: { xs: '0.9375rem', sm: '0.875rem' },
+                            fontSize: '0.75rem',
                             fontWeight: 500
                         }}
                     >
