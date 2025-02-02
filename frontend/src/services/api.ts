@@ -184,11 +184,17 @@ export const getTeamById = async (id: string): Promise<SoccerTeam> => {
 
 // Hiring endpoints
 export const getHiringManagerProfile = async (): Promise<HiringManagerProfile> => {
-  const response = await axios.get<HiringManagerProfile>('/api/hiring/manager');
-  return response.data;
+  const response = await axios.get<ApiResponse<HiringManagerProfile>>('/api/hiring/manager');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 };
 
 export const getJobOpenings = async (): Promise<JobOpening[]> => {
-  const response = await axios.get<JobOpening[]>('/api/hiring/jobs');
-  return response.data;
+  const response = await axios.get<ApiResponse<JobOpening[]>>('/api/hiring/jobs');
+  if (response.data.status !== 'success') {
+    throw new Error(response.data.message);
+  }
+  return response.data.data;
 }; 

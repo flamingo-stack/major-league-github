@@ -16,16 +16,16 @@ export interface HiringManagerProfile {
   role: string;
   bio: string;
   socialLinks: SocialLink[];
-  githubStats?: {
+  githubStats: {
     score: number;
     totalCommits: number;
-    javaRepos: number;
+    starsGiven: number;
     starsReceived: number;
     forksReceived: number;
-    starsGiven: number;
     forksGiven: number;
+    javaRepos: number;
     totalPullRequests: number;
     totalIssues: number;
   };
-  lastActive: string;
+  lastActive: number;
 } 
