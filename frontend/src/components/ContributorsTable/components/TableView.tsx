@@ -157,43 +157,6 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                     }}>
                         Score Components
                     </Typography>
-                    {contributor.socialLinks && contributor.socialLinks.length > 0 && (
-                        <Box sx={{ 
-                            display: 'flex', 
-                            gap: 1,
-                            mb: 2,
-                            '& a': {
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: 32,
-                                height: 32,
-                                borderRadius: '6px',
-                                transition: 'all 0.2s',
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                                '&:hover': {
-                                    bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(83, 155, 245, 0.1)' : 'rgba(9, 105, 218, 0.1)',
-                                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                                }
-                            }
-                        }}>
-                            {contributor.socialLinks
-                                .filter((link, index, self) => 
-                                    index === self.findIndex((l) => l.platform === link.platform)
-                                )
-                                .map((link, index) => (
-                                    <Link
-                                        key={`${link.platform}-${index}`}
-                                        href={link.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        title={link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}
-                                    >
-                                        {getSocialIcon(link.platform)}
-                                    </Link>
-                                ))}
-                        </Box>
-                    )}
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <Box>
                             <Typography sx={{ 
