@@ -34,8 +34,8 @@ import cx.flamingo.analysis.graphql.GitHubQueryBuilder;
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Contributor;
 import cx.flamingo.analysis.model.HiringManagerProfile;
-import cx.flamingo.analysis.model.HiringManagerProfile.SocialLink;
 import cx.flamingo.analysis.model.Language;
+import cx.flamingo.analysis.model.SocialLink;
 import cx.flamingo.analysis.rate.GithubToken;
 import cx.flamingo.analysis.rate.GithubTokenRateManager;
 import lombok.extern.slf4j.Slf4j;
@@ -390,12 +390,68 @@ public class GithubService {
                 // Find nearest team
                 String nearestTeamId = soccerTeamService.findNearestTeamId(city);
 
+                List<SocialLink> socialLinks = new ArrayList<>();
+                
+                // Add GitHub profile link
+                socialLinks.add(SocialLink.builder()
+                    .platform("github")
+                    .url(getStringOrDefault(user, "url", ""))
+                    .build());
+
+                // Add email if available
+                String email = getStringOrDefault(user, "email", "");
+                if (!email.isEmpty()) {
+                    socialLinks.add(SocialLink.builder()
+                        .platform("email")
+                        .url("mailto:" + email)
+                        .build());
+                }
+
+                // Add website if available
+                String website = getStringOrDefault(user, "websiteUrl", "");
+                if (!website.isEmpty()) {
+                    String platform = determineWebsitePlatform(website);
+                    socialLinks.add(SocialLink.builder()
+                        .platform(platform)
+                        .url(website)
+                        .build());
+                }
+
+                // Add Twitter if available
+                String twitterUsername = getStringOrDefault(user, "twitterUsername", "");
+                if (!twitterUsername.isEmpty()) {
+                    socialLinks.add(SocialLink.builder()
+                        .platform("twitter")
+                        .url("https://twitter.com/" + twitterUsername)
+                        .build());
+                }
+
+                // Add social accounts from GitHub API
+                if (user.has("socialAccounts") && !user.get("socialAccounts").isJsonNull()) {
+                    JsonObject socialAccounts = user.getAsJsonObject("socialAccounts");
+                    if (socialAccounts.has("nodes") && !socialAccounts.get("nodes").isJsonNull()) {
+                        JsonArray nodes = socialAccounts.getAsJsonArray("nodes");
+                        for (JsonElement account : nodes) {
+                            if (!account.isJsonNull()) {
+                                JsonObject accountObj = account.getAsJsonObject();
+                                String provider = accountObj.get("provider").getAsString().toLowerCase();
+                                String url = accountObj.get("url").getAsString();
+                                
+                                socialLinks.add(SocialLink.builder()
+                                    .platform(provider)
+                                    .url(url)
+                                    .build());
+                            }
+                        }
+                    }
+                }
+
                 contributors.add(Contributor.builder()
                         .login(getStringOrDefault(user, "login", ""))
                         .name(getStringOrDefault(user, "name", "Unknown"))
                         .url(getStringOrDefault(user, "url", ""))
-                        .email(getStringOrDefault(user, "email", ""))
-                        .website(getStringOrDefault(user, "websiteUrl", ""))
+                        .email(email)
+                        .socialLinks(socialLinks)
                         .avatarUrl(getStringOrDefault(user, "avatarUrl", ""))
                         .totalCommits(totalCommits)
                         .javaRepos((int) javaRepos)

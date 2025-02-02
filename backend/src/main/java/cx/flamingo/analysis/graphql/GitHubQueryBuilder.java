@@ -126,6 +126,14 @@ public class GitHubQueryBuilder {
             user.addField("email");
             user.addField("websiteUrl");
             user.addField("avatarUrl");
+            user.addField("twitterUsername");
+
+            // Add social accounts
+            Field socialAccounts = user.addField("socialAccounts");
+            socialAccounts.withArgs("first: 10");
+            Field socialNodes = socialAccounts.addField("nodes");
+            socialNodes.addField("provider");
+            socialNodes.addField("url");
 
             Field contributions = user.addField("contributionsCollection");
             contributions.addField("totalCommitContributions");

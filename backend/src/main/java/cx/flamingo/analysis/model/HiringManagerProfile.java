@@ -21,13 +21,4 @@ public class HiringManagerProfile {
     private List<SocialLink> socialLinks;
     private Map<String, Integer> githubStats;
     private Instant lastActive;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SocialLink {
-        private String platform;
-        private String url;
-    }
 } 

@@ -1,6 +1,7 @@
 package cx.flamingo.analysis.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +13,7 @@ public class Contributor {
     private String name;
     private String url;
     private String email;
-    private String website;
+    private List<SocialLink> socialLinks;
     private String avatarUrl;
     private int totalCommits;
     private int javaRepos;
