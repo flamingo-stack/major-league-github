@@ -182,7 +182,7 @@ public class GitHubQueryBuilder {
 
         public SearchField addLocationFilter(String location) {
             if (queryFilters.length() > 0) queryFilters.append(" ");
-            queryFilters.append("location:").append("\\\"").append(location).append("\\\"");
+            queryFilters.append("location:\"").append(location).append("\"");
             updateQueryArg();
             return this;
         }
@@ -203,7 +203,8 @@ public class GitHubQueryBuilder {
 
         private void updateQueryArg() {
             String currentArgs = this.args != null ? this.args.replaceAll(", query: .*$", "") : "";
-            this.withArgs(currentArgs + ", query: \"" + queryFilters.toString() + "\"");
+            String escapedQuery = queryFilters.toString().replace("\"", "\\\"");
+            this.withArgs(currentArgs + ", query: \"" + escapedQuery + "\"");
         }
     }
 }

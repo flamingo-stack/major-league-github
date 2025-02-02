@@ -1,7 +1,6 @@
 package cx.flamingo.analysis.model;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,7 @@ public class Contributor {
 
     // Stats fields - used by both roles but stored differently
     private Map<String, Integer> githubStats;  // Used by HIRING_MANAGER
-    private Instant lastActive;                // Used by HIRING_MANAGER
+    private Instant lastActive;                // Used by both roles now
 
     // Individual stats fields - used by CONTRIBUTOR
     private int totalCommits;
@@ -44,7 +43,6 @@ public class Contributor {
     private int starsGiven;
     private int forksGiven;
     private int score;
-    private LocalDateTime latestCommitDate;
 
     public Map<String, Integer> getGithubStats() {
         if (type == Role.CONTRIBUTOR) {
@@ -63,9 +61,6 @@ public class Contributor {
     }
 
     public Instant getLastActive() {
-        if (type == Role.CONTRIBUTOR && latestCommitDate != null) {
-            return latestCommitDate.toInstant(java.time.ZoneOffset.UTC);
-        }
         return lastActive;
     }
 }

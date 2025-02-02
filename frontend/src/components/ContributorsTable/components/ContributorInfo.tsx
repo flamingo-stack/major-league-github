@@ -57,7 +57,7 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                         sx={{ 
                             width: { xs: 96, sm: 84 }, 
                             height: { xs: 96, sm: 84 },
-                            borderRadius: '6px'
+                            borderRadius: '50%'
                         }}
                     />
                 </Link>
@@ -67,8 +67,9 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                             fontSize: { xs: '1.4rem', sm: '1.2rem' },
                             lineHeight: 1,
                             position: 'absolute',
-                            right: -12,
-                            bottom: -6
+                            right: -4,
+                            bottom: -2,
+                            filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))'
                         }}
                     >
                         {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}

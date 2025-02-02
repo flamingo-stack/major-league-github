@@ -357,11 +357,13 @@ public class GithubService {
 
     private String buildGitHubQuery(String cursor, City city, Language language, Integer numberOfUsers) {
         GitHubQueryBuilder builder = new GitHubQueryBuilder();
-        return builder.searchUsers(numberOfUsers)
+        String query = builder.searchUsers(numberOfUsers)
                 .location(city.getName())
                 .language(language.getName())
                 .cursor(cursor)
                 .build();
+        log.info("Generated GitHub query for city {}: {}", city.getName(), query);
+        return query;
     }
 
     private void processUsers(JsonArray users, List<Contributor> contributors, City city) {
@@ -464,6 +466,7 @@ public class GithubService {
             return null;
         }
         JsonObject contributions = user.getAsJsonObject("contributionsCollection");
+        
         if (!contributions.has("contributionCalendar")) {
             return null;
         }
@@ -780,7 +783,7 @@ public class GithubService {
                   .starsGiven(starsGiven)
                   .forksGiven(forksGiven)
                   .score((int) score)
-                  .latestCommitDate(latestCommit != null ? latestCommit.atZone(java.time.ZoneOffset.UTC).toLocalDateTime() : null);
+                  .lastActive(latestCommit);
         }
 
         return builder.build();
