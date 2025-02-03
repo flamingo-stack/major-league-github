@@ -47,14 +47,16 @@ export function downloadContributors({
     regionId,
     stateId,
     teamId,
-    languageId
-}: Omit<GetContributorsParams, 'maxResults' | 'signal'>) {
+    languageId,
+    maxResults
+}: Omit<GetContributorsParams, 'signal'>) {
     const params = new URLSearchParams();
     if (cityId) params.set('cityId', cityId);
     if (regionId) params.set('regionId', regionId);
     if (stateId) params.set('stateId', stateId);
     if (teamId) params.set('teamId', teamId);
     if (languageId) params.set('languageId', languageId);
+    if (maxResults) params.set('maxResults', maxResults.toString());
 
     // Create a hidden link and click it to trigger the download
     const link = document.createElement('a');
