@@ -1,16 +1,10 @@
 package cx.flamingo.analysis.controller;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.io.StringWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -115,10 +109,11 @@ public class ContributorController {
 
         StringWriter stringWriter = new StringWriter();
         CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
-            .setHeader("First Name", "Last Name", "City", "State", "MLG URL", "GitHub URL", "Email", "Twitter", "LinkedIn")
+            .setHeader("Rank", "First Name", "Last Name", "City", "State", "MLG URL", "GitHub URL", "Email", "Twitter", "LinkedIn")
             .build();
 
         try (CSVPrinter csvPrinter = new CSVPrinter(stringWriter, csvFormat)) {
+            int rank = 1;
             for (Contributor contributor : contributors) {
                 String[] nameParts = (contributor.getName() != null ? contributor.getName() : "Unknown Unknown").split(" ", 2);
                 String firstName = nameParts[0];
@@ -163,6 +158,7 @@ public class ContributorController {
                 }
 
                 csvPrinter.printRecord(
+                    rank++,
                     firstName,
                     lastName,
                     cityName,

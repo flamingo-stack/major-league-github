@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -106,15 +105,6 @@ public class GithubService {
                             log.info("Found {} {} contributors for city: {}", contributors.size(), language.getName(),
                                     city.getName());
 
-                            for (Contributor contributor : contributors) {
-                                if (contributor.getSocialLinks() == null || contributor.getSocialLinks().isEmpty()) {
-                                    log.debug("No social links found for contributor: {}", contributor.getLogin());
-                                    continue;
-                                }
-                                for (SocialLink socialLink : contributor.getSocialLinks()) {
-                                    log.debug("Social Link: {}", socialLink.getUrl());
-                                }
-                            }
                             return contributors;
                         } catch (Exception e) {
                             log.error("Failed to fetch contributors for city {}: {}", city.getName(), e.getMessage());
@@ -228,7 +218,7 @@ public class GithubService {
                     .getAsJsonObject("search");
 
             List<Contributor> tempContributors = new ArrayList<>();
-            processUsers(search.getAsJsonArray("nodes"), tempContributors, city);
+            processUsers(search.getAsJsonArray("nodes"), tempContributors, city, language);
             contributors.addAll(tempContributors);
             log.debug("Found {} {} contributors on page {}", tempContributors.size(), language.getName(),
                     pageCount + 1);
@@ -368,15 +358,19 @@ public class GithubService {
         return query;
     }
 
-    private void processUsers(JsonArray users, List<Contributor> contributors, City city) {
+    private void processUsers(JsonArray users, List<Contributor> contributors, City city, Language language) {
         for (JsonElement userElement : users) {
             if (!userElement.isJsonNull()) {
                 JsonObject user = userElement.getAsJsonObject();
                 try {
+                    String login = getStringOrDefault(user, "login", "");
+                    log.info("Processing user: {} with language: {}", login, language.getName());
+                    
                     Contributor contributor = fetchUserProfile(
-                            getStringOrDefault(user, "login", ""),
+                            login,
                             Contributor.Role.CONTRIBUTOR,
-                            user);
+                            user,
+                            language);
 
                     // Override location-specific fields since we know them
                     contributor = contributor.toBuilder()
@@ -388,14 +382,13 @@ public class GithubService {
 
                     contributors.add(contributor);
                 } catch (Exception e) {
-                    log.error("Failed to process user: {}", e.getMessage());
+                    log.error("Failed to process user: {}", e.getMessage(), e);
                 }
             }
         }
     }
 
-    private double calculateScore(int commits, long javaRepos, int starsReceived,
-            int forks, int starsGiven, int forksGiven, Instant latestCommit) {
+    private double calculateScore(String username, int commits, int starsReceived, Instant latestCommit) {
         // Calculate recency multiplier (1.0 to 2.0)
         double recency = 1.0;
         if (latestCommit != null) {
@@ -411,38 +404,83 @@ public class GithubService {
         }
 
         // Calculate final score using formula: commits × max(stars, 1) × recency
-        return Math.round(commits * Math.max(starsReceived, 1) * recency);
+        double score = Math.round(commits * Math.max(starsReceived, 1) * recency);
+        log.info("Score calculation for {}: {} commits × max({} stars, 1) × {:.2f} recency = {}",
+                username, commits, starsReceived, recency, score);
+        return score;
     }
 
-    private long countJavaRepositories(JsonArray repositories) {
+    private long countLanguageRepositories(JsonArray repositories, Language language) {
         return repositories.asList().stream()
-                .filter(repo -> repo.getAsJsonObject().has("primaryLanguage")
-                        && !repo.getAsJsonObject().get("primaryLanguage").isJsonNull()
-                        && repo.getAsJsonObject().getAsJsonObject("primaryLanguage")
-                                .get("name").getAsString().equals("Java"))
+                .filter(repo -> {
+                    JsonObject repoObj = repo.getAsJsonObject();
+                    boolean isTargetLanguage = repoObj.has("primaryLanguage")
+                            && !repoObj.get("primaryLanguage").isJsonNull()
+                            && repoObj.getAsJsonObject("primaryLanguage")
+                                    .get("name").getAsString().equals(language.getName());
+
+                    if (repoObj.has("primaryLanguage") && !repoObj.get("primaryLanguage").isJsonNull()) {
+                        log.info("Found {} repository: {} (Fork: {}) primary language: {}", 
+                            language.getName(),
+                            repoObj.get("name").getAsString(),
+                            repoObj.get("isFork").getAsBoolean(),
+                            repoObj.getAsJsonObject("primaryLanguage").get("name").getAsString());
+                    } else {
+                        log.info("Found {} repository: {} (Fork: {}) with no primary language", 
+                            language.getName(),
+                            repoObj.get("name").getAsString(),
+                            repoObj.get("isFork").getAsBoolean());
+                    }
+                    return isTargetLanguage;
+                })
                 .count();
     }
 
     private int calculateTotalStars(JsonArray repositories) {
         return repositories.asList().stream()
-                .mapToInt(repo -> repo.getAsJsonObject().get("stargazerCount").getAsInt())
+                .mapToInt(repo -> {
+                    JsonObject repoObj = repo.getAsJsonObject();
+                    int stars = repoObj.get("stargazerCount").getAsInt();
+                    log.info("Repository {} (Fork: {}) has {} stars",
+                            repoObj.get("name").getAsString(),
+                            repoObj.get("isFork").getAsBoolean(),
+                            stars);
+                    return stars;
+                })
                 .sum();
     }
 
     private int calculateTotalForks(JsonArray repositories) {
         return repositories.asList().stream()
-                .mapToInt(repo -> repo.getAsJsonObject().get("forkCount").getAsInt())
+                .mapToInt(repo -> {
+                    JsonObject repoObj = repo.getAsJsonObject();
+                    int forks = repoObj.get("forkCount").getAsInt();
+                    log.info("Repository {} (Fork: {}) has been forked {} times",
+                            repoObj.get("name").getAsString(),
+                            repoObj.get("isFork").getAsBoolean(),
+                            forks);
+                    return forks;
+                })
                 .sum();
     }
 
-    private int calculateStarsReceived(JsonArray repositories) {
+    private int calculateLanguageStarsReceived(JsonArray repositories, Language language) {
         return repositories.asList().stream()
                 .filter(repo -> {
                     JsonObject repoObj = repo.getAsJsonObject();
-                    return repoObj.has("primaryLanguage")
+                    boolean isTargetLanguage = repoObj.has("primaryLanguage")
                             && !repoObj.get("primaryLanguage").isJsonNull()
                             && repoObj.getAsJsonObject("primaryLanguage")
-                                    .get("name").getAsString().equals("Java");
+                                    .get("name").getAsString().equals(language.getName());
+
+                    if (isTargetLanguage) {
+                        log.info("Found {} repository {} (Fork: {}) with {} stars",
+                                language.getName(),
+                                repoObj.get("name").getAsString(),
+                                repoObj.get("isFork").getAsBoolean(),
+                                repoObj.get("stargazerCount").getAsInt());
+                    }
+                    return isTargetLanguage;
                 })
                 .mapToInt(repo -> repo.getAsJsonObject().get("stargazerCount").getAsInt())
                 .sum();
@@ -455,11 +493,49 @@ public class GithubService {
     }
 
     private int getContributionCount(JsonObject user) {
-        if (user.has("contributionsCollection")) {
-            JsonObject contributions = user.getAsJsonObject("contributionsCollection");
-            return contributions.get("totalCommitContributions").getAsInt();
+        if (!user.has("contributionsCollection")) {
+            log.warn("No contributions collection found");
+            return 0;
         }
-        return 0;
+        
+        JsonObject contributions = user.getAsJsonObject("contributionsCollection");
+        String login = getStringOrDefault(user, "login", "unknown");
+        
+        if (!contributions.has("contributionCalendar")) {
+            log.warn("No contribution calendar found for user {}", login);
+            return 0;
+        }
+
+        JsonObject calendar = contributions.getAsJsonObject("contributionCalendar");
+        JsonArray weeks = calendar.getAsJsonArray("weeks");
+        
+        int totalContributions = 0;
+        
+        // Sum up all contributions from the calendar
+        for (JsonElement weekElement : weeks) {
+            JsonObject week = weekElement.getAsJsonObject();
+            JsonArray days = week.getAsJsonArray("contributionDays");
+            for (JsonElement dayElement : days) {
+                JsonObject day = dayElement.getAsJsonObject();
+                totalContributions += day.get("contributionCount").getAsInt();
+            }
+        }
+
+        log.info("Contribution details for user {}:", login);
+        log.info("- Total contributions from calendar: {}", totalContributions);
+        
+        // Also log the other contribution metrics for comparison
+        if (contributions.has("totalCommitContributions")) {
+            log.info("- Total commit contributions: {}", contributions.get("totalCommitContributions").getAsInt());
+        }
+        if (contributions.has("restrictedContributionsCount")) {
+            log.info("- Restricted contributions: {}", contributions.get("restrictedContributionsCount").getAsInt());
+        }
+        if (contributions.has("totalRepositoryContributions")) {
+            log.info("- Repository contributions: {}", contributions.get("totalRepositoryContributions").getAsInt());
+        }
+
+        return totalContributions;
     }
 
     private Instant getLatestCommitDate(JsonObject user) {
@@ -508,7 +584,8 @@ public class GithubService {
         return 0;
     }
 
-    public Contributor fetchUserProfile(String username, Contributor.Role role, JsonObject existingData) {
+    public Contributor fetchUserProfile(String username, Contributor.Role role, JsonObject existingData,
+            Language language) {
         JsonObject userData = existingData;
 
         fetchUserDataFromGithubAPI: {
@@ -535,7 +612,9 @@ public class GithubService {
                               totalPullRequestContributions
                               totalIssueContributions
                               totalRepositoryContributions
+                              restrictedContributionsCount
                               contributionCalendar {
+                                totalContributions
                                 weeks {
                                   contributionDays {
                                     contributionCount
@@ -544,16 +623,27 @@ public class GithubService {
                                 }
                               }
                             }
+                            # Get all time contributions
+                            contributionsCollection(from: "2008-01-01T00:00:00Z") {
+                              totalCommitContributions
+                              restrictedContributionsCount
+                              totalRepositoryContributions
+                              contributionCalendar {
+                                totalContributions
+                              }
+                            }
                             starredRepositories {
                               totalCount
                             }
                             forkedRepos: repositories(isFork: true) {
                               totalCount
                             }
-                            originalRepos: repositories(first: 100, isFork: false, orderBy: {field: STARGAZERS, direction: DESC}) {
+                            allRepos: repositories(first: 100, orderBy: {field: STARGAZERS, direction: DESC}) {
                               nodes {
+                                name
                                 stargazerCount
                                 forkCount
+                                isFork
                                 primaryLanguage {
                                   name
                                 }
@@ -584,28 +674,40 @@ public class GithubService {
         }
 
         // Process the data using shared logic
-        JsonObject reposObj = userData.getAsJsonObject("originalRepos");
+        JsonObject reposObj = userData.getAsJsonObject("allRepos");
         JsonArray repositories = new JsonArray();
         if (reposObj != null && reposObj.has("nodes")) {
             repositories = reposObj.getAsJsonArray("nodes");
         }
 
-        long javaRepos = countJavaRepositories(repositories);
+        log.info("Processing repositories for user: {}", getStringOrDefault(userData, "login", "unknown"));
+        log.info("Total repositories found: {}", repositories.size());
+
+        long languageRepos = language != null ? countLanguageRepositories(repositories, language) : 0;
         int starsGiven = getStarsGiven(userData);
         int forksGiven = getForksGiven(userData);
-        int starsReceived = calculateStarsReceived(repositories);
+        int starsReceived = language != null ? calculateLanguageStarsReceived(repositories, language)
+                : calculateTotalStars(repositories);
         int totalCommits = getContributionCount(userData);
         int totalForks = calculateTotalForks(repositories);
         Instant latestCommit = getLatestCommitDate(userData);
 
+        log.info("Repository Statistics Summary:");
+        log.info("- Total {} Repositories: {}", language != null ? language.getName() : "All", languageRepos);
+        log.info("- Total Stars Received: {}", starsReceived);
+        log.info("- Total Forks Received: {}", totalForks);
+        log.info("- Total Stars Given: {}", starsGiven);
+        log.info("- Total Forks Given: {}", forksGiven);
+        log.info("- Total Commits: {}", totalCommits);
+        log.info("- Latest Commit: {}", latestCommit);
+
         double score = calculateScore(
+                getStringOrDefault(userData, "login", "unknown"),
                 totalCommits,
-                javaRepos,
                 starsReceived,
-                totalForks,
-                starsGiven,
-                forksGiven,
                 latestCommit);
+
+        log.info("Final Score: {}", score);
 
         // Extract bio and job role
         String bio = getStringOrDefault(userData, "bio", "");
@@ -711,7 +813,7 @@ public class GithubService {
             Map<String, Integer> stats = new HashMap<>();
             stats.put("score", (int) score);
             stats.put("totalCommits", totalCommits);
-            stats.put("javaRepos", (int) javaRepos);
+            stats.put("javaRepos", (int) languageRepos);
             stats.put("starsReceived", starsReceived);
             stats.put("forksReceived", totalForks);
             stats.put("starsGiven", starsGiven);
@@ -727,7 +829,7 @@ public class GithubService {
                     .lastActive(latestCommit);
         } else {
             builder.totalCommits(totalCommits)
-                    .javaRepos((int) javaRepos)
+                    .javaRepos((int) languageRepos)
                     .starsReceived(starsReceived)
                     .forksReceived(totalForks)
                     .starsGiven(starsGiven)
@@ -737,11 +839,6 @@ public class GithubService {
         }
 
         return builder.build();
-    }
-
-    // Update the old method to use the new one
-    public Contributor fetchUserProfile(String username, Contributor.Role role) {
-        return fetchUserProfile(username, role, null);
     }
 
     private String determineWebsitePlatform(String url) {

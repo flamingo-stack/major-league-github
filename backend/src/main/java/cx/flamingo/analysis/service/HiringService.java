@@ -13,6 +13,7 @@ import cx.flamingo.analysis.cache.CacheServiceAbs;
 import cx.flamingo.analysis.model.Contributor;
 import cx.flamingo.analysis.model.HiringManagerProfile;
 import cx.flamingo.analysis.model.JobOpening;
+import cx.flamingo.analysis.model.Language;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -38,7 +39,11 @@ public class HiringService {
         HiringManagerProfile profile = cacheService.get(CACHE_PATH, PROFILE_KEY, new TypeToken<HiringManagerProfile>() {
         }, refreshInterval)
                 .orElseGet(() -> {
-                    Contributor contributor = githubService.fetchUserProfile(githubUsername, Contributor.Role.HIRING_MANAGER);
+                    Language java = Language.builder()
+                            .id("java")
+                            .name("Java")
+                            .build();
+                    Contributor contributor = githubService.fetchUserProfile(githubUsername, Contributor.Role.HIRING_MANAGER, null, java);
                     HiringManagerProfile newProfile = HiringManagerProfile.builder()
                         .name(contributor.getName())
                         .avatarUrl(contributor.getAvatarUrl())

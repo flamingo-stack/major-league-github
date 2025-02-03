@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme, useMediaQuery, IconButton, Collapse, Button, Link } from '@mui/material';
+import { Box, Typography, useTheme, useMediaQuery, IconButton, Collapse, Button, Link, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemButton, ListItemText } from '@mui/material';
 import { useQueryClient } from '@tanstack/react-query';
 import { City, Region, State, SoccerTeam, Language } from '../types/api';
 import { useUrlState } from '../hooks/useUrlState';
@@ -27,6 +27,8 @@ export const FiltersPanel = () => {
   const queryClient = useQueryClient();
   const { urlState, updateUrlState } = useUrlState();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [showSizeSelection, setShowSizeSelection] = useState(false);
   
   // Local state for selected entities
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
@@ -116,6 +118,30 @@ export const FiltersPanel = () => {
     };
 
     loadInitialState();
+  }, []);
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      console.log('Key pressed:', {
+        key: event.key,
+        altKey: event.altKey,
+        metaKey: event.metaKey,
+        code: event.code,
+        keyCode: event.keyCode
+      });
+      
+      // Check if it's Option+E on Mac (using event.code)
+      if ((navigator.platform.includes('Mac') && event.altKey && event.code === 'KeyE') ||
+          (!navigator.platform.includes('Mac') && event.altKey && event.key.toLowerCase() === 'e')) {
+        console.log('Export shortcut triggered!');
+        event.preventDefault();
+        setShowSizeSelection(true);
+        setExportDialogOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
   // Handle selection changes
@@ -235,235 +261,104 @@ export const FiltersPanel = () => {
     if (isMobile) dismissKeyboard();
   };
 
-  const handleDownload = () => {
+  const handleExportClick = () => {
+    if (showSizeSelection) {
+      setExportDialogOpen(true);
+    } else {
+      downloadContributors({
+        cityId: urlState.selectedCityId || undefined,
+        regionId: urlState.selectedRegionId || undefined,
+        stateId: urlState.stateId || undefined,
+        languageId: urlState.languageId || undefined,
+        teamId: urlState.teamId || undefined
+      });
+    }
+  };
+
+  const handleExportSize = (size: number) => {
     downloadContributors({
       cityId: urlState.selectedCityId || undefined,
       regionId: urlState.selectedRegionId || undefined,
       stateId: urlState.stateId || undefined,
       languageId: urlState.languageId || undefined,
-      teamId: urlState.teamId || undefined
+      teamId: urlState.teamId || undefined,
+      maxResults: size
     });
+    setExportDialogOpen(false);
+    setShowSizeSelection(false);
   };
 
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: { xs: 0.5, sm: 2 },
-      px: 2,
-      pt: { xs: 1, sm: 2 },
-      pb: 1,
-      width: '100%'
-    }}>
+    <>
       <Box sx={{ 
         display: 'flex', 
-        flexDirection: { xs: 'column', sm: 'row' },
+        flexDirection: 'column', 
         gap: { xs: 0.5, sm: 2 },
-        alignItems: { sm: 'center' },
-        justifyContent: 'space-between'
+        px: 2,
+        pt: { xs: 1, sm: 2 },
+        pb: 1,
+        width: '100%'
       }}>
         <Box sx={{ 
           display: 'flex', 
           flexDirection: { xs: 'column', sm: 'row' },
           gap: { xs: 0.5, sm: 2 },
-          flex: 1
+          alignItems: { sm: 'center' },
+          justifyContent: 'space-between'
         }}>
-          <LanguageAutocomplete
-            value={selectedLanguage}
-            inputValue={languageInput}
-            onChange={handleLanguageChange}
-            onInputChange={handleLanguageInputChange}
-            sx={{ flex: 1 }}
-          />
-          {!isMobile && (
-            <TeamAutocomplete
-              value={selectedTeam}
-              inputValue={teamInput}
-              onChange={handleTeamChange}
-              onInputChange={setTeamInput}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 0.5, sm: 2 },
+            flex: 1
+          }}>
+            <LanguageAutocomplete
+              value={selectedLanguage}
+              inputValue={languageInput}
+              onChange={handleLanguageChange}
+              onInputChange={handleLanguageInputChange}
               sx={{ flex: 1 }}
             />
+            {!isMobile && (
+              <TeamAutocomplete
+                value={selectedTeam}
+                inputValue={teamInput}
+                onChange={handleTeamChange}
+                onInputChange={setTeamInput}
+                sx={{ flex: 1 }}
+              />
+            )}
+          </Box>
+          {!isMobile && (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Link
+                component="button"
+                onClick={handleExportClick}
+                sx={{
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(36, 41, 47, 0.8)',
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'
+                  }
+                }}
+              >
+                Download CSV
+              </Link>
+            </Box>
           )}
         </Box>
-        {!isMobile && (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Link
-              component="button"
-              onClick={handleDownload}
-              sx={{
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(36, 41, 47, 0.8)',
-                textDecoration: 'none',
-                '&:hover': {
-                  textDecoration: 'underline',
-                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'
-                }
-              }}
-            >
-              Download CSV
-            </Link>
-          </Box>
-        )}
-      </Box>
 
-      {/* Second Row - Region, State, City (Desktop) */}
-      <Box sx={{ 
-        display: { xs: 'none', sm: 'flex' },
-        flexDirection: 'row',
-        gap: 2,
-        width: '100%'
-      }}>
-        <Box sx={{ flex: 1, width: '100%' }}>
-          <Typography 
-            variant="subtitle2" 
-            sx={{ 
-              mb: 1,
-              fontWeight: 600,
-              color: 'text.primary',
-              display: { xs: 'none', sm: 'block' }
-            }}
-          >
-            Region
-          </Typography>
-          <RegionAutocomplete
-            value={selectedRegion}
-            onChange={handleRegionChange}
-            inputValue={regionInput}
-            onInputChange={setRegionInput}
-            stateId={selectedState?.id}
-            cityIds={selectedCity ? [selectedCity.id] : undefined}
-          />
-        </Box>
-        <Box sx={{ flex: 1, width: '100%' }}>
-          <Typography 
-            variant="subtitle2" 
-            sx={{ 
-              mb: 1,
-              fontWeight: 600,
-              color: 'text.primary',
-              display: { xs: 'none', sm: 'block' }
-            }}
-          >
-            State
-          </Typography>
-          <StateAutocomplete
-            value={selectedState}
-            onChange={handleStateChange}
-            inputValue={stateInput}
-            onInputChange={setStateInput}
-            regionId={selectedRegion?.id}
-          />
-        </Box>
-        <Box sx={{ flex: 1, width: '100%' }}>
-          <Typography 
-            variant="subtitle2" 
-            sx={{ 
-              mb: 1,
-              fontWeight: 600,
-              color: 'text.primary',
-              display: { xs: 'none', sm: 'block' }
-            }}
-          >
-            City
-          </Typography>
-          <CityAutocomplete
-            value={selectedCity}
-            onChange={handleCityChange}
-            inputValue={cityInput}
-            onInputChange={setCityInput}
-            stateId={selectedState?.id}
-            regionId={selectedRegion?.id}
-          />
-        </Box>
-      </Box>
-
-      {/* Mobile City Field (Always Visible) */}
-      <Box sx={{ 
-        display: { xs: 'block', sm: 'none' },
-        width: '100%',
-        mb: 0
-      }}>
-        <Typography 
-          variant="subtitle2" 
-          sx={{ 
-            mb: 1,
-            fontWeight: 600,
-            color: 'text.primary',
-            display: { xs: 'none', sm: 'block' }
-          }}
-        >
-          City
-        </Typography>
-        <CityAutocomplete
-          value={selectedCity}
-          onChange={handleCityChange}
-          inputValue={cityInput}
-          onInputChange={setCityInput}
-          stateId={selectedState?.id}
-          regionId={selectedRegion?.id}
-        />
-      </Box>
-
-      {/* Mobile Expand Button */}
-      {isMobile && (
+        {/* Second Row - Region, State, City (Desktop) */}
         <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'center',
-          mt: -0.5,
-          mb: isExpanded ? 0 : 0,
-          opacity: 0.8
+          display: { xs: 'none', sm: 'flex' },
+          flexDirection: 'row',
+          gap: 2,
+          width: '100%'
         }}>
-          <IconButton 
-            size="small"
-            onClick={() => setIsExpanded(!isExpanded)}
-            sx={{ 
-              color: 'text.secondary',
-              transform: isExpanded ? 'rotate(180deg)' : 'none',
-              transition: 'transform 0.3s',
-              p: 0.25,
-              '&:hover': {
-                backgroundColor: 'transparent'
-              }
-            }}
-          >
-            {isExpanded ? (
-              <ExpandLessIcon sx={{ fontSize: '1.25rem' }} />
-            ) : (
-              <ExpandMoreIcon sx={{ fontSize: '1.25rem' }} />
-            )}
-          </IconButton>
-        </Box>
-      )}
-
-      {/* Mobile Expandable Fields */}
-      <Collapse in={!isMobile || isExpanded} sx={{ mt: 0 }}>
-        <Box sx={{ 
-          display: { xs: 'flex', sm: 'none' }, 
-          flexDirection: 'column',
-          gap: 0.5,
-          pt: 0.5
-        }}>
-          <Box>
-            <Typography 
-              variant="subtitle2" 
-              sx={{ 
-                mb: 1,
-                fontWeight: 600,
-                color: 'text.primary',
-                display: { xs: 'none', sm: 'block' }
-              }}
-            >
-              Soccer Team
-            </Typography>
-            <TeamAutocomplete
-              value={selectedTeam}
-              onChange={handleTeamChange}
-              inputValue={teamInput}
-              onInputChange={setTeamInput}
-            />
-          </Box>
-          <Box>
+          <Box sx={{ flex: 1, width: '100%' }}>
             <Typography 
               variant="subtitle2" 
               sx={{ 
@@ -484,7 +379,7 @@ export const FiltersPanel = () => {
               cityIds={selectedCity ? [selectedCity.id] : undefined}
             />
           </Box>
-          <Box>
+          <Box sx={{ flex: 1, width: '100%' }}>
             <Typography 
               variant="subtitle2" 
               sx={{ 
@@ -504,8 +399,185 @@ export const FiltersPanel = () => {
               regionId={selectedRegion?.id}
             />
           </Box>
+          <Box sx={{ flex: 1, width: '100%' }}>
+            <Typography 
+              variant="subtitle2" 
+              sx={{ 
+                mb: 1,
+                fontWeight: 600,
+                color: 'text.primary',
+                display: { xs: 'none', sm: 'block' }
+              }}
+            >
+              City
+            </Typography>
+            <CityAutocomplete
+              value={selectedCity}
+              onChange={handleCityChange}
+              inputValue={cityInput}
+              onInputChange={setCityInput}
+              stateId={selectedState?.id}
+              regionId={selectedRegion?.id}
+            />
+          </Box>
         </Box>
-      </Collapse>
-    </Box>
+
+        {/* Mobile City Field (Always Visible) */}
+        <Box sx={{ 
+          display: { xs: 'block', sm: 'none' },
+          width: '100%',
+          mb: 0
+        }}>
+          <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              mb: 1,
+              fontWeight: 600,
+              color: 'text.primary',
+              display: { xs: 'none', sm: 'block' }
+            }}
+          >
+            City
+          </Typography>
+          <CityAutocomplete
+            value={selectedCity}
+            onChange={handleCityChange}
+            inputValue={cityInput}
+            onInputChange={setCityInput}
+            stateId={selectedState?.id}
+            regionId={selectedRegion?.id}
+          />
+        </Box>
+
+        {/* Mobile Expand Button */}
+        {isMobile && (
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center',
+            mt: -0.5,
+            mb: isExpanded ? 0 : 0,
+            opacity: 0.8
+          }}>
+            <IconButton 
+              size="small"
+              onClick={() => setIsExpanded(!isExpanded)}
+              sx={{ 
+                color: 'text.secondary',
+                transform: isExpanded ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.3s',
+                p: 0.25,
+                '&:hover': {
+                  backgroundColor: 'transparent'
+                }
+              }}
+            >
+              {isExpanded ? (
+                <ExpandLessIcon sx={{ fontSize: '1.25rem' }} />
+              ) : (
+                <ExpandMoreIcon sx={{ fontSize: '1.25rem' }} />
+              )}
+            </IconButton>
+          </Box>
+        )}
+
+        {/* Mobile Expandable Fields */}
+        <Collapse in={!isMobile || isExpanded} sx={{ mt: 0 }}>
+          <Box sx={{ 
+            display: { xs: 'flex', sm: 'none' }, 
+            flexDirection: 'column',
+            gap: 0.5,
+            pt: 0.5
+          }}>
+            <Box>
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  mb: 1,
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  display: { xs: 'none', sm: 'block' }
+                }}
+              >
+                Soccer Team
+              </Typography>
+              <TeamAutocomplete
+                value={selectedTeam}
+                onChange={handleTeamChange}
+                inputValue={teamInput}
+                onInputChange={setTeamInput}
+              />
+            </Box>
+            <Box>
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  mb: 1,
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  display: { xs: 'none', sm: 'block' }
+                }}
+              >
+                Region
+              </Typography>
+              <RegionAutocomplete
+                value={selectedRegion}
+                onChange={handleRegionChange}
+                inputValue={regionInput}
+                onInputChange={setRegionInput}
+                stateId={selectedState?.id}
+                cityIds={selectedCity ? [selectedCity.id] : undefined}
+              />
+            </Box>
+            <Box>
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  mb: 1,
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  display: { xs: 'none', sm: 'block' }
+                }}
+              >
+                State
+              </Typography>
+              <StateAutocomplete
+                value={selectedState}
+                onChange={handleStateChange}
+                inputValue={stateInput}
+                onInputChange={setStateInput}
+                regionId={selectedRegion?.id}
+              />
+            </Box>
+          </Box>
+        </Collapse>
+      </Box>
+
+      <Dialog 
+        open={exportDialogOpen && showSizeSelection} 
+        onClose={() => {
+          setExportDialogOpen(false);
+          setShowSizeSelection(false);
+        }}
+        PaperProps={{
+          sx: {
+            width: '300px',
+            maxWidth: '90vw'
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>Select Export Size</DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <List sx={{ pt: 0 }}>
+            {[15, 50, 100].map((size) => (
+              <ListItem key={size} disablePadding>
+                <ListItemButton onClick={() => handleExportSize(size)}>
+                  <ListItemText primary={`${size} Results`} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }; 
