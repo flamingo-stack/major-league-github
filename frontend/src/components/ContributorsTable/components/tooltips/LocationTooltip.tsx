@@ -21,10 +21,17 @@ export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contrib
                         }}
                     />
                     <Box>
-                        <Typography variant="h6" sx={{ color: '#e6edf3', fontSize: '1rem', fontWeight: 600, mb: 0.5 }}>
+                        <Typography variant="h6" sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f', 
+                            fontSize: '1rem', 
+                            fontWeight: 600, 
+                            mb: 0.5 
+                        }}>
                             {contributor.nearestTeam.name}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#7d8590' }}>
+                        <Typography variant="body2" sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                        }}>
                             {contributor.nearestTeam.city}, {contributor.nearestTeam.state}
                         </Typography>
                     </Box>
@@ -33,21 +40,27 @@ export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contrib
                 <Stack spacing={1}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>🏟️</Typography>
-                        <Typography variant="body2" sx={{ color: '#7d8590' }}>
+                        <Typography variant="body2" sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                        }}>
                             {contributor.nearestTeam.stadium} ({contributor.nearestTeam.stadiumCapacity.toLocaleString()} capacity)
                         </Typography>
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>📅</Typography>
-                        <Typography variant="body2" sx={{ color: '#7d8590' }}>
+                        <Typography variant="body2" sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' 
+                        }}>
                             Joined MLS in {contributor.nearestTeam.joinedYear}
                         </Typography>
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>🏆</Typography>
-                        <Typography variant="body2" sx={{ color: '#7d8590' }}>
+                        <Typography variant="body2" sx={{ 
+                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                        }}>
                             Head Coach: {contributor.nearestTeam.headCoach}
                         </Typography>
                     </Box>

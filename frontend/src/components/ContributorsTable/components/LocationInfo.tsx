@@ -101,7 +101,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                                         gap: 1,
                                         '&:hover': {
                                             '.team-name': {
-                                                color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0969da'
+                                                color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0550ae'
                                             }
                                         }
                                     }}

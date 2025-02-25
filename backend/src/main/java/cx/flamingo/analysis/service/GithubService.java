@@ -778,6 +778,9 @@ public class GithubService {
                 }
             }
         }
+        
+        // Post-process links to detect social media in generic links
+        processAndEnhanceSocialLinks(socialLinks);
 
         // Try to find city based on location
         City city = null;
@@ -842,18 +845,113 @@ public class GithubService {
     }
 
     private String determineWebsitePlatform(String url) {
-        url = url.toLowerCase();
+        if (url == null || url.trim().isEmpty()) {
+            return "website";
+        }
+        
+        url = url.toLowerCase().trim();
+        
+        // First check for known domains
         if (url.contains("linkedin.com"))
             return "linkedin";
         if (url.contains("instagram.com"))
             return "instagram";
-        if (url.contains("twitter.com") || url.contains("x.com"))
+        if (url.contains("twitter.com"))
             return "twitter";
-        if (url.contains("facebook.com"))
+        if (url.contains("x.com"))
+            return "x";
+        if (url.contains("facebook.com") || url.contains("fb.com"))
             return "facebook";
         if (url.contains("github.com"))
             return "github";
+        
+        // Check for Mastodon/Fediverse instances
+        if (url.contains("mastodon.") || 
+            url.contains(".social") || 
+            (url.contains("@") && (url.contains("/") || url.contains("://")))) {
+            return "mastodon";
+        }
+        
+        // Check for Bluesky - expanded patterns
+        if (url.contains("bsky.") || 
+            url.contains("bluesky.") || 
+            url.contains("blueskyweb.") || 
+            (url.contains("did:plc:") && url.contains("bsky")) ||
+            url.matches(".*at\\.bsky\\..*")) {
+            return "bluesky";
+        }
+        
+        // Deep scan URLs that don't match obvious patterns
+        return scanForSocialPatterns(url);
+    }
+    
+    /**
+     * Deep scan a URL for social media patterns
+     * @param url The URL to scan
+     * @return The detected platform or "website" if none is found
+     */
+    private String scanForSocialPatterns(String url) {
+        // Look for social media handles/patterns in the URL
+        
+        // Bluesky
+        if (url.matches(".*bsky.*") || 
+            url.matches(".*app\\.bsky\\..*") || 
+            url.contains("did:plc:") ||
+            url.contains("/profile/")) {
+            return "bluesky";
+        }
+        
+        // Mastodon / Fediverse
+        if (url.matches(".*@[\\w.-]+\\.[\\w]+.*") || // Contains @ followed by domain
+            url.contains("/@") ||
+            url.contains("/users/")) {
+            return "mastodon";
+        }
+        
+        // Twitter/X
+        if (url.contains("/status/") || 
+            url.matches(".*/i/[\\w]+") ||
+            url.matches(".*twitter\\..*")) {
+            return "twitter";
+        }
+        
+        // Instagram-like URL patterns
+        if (url.contains("/p/") || url.contains("/reel/")) {
+            return "instagram";
+        }
+        
+        // LinkedIn-like URL patterns
+        if (url.contains("/in/") || url.contains("/company/")) {
+            return "linkedin";
+        }
+        
+        // Default fallback
         return "website";
+    }
+
+    /**
+     * Post-process and enhance social links to detect social media platforms in generic links
+     * @param socialLinks The list of social links to process
+     */
+    private void processAndEnhanceSocialLinks(List<SocialLink> socialLinks) {
+        // Make a copy to avoid concurrent modification
+        List<SocialLink> linksToProcess = new ArrayList<>(socialLinks);
+        
+        for (SocialLink link : linksToProcess) {
+            // If it's already a website link, check if it's actually a social media site
+            if (link.getPlatform().equals("website")) {
+                String detectedPlatform = determineWebsitePlatform(link.getUrl());
+                
+                // If we detected a more specific platform, update it
+                if (!detectedPlatform.equals("website")) {
+                    log.info("Enhanced generic link detection: {} detected as {} platform", 
+                             link.getUrl(), detectedPlatform);
+                    
+                    // Update the platform for this link
+                    link.setPlatform(detectedPlatform);
+                }
+            }
+        }
     }
 
     public List<City> getTargetCities(String cityId, String regionId, String stateId, String teamId) {
