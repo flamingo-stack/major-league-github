@@ -20,7 +20,7 @@
     "@types/react-query": "1.2.9",
     "axios": "^1.7.9",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.2",
+    "jspdf": "^3.0.0",
     "lodash": "^4.17.21",
     "react": "18.3.1",
     "react-dom": "^18.3.1",
