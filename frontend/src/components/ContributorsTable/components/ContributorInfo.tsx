@@ -13,6 +13,9 @@ import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import EmailIcon from '@mui/icons-material/Email';
 import LanguageIcon from '@mui/icons-material/Language';
+import TagIcon from '@mui/icons-material/Tag';
+import CloudIcon from '@mui/icons-material/Cloud';
+import CloseIcon from '@mui/icons-material/Close';
 import { ContributorInfoProps } from '../types';
 import { ContributorTooltipContent } from './tooltips/ContributorTooltip';
 
@@ -22,18 +25,26 @@ const getSocialIcon = (platform: string) => {
             return <LinkedInIcon fontSize="small" />;
         case 'twitter':
             return <TwitterIcon fontSize="small" />;
+        case 'x':
+            return <CloseIcon fontSize="small" />;
         case 'github':
             return <GitHubIcon fontSize="small" />;
         case 'facebook':
             return <FacebookIcon fontSize="small" />;
         case 'instagram':
             return <InstagramIcon fontSize="small" />;
+        case 'mastodon':
+            return <TagIcon fontSize="small" />;
+        case 'bluesky':
+            return <CloudIcon fontSize="small" />;
         case 'email':
             return <EmailIcon fontSize="small" />;
         case 'website':
             return <LanguageIcon fontSize="small" />;
         default:
-            return null;
+            // Fallback to website icon for unknown platforms
+            console.log(`Unknown social platform: ${platform}`);
+            return <LanguageIcon fontSize="small" />;
     }
 };
 
@@ -296,20 +307,30 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                     }
                                 }}>
                                     {contributor.socialLinks
+                                        // Filter out links with missing/empty platforms or URLs
+                                        .filter(link => link.platform && link.url && link.url.trim() !== '')
+                                        // Remove duplicates (keep first instance of each platform)
                                         .filter((link, index, self) => 
                                             index === self.findIndex((l) => l.platform === link.platform)
                                         )
-                                        .map((link, index) => (
-                                            <Link
-                                                key={`${link.platform}-${index}`}
-                                                href={link.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                title={link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}
-                                            >
-                                                {getSocialIcon(link.platform)}
-                                            </Link>
-                                        ))}
+                                        .map((link, index) => {
+                                            // For debugging
+                                            if (process.env.NODE_ENV === 'development') {
+                                                console.log(`Rendering social link: ${link.platform} - ${link.url}`);
+                                            }
+                                            
+                                            return (
+                                                <Link
+                                                    key={`${link.platform}-${index}`}
+                                                    href={link.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    title={`${link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}: ${link.url}`}
+                                                >
+                                                    {getSocialIcon(link.platform)}
+                                                </Link>
+                                            );
+                                        })}
                                 </Box>
                             )}
                         </Box>

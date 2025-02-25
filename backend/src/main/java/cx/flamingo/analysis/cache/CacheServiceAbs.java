@@ -43,7 +43,6 @@ public abstract class CacheServiceAbs {
 
     @Data
     private static class CachedResponse<T> {
-
         private final T data;
         private final long timestamp;
     }
@@ -94,8 +93,8 @@ public abstract class CacheServiceAbs {
 
             if (cachedResponse.isPresent()
                     && isCacheEntryStale(getGithubCachePath(), cacheKey, githubRefreshIntervalMs)) {
-                invalidate(getGithubCachePath(), cacheKey);
-                // Start async refresh but don't wait for it
+                // Don't invalidate the cache entry now, refresh it asynchronously first
+                // and only replace it once we have the new data
                 doHttpCallAsync(supplier, getGithubCachePath(), cacheKey);
             }
 
@@ -133,8 +132,8 @@ public abstract class CacheServiceAbs {
                     }, httpRefreshIntervalMs);
 
             if (cachedResponse.isPresent() && isCacheEntryStale(getHttpCachePath(), cacheKey, httpRefreshIntervalMs)) {
-                invalidate(getHttpCachePath(), cacheKey);
-                // Start async refresh but don't wait for it
+                // Don't invalidate the cache entry now, refresh it asynchronously first
+                // and only replace it once we have the new data
                 doHttpCallAsync(supplier, getHttpCachePath(), cacheKey);
             }
 

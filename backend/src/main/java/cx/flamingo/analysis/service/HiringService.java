@@ -43,20 +43,21 @@ public class HiringService {
                             .id("java")
                             .name("Java")
                             .build();
-                    Contributor contributor = githubService.fetchUserProfile(githubUsername, Contributor.Role.HIRING_MANAGER, null, java);
+                    Contributor contributor = githubService.fetchUserProfile(githubUsername,
+                            Contributor.Role.HIRING_MANAGER, null, java);
                     HiringManagerProfile newProfile = HiringManagerProfile.builder()
-                        .name(contributor.getName())
-                        .avatarUrl(contributor.getAvatarUrl())
-                        .role(contributor.getRole())
-                        .bio(contributor.getBio())
-                        .socialLinks(contributor.getSocialLinks())
-                        .githubStats(contributor.getGithubStats())
-                        .lastActive(contributor.getLastActive())
-                        .build();
+                            .name(contributor.getName())
+                            .avatarUrl(contributor.getAvatarUrl())
+                            .role(contributor.getRole())
+                            .bio(contributor.getBio())
+                            .socialLinks(contributor.getSocialLinks())
+                            .githubStats(contributor.getGithubStats())
+                            .lastActive(contributor.getLastActive())
+                            .build();
                     cacheService.put(CACHE_PATH, PROFILE_KEY, newProfile);
                     return newProfile;
                 });
-        
+
         response.put("status", "success");
         response.put("message", "Hiring manager profile retrieved successfully");
         response.put("data", profile);
@@ -64,28 +65,34 @@ public class HiringService {
     }
 
     public List<JobOpening> getJobOpenings() {
-        return cacheService.get(CACHE_PATH, JOBS_KEY, new TypeToken<List<JobOpening>>() {}, refreshInterval)
-            .orElseGet(() -> {
-                List<JobOpening> jobs = linkedInService.getCompanyJobPostings();
-                if (jobs == null || jobs.isEmpty()) {
-                    // Fallback to default jobs if LinkedIn API fails
-                    jobs = List.of(
-                        JobOpening.builder()
-                            .id("founding-engineer-1")
-                            .title("Founding Engineer")
-                            .location("Miami, FL")
-                            .url("https://www.linkedin.com/jobs/view/4138405825")
-                            .build(),
-                        JobOpening.builder()
-                            .id("founding-engineer-2")
-                            .title("Founding Engineer")
-                            .location("Miami, FL")
-                            .url("https://www.linkedin.com/jobs/view/4138405825")
-                            .build()
-                    );
-                }
-                cacheService.put(CACHE_PATH, JOBS_KEY, jobs);
-                return jobs;
-            });
+        return cacheService.get(CACHE_PATH, JOBS_KEY, new TypeToken<List<JobOpening>>() {
+        }, refreshInterval)
+                .orElseGet(() -> {
+                    List<JobOpening> jobs = linkedInService.getCompanyJobPostings();
+                    if (jobs == null || jobs.isEmpty()) {
+                        // Fallback to default jobs if LinkedIn API fails
+                        jobs = List.of(
+                                JobOpening.builder()
+                                        .id("senior-back-end-engineer-1")
+                                        .title("Senior Back-end Engineer")
+                                        .location("Remote")
+                                        .url("https://djinni.co/jobs/717621-senior-back-end-engineer/")
+                                        .build(),
+                                JobOpening.builder()
+                                        .id("senior-devops-engineer-2")
+                                        .title("Senior DevOps Engineer")
+                                        .location("Remote")
+                                        .url("https://djinni.co/jobs/717622-senior-devops-engineer/")
+                                        .build(),
+                                JobOpening.builder()
+                                        .id("senior-front-end-engineer-3")
+                                        .title("Senior Front-end Engineer")
+                                        .location("Remote")
+                                        .url("https://djinni.co/jobs/717624-senior-front-end-engineer/")
+                                        .build());
+                    }
+                    cacheService.put(CACHE_PATH, JOBS_KEY, jobs);
+                    return jobs;
+                });
     }
 }

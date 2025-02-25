@@ -1,5 +1,5 @@
 export interface SocialLink {
-  platform: 'linkedin' | 'twitter' | 'github' | 'facebook' | 'instagram' | 'email' | 'website';
+  platform: 'linkedin' | 'twitter' | 'x' | 'github' | 'facebook' | 'instagram' | 'mastodon' | 'bluesky' | 'email' | 'website';
   url: string;
 }
 
