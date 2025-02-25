@@ -493,6 +493,10 @@ public class GithubService {
     }
 
     private int getContributionCount(JsonObject user) {
+        if (user == null) {
+            return 0;
+        }
+        
         if (!user.has("contributionsCollection")) {
             log.warn("No contributions collection found");
             return 0;
@@ -534,11 +538,27 @@ public class GithubService {
         if (contributions.has("totalRepositoryContributions")) {
             log.info("- Repository contributions: {}", contributions.get("totalRepositoryContributions").getAsInt());
         }
+        
+        // Also log all-time contributions for comparison if available
+        if (user.has("allTimeContributions") && !user.get("allTimeContributions").isJsonNull()) {
+            JsonObject allTimeContributions = user.getAsJsonObject("allTimeContributions");
+            if (allTimeContributions.has("contributionCalendar") && 
+                !allTimeContributions.get("contributionCalendar").isJsonNull()) {
+                JsonObject allTimeCalendar = allTimeContributions.getAsJsonObject("contributionCalendar");
+                if (allTimeCalendar.has("totalContributions")) {
+                    log.info("- All-time total contributions: {}", allTimeCalendar.get("totalContributions").getAsInt());
+                }
+            }
+        }
 
         return totalContributions;
     }
 
     private Instant getLatestCommitDate(JsonObject user) {
+        if (user == null) {
+            return null;
+        }
+        
         if (!user.has("contributionsCollection")) {
             return null;
         }
@@ -567,7 +587,11 @@ public class GithubService {
     }
 
     private int getStarsGiven(JsonObject user) {
-        if (user.has("starredRepositories")) {
+        if (user == null) {
+            return 0;
+        }
+        
+        if (user.has("starredRepositories") && !user.get("starredRepositories").isJsonNull()) {
             JsonObject starred = user.getAsJsonObject("starredRepositories");
             return starred.get("totalCount").getAsInt();
         }
@@ -575,7 +599,11 @@ public class GithubService {
     }
 
     private int getForksGiven(JsonObject user) {
-        if (user.has("forkedRepos")) {
+        if (user == null) {
+            return 0;
+        }
+        
+        if (user.has("forkedRepos") && !user.get("forkedRepos").isJsonNull()) {
             JsonObject repos = user.getAsJsonObject("forkedRepos");
             if (repos.has("totalCount")) {
                 return repos.get("totalCount").getAsInt();
@@ -624,7 +652,7 @@ public class GithubService {
                               }
                             }
                             # Get all time contributions
-                            contributionsCollection(from: "2008-01-01T00:00:00Z") {
+                            allTimeContributions: contributionsCollection(from: "2008-01-01T00:00:00Z") {
                               totalCommitContributions
                               restrictedContributionsCount
                               totalRepositoryContributions
@@ -669,8 +697,52 @@ public class GithubService {
                     .bodyToMono(String.class)
                     .block();
 
+            log.debug("GraphQL response: {}", graphqlResponse);
             JsonObject jsonResponse = JsonParser.parseString(graphqlResponse).getAsJsonObject();
-            userData = jsonResponse.getAsJsonObject("data").getAsJsonObject("user");
+            
+            // Check for errors in the response
+            if (jsonResponse.has("errors")) {
+                JsonArray errors = jsonResponse.getAsJsonArray("errors");
+                if (errors != null && errors.size() > 0) {
+                    JsonObject firstError = errors.get(0).getAsJsonObject();
+                    String errorMessage = firstError.get("message").getAsString();
+                    log.error("GitHub API Error: {}", errorMessage);
+                    throw new RuntimeException("GitHub API Error: " + errorMessage);
+                }
+            }
+
+            // Properly handle the response to avoid NPEs
+            if (jsonResponse != null && jsonResponse.has("data") && !jsonResponse.get("data").isJsonNull()) {
+                JsonObject data = jsonResponse.getAsJsonObject("data");
+                if (data.has("user") && !data.get("user").isJsonNull()) {
+                    userData = data.getAsJsonObject("user");
+                    log.info("Successfully retrieved user data for: {}", username);
+                } else {
+                    log.warn("GitHub API response missing user data for username: {}", username);
+                    userData = null;
+                }
+            } else {
+                log.warn("GitHub API response missing data element for username: {}", username);
+                userData = null;
+            }
+        }
+
+        // Handle case where no valid user data was returned
+        if (userData == null) {
+            log.warn("No valid user data available for {}. Creating minimal profile.", username);
+            return Contributor.builder()
+                .type(role)
+                .login(username)
+                .name(username)
+                .avatarUrl("")
+                .role("Software Engineer")
+                .bio("")
+                .socialLinks(List.of(SocialLink.builder()
+                    .platform("github")
+                    .url("https://github.com/" + username)
+                    .build()))
+                .score(0)
+                .build();
         }
 
         // Process the data using shared logic
