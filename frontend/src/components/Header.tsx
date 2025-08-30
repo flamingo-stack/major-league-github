@@ -105,7 +105,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                             {BLOG_TEXT}
                         </Link>
                         <Link
-                            href="https://github.com/flamingo-cx/major-league-github"
+                            href="https://github.com/flamingo-stack/major-league-github"
                             target="_blank"
                             rel="noopener noreferrer"
                             sx={{

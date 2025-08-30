@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/flamingo-cx/major-league-github/main/frontend/public/og-image-transparent.png" alt="Major League GitHub Logo"/>
+  <img src="https://raw.githubusercontent.com/flamingo-stack/major-league-github/main/frontend/public/og-image-transparent.png" alt="Major League GitHub Logo"/>
 </div>
 
-[![Build and Deploy](https://github.com/flamingo-cx/major-league-github/actions/workflows/deploy.yml/badge.svg)](https://github.com/flamingo-cx/major-league-github/actions/workflows/deploy.yml)
+[![Build and Deploy](https://github.com/flamingo-stack/major-league-github/actions/workflows/deploy.yml/badge.svg)](https://github.com/flamingo-stack/major-league-github/actions/workflows/deploy.yml)
 
 **An open-source leaderboard for top GitHub contributors, inspired by Major League Soccer (MLS).**
 
