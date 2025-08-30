@@ -19,11 +19,9 @@ spec:
       labels:
         app: frontend
     spec:
-      imagePullSecrets:
-        - name: registry-credentials
       containers:
         - name: frontend
-          image: ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}
+          image: ghcr.io/flamingo-stack/major-league-github/frontend:${VERSION}
           imagePullPolicy: Always
           env:
             - name: OG_TITLE

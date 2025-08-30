@@ -19,11 +19,9 @@ spec:
       labels:
         app: ${SERVICE_NAME}
     spec:
-      imagePullSecrets:
-        - name: registry-credentials
       containers:
         - name: ${SERVICE_NAME}
-          image: ${REGISTRY}/${REGISTRY_NAME}/${SERVICE_NAME}:${VERSION}
+          image: ghcr.io/flamingo-stack/major-league-github/${SERVICE_NAME}:${VERSION}
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
@@ -39,7 +37,7 @@ spec:
                   name: app-secrets
                   key: github.tokens
             - name: SPRING_REDIS_HOST
-              value: redis
+              value: "${REDIS_HOST}"
             - name: SPRING_REDIS_PORT
               value: "6379"
             - name: JAVA_MIN_HEAP
