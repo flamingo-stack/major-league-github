@@ -412,17 +412,14 @@ jobs:
             echo "🌍 Updating existing A record from $EXISTING_IP to $LB_IP"
             
             # Get the existing record with full details including TTL
-            EXISTING_RECORD=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." --type=A --format="value(ttl,rrdatas[].join(' '))" 2>/dev/null || echo "")
+            EXISTING_TTL=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." --type=A --format="value(ttl)" 2>/dev/null | head -1)
             
-            if [ ! -z "$EXISTING_RECORD" ]; then
-              EXISTING_TTL=$(echo "$EXISTING_RECORD" | cut -d' ' -f1)
-              EXISTING_DATA=$(echo "$EXISTING_RECORD" | cut -d' ' -f2-)
-              
-              echo "Found existing record: TTL=$EXISTING_TTL, Data=$EXISTING_DATA"
+            if [ ! -z "$EXISTING_TTL" ] && [ "$EXISTING_TTL" != "null" ]; then
+              echo "Found existing record: TTL=$EXISTING_TTL, IP=$EXISTING_IP"
               
               # Use transaction to update the record with exact existing values
               gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-              gcloud dns record-sets transaction remove "$EXISTING_DATA" \
+              gcloud dns record-sets transaction remove "$EXISTING_IP" \
                 --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
                 --ttl=$EXISTING_TTL \
                 --type=A \
