@@ -1,28 +1,4 @@
 apiVersion: v1
-kind: Service
-metadata:
-  name: main-load-balancer
-  labels:
-    app: main-load-balancer
-  annotations:
-    cloud.google.com/load-balancer-type: "External"
-spec:
-  type: LoadBalancer
-  ports:
-    - name: frontend
-      port: 80
-      targetPort: 80
-      protocol: TCP
-    - name: api
-      port: 8080
-      targetPort: 8080
-      protocol: TCP
-  selector:
-    # This will need to be handled via an nginx proxy or similar
-    # For now, we'll point to frontend and handle API routing differently
-    app: frontend
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginx-proxy-config
@@ -33,6 +9,21 @@ data:
     }
     
     http {
+        # Basic settings
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        
+        # Basic MIME types
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        
+        # Logging
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+        
         upstream frontend {
             server frontend-service:80;
         }
@@ -43,6 +34,14 @@ data:
         
         server {
             listen 80;
+            server_name _;
+            
+            # Health check endpoint
+            location /nginx-health {
+                access_log off;
+                return 200 "healthy\n";
+                add_header Content-Type text/plain;
+            }
             
             location /api {
                 proxy_pass http://api;
@@ -50,6 +49,9 @@ data:
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 5s;
+                proxy_send_timeout 60s;
+                proxy_read_timeout 60s;
             }
             
             location / {
@@ -58,6 +60,9 @@ data:
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 5s;
+                proxy_send_timeout 60s;
+                proxy_read_timeout 60s;
             }
         }
     }
@@ -88,6 +93,18 @@ spec:
             - name: nginx-config
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
+          livenessProbe:
+            httpGet:
+              path: /nginx-health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /nginx-health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
           resources:
             requests:
               memory: 32Mi
