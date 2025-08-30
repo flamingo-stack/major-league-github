@@ -375,8 +375,14 @@ jobs:
           # Set project context to DNS project
           gcloud config set project $DNS_PROJECT_ID
           
+          # Debug: List all DNS zones in the project
+          echo "🔍 Available DNS zones in project $DNS_PROJECT_ID:"
+          gcloud dns managed-zones list --project=$DNS_PROJECT_ID --format="table(name,dnsName)" || echo "No zones found or permission denied"
+          
+          echo "🔍 Looking for DNS zone: $DNS_ZONE"
+          
           # Check if DNS zone exists
-          if ! gcloud dns managed-zones describe $DNS_ZONE --format="value(name)" > /dev/null 2>&1; then
+          if ! gcloud dns managed-zones describe $DNS_ZONE --project=$DNS_PROJECT_ID --format="value(name)" > /dev/null 2>&1; then
             echo "❌ Cloud DNS zone '$DNS_ZONE' not found in project $DNS_PROJECT_ID"
             echo "🌍 FALLBACK - Manual DNS Update Required:"
             echo "Load Balancer IP: ${LB_IP}"
@@ -385,36 +391,36 @@ jobs:
           fi
           
           # Get existing A record if it exists
-          EXISTING_IP=$(gcloud dns record-sets list --zone=$DNS_ZONE --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." --type=A --format="value(rrdatas[0])" 2>/dev/null | head -1 || echo "")
+          EXISTING_IP=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." --type=A --format="value(rrdatas[0])" 2>/dev/null | head -1 || echo "")
           
           if [ ! -z "$EXISTING_IP" ] && [ "$EXISTING_IP" != "null" ] && [ "$EXISTING_IP" != "$LB_IP" ]; then
             echo "🌍 Updating existing A record from $EXISTING_IP to $LB_IP"
             
             # Use transaction to update the record
-            gcloud dns record-sets transaction start --zone=$DNS_ZONE
+            gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
             gcloud dns record-sets transaction remove "$EXISTING_IP" \
               --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
               --ttl=300 \
               --type=A \
-              --zone=$DNS_ZONE
+              --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
             gcloud dns record-sets transaction add "$LB_IP" \
               --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
               --ttl=300 \
               --type=A \
-              --zone=$DNS_ZONE
-            gcloud dns record-sets transaction execute --zone=$DNS_ZONE
+              --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+            gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
             
           elif [ -z "$EXISTING_IP" ] || [ "$EXISTING_IP" = "null" ]; then
             echo "🌍 Creating new A record pointing to $LB_IP"
             
             # Create new A record
-            gcloud dns record-sets transaction start --zone=$DNS_ZONE
+            gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
             gcloud dns record-sets transaction add "$LB_IP" \
               --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
               --ttl=300 \
               --type=A \
-              --zone=$DNS_ZONE
-            gcloud dns record-sets transaction execute --zone=$DNS_ZONE
+              --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+            gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
             
           else
             echo "🌍 DNS record already points to correct IP: $LB_IP"
