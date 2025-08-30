@@ -1,44 +1,39 @@
-# Add DNS Permissions for Automated DNS Updates
+# DNS Configuration for Cross-Project Setup
 
-Since you already have `flamingo.cx` in GCP Cloud DNS, we can automate the DNS record updates. You need to grant your service account DNS permissions.
+Since your `flamingo.cx` DNS zone is in a different GCP project (`flash-asset-460518-v4`), the workflow will provide you with the Load Balancer IP for manual DNS updates.
 
-## Run these commands in your terminal:
+## How it works:
 
-```bash
-# Set your project ID (replace with your actual project ID)
-export PROJECT_ID="major-league-github"
+1. **Workflow completes deployment** to GKE
+2. **Gets Load Balancer IP** from the ingress
+3. **Shows DNS update instructions** with the exact IP and steps
+4. **You manually update** the DNS record in the other project
 
-# Enable Cloud DNS API (if not already enabled)
-gcloud services enable dns.googleapis.com
+## Manual DNS Update Steps:
 
-# Grant DNS admin permissions to your GitHub Actions service account
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:github-actions@$PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/dns.admin"
+After deployment, the workflow will show:
 
-# Verify your DNS zone exists (should show flamingo-cx)
-gcloud dns managed-zones list
+```
+🌍 DNS UPDATE REQUIRED:
+======================================
+Load Balancer IP: 34.102.136.180
+Domain: your-domain.flamingo.cx
 
-# If flamingo-cx zone doesn't exist, create it:
-# gcloud dns managed-zones create flamingo-cx \
-#   --dns-name=flamingo.cx \
-#   --description="Flamingo CX domain zone"
+📝 MANUAL STEPS:
+1. Go to: https://console.cloud.google.com/net-services/dns/zones?project=flash-asset-460518-v4
+2. Click on 'flamingo-cx' zone  
+3. Find the A record for 'your-domain'
+4. Update it to point to: 34.102.136.180
+5. Save changes
+======================================
 ```
 
-## What this enables:
+## Alternative: Cross-Project Access
 
-✅ **Automatic DNS Updates**: The workflow will automatically update your DNS A record to point to the new GKE load balancer IP
+If you want fully automated DNS, you could:
 
-✅ **No Manual DNS Steps**: You won't need to manually copy/paste IP addresses
+1. **Grant cross-project permissions** (complex)
+2. **Move the DNS zone** to your new project (if possible)
+3. **Use a service account** from the DNS project
 
-✅ **Immediate Cutover**: DNS switches happen as part of the deployment
-
-## Alternative: Manual DNS
-
-If you prefer to manage DNS manually, you can:
-
-1. **Remove the DNS step** from the workflow
-2. **Get the Load Balancer IP** from the workflow output  
-3. **Update DNS manually** in GCP Console
-
-Let me know if you want me to remove the automated DNS step or if you want to proceed with the automated approach!
+For this migration, **manual DNS update is simpler and safer**.

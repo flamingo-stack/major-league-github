@@ -312,45 +312,68 @@ jobs:
           echo "LB_IP=${LB_IP}" >> $GITHUB_ENV
           echo "Your app will be available at: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
 
-      - name: Update DNS Record 🌍
+      - name: Update DNS Record (Cross-Project) 🌍
         run: |
           echo "🌍 Updating DNS record for ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }} to ${LB_IP}"
           
-          # Check if Cloud DNS zone exists for flamingo.cx
-          if ! gcloud dns managed-zones describe flamingo-cx --format="value(name)" > /dev/null 2>&1; then
-            echo "❌ Cloud DNS zone 'flamingo-cx' not found"
-            echo "Please create the DNS zone first or update DNS manually"
+          # DNS project details
+          DNS_PROJECT_ID="flash-asset-460518-v4"
+          DNS_ZONE="flamingo-cx"
+          
+          # Set project context to DNS project
+          gcloud config set project $DNS_PROJECT_ID
+          
+          # Check if DNS zone exists
+          if ! gcloud dns managed-zones describe $DNS_ZONE --format="value(name)" > /dev/null 2>&1; then
+            echo "❌ Cloud DNS zone '$DNS_ZONE' not found in project $DNS_PROJECT_ID"
+            echo "🌍 FALLBACK - Manual DNS Update Required:"
+            echo "Load Balancer IP: ${LB_IP}"
+            echo "Go to: https://console.cloud.google.com/net-services/dns/zones?project=$DNS_PROJECT_ID"
             exit 1
           fi
           
-          # Remove existing A record if it exists
-          echo "🌍 Removing existing A records..."
-          EXISTING_RECORDS=$(gcloud dns record-sets list --zone=flamingo-cx --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." --type=A --format="value(rrdatas[0])" 2>/dev/null || echo "")
+          # Get existing A record if it exists
+          EXISTING_IP=$(gcloud dns record-sets list --zone=$DNS_ZONE --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." --type=A --format="value(rrdatas[0])" 2>/dev/null | head -1 || echo "")
           
-          if [ ! -z "$EXISTING_RECORDS" ] && [ "$EXISTING_RECORDS" != "null" ]; then
-            echo "🌍 Removing existing record pointing to: $EXISTING_RECORDS"
-            gcloud dns record-sets transaction start --zone=flamingo-cx
-            gcloud dns record-sets transaction remove "$EXISTING_RECORDS" \
+          if [ ! -z "$EXISTING_IP" ] && [ "$EXISTING_IP" != "null" ] && [ "$EXISTING_IP" != "$LB_IP" ]; then
+            echo "🌍 Updating existing A record from $EXISTING_IP to $LB_IP"
+            
+            # Use transaction to update the record
+            gcloud dns record-sets transaction start --zone=$DNS_ZONE
+            gcloud dns record-sets transaction remove "$EXISTING_IP" \
               --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
               --ttl=300 \
               --type=A \
-              --zone=flamingo-cx
-            gcloud dns record-sets transaction execute --zone=flamingo-cx
+              --zone=$DNS_ZONE
+            gcloud dns record-sets transaction add "$LB_IP" \
+              --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
+              --ttl=300 \
+              --type=A \
+              --zone=$DNS_ZONE
+            gcloud dns record-sets transaction execute --zone=$DNS_ZONE
+            
+          elif [ -z "$EXISTING_IP" ] || [ "$EXISTING_IP" = "null" ]; then
+            echo "🌍 Creating new A record pointing to $LB_IP"
+            
+            # Create new A record
+            gcloud dns record-sets transaction start --zone=$DNS_ZONE
+            gcloud dns record-sets transaction add "$LB_IP" \
+              --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
+              --ttl=300 \
+              --type=A \
+              --zone=$DNS_ZONE
+            gcloud dns record-sets transaction execute --zone=$DNS_ZONE
+            
+          else
+            echo "🌍 DNS record already points to correct IP: $LB_IP"
           fi
-          
-          # Add new A record
-          echo "🌍 Creating new A record..."
-          gcloud dns record-sets transaction start --zone=flamingo-cx
-          gcloud dns record-sets transaction add "${LB_IP}" \
-            --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
-            --ttl=300 \
-            --type=A \
-            --zone=flamingo-cx
-          gcloud dns record-sets transaction execute --zone=flamingo-cx
           
           echo "✅ DNS record updated successfully"
           echo "🌍 Domain will be accessible at: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
           echo "⏳ DNS propagation may take 5-15 minutes"
+          
+          # Switch back to original project
+          gcloud config set project ${{ env.GCP_PROJECT_ID }}
 
       - name: Create GitHub Deployment 📦
         uses: chrnorm/deployment-action@v2
