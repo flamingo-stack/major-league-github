@@ -38,15 +38,15 @@ env:
   BACKEND_REPLICAS: 1
   FRONTEND_REPLICAS: 1
   
-  # Backend resources
+  # Backend resources (reduced for single-node cluster)
   BACKEND_REQUEST_MEMORY: 512Mi
-  BACKEND_REQUEST_CPU: 200m
+  BACKEND_REQUEST_CPU: 100m
   BACKEND_LIMIT_MEMORY: 1.375Gi
   BACKEND_LIMIT_CPU: 500m
   
-  # Frontend resources
+  # Frontend resources (reduced for single-node cluster)
   FRONTEND_REQUEST_MEMORY: 128Mi
-  FRONTEND_REQUEST_CPU: 100m
+  FRONTEND_REQUEST_CPU: 50m
   FRONTEND_LIMIT_MEMORY: 256Mi
   FRONTEND_LIMIT_CPU: 200m
   
