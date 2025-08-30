@@ -15,12 +15,12 @@ env:
   
   # GCP Configuration
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  GKE_CLUSTER: major-league-github
-  GKE_ZONE: us-central1-a
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
   
   # GitHub Container Registry
   REGISTRY: ghcr.io
-  REGISTRY_NAME: flamingo-stack/major-league-github
+  REGISTRY_NAME: ${{ github.repository }}
 
   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
   DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
@@ -67,10 +67,12 @@ jobs:
         run: |
           missing_secrets=()
           
+          # Core project secrets
           if [ -z "${{ secrets.PROJECT_NAME }}" ]; then
             missing_secrets+=("PROJECT_NAME")
           fi
           
+          # GCP Infrastructure secrets
           if [ -z "${{ secrets.GCP_PROJECT_ID }}" ]; then
             missing_secrets+=("GCP_PROJECT_ID")
           fi
@@ -79,6 +81,31 @@ jobs:
             missing_secrets+=("GCP_SA_KEY")
           fi
           
+          if [ -z "${{ secrets.GKE_CLUSTER }}" ]; then
+            missing_secrets+=("GKE_CLUSTER")
+          fi
+          
+          if [ -z "${{ secrets.GKE_ZONE }}" ]; then
+            missing_secrets+=("GKE_ZONE")
+          fi
+          
+          # Container Registry auto-detected from repository
+          
+          # DNS secrets
+          if [ -z "${{ secrets.DNS_PROJECT_ID }}" ]; then
+            missing_secrets+=("DNS_PROJECT_ID")
+          fi
+          
+          if [ -z "${{ secrets.DNS_ZONE }}" ]; then
+            missing_secrets+=("DNS_ZONE")
+          fi
+          
+          # Redis secret
+          if [ -z "${{ secrets.REDIS_IP }}" ]; then
+            missing_secrets+=("REDIS_IP")
+          fi
+          
+          # Domain secrets
           if [ -z "${{ secrets.DOMAIN_NAME }}" ]; then
             missing_secrets+=("DOMAIN_NAME")
           fi
@@ -87,6 +114,7 @@ jobs:
             missing_secrets+=("DOMAIN_SUFFIX")
           fi
           
+          # Application secrets
           if [ -z "${{ secrets.GH_API_TOKENS }}" ]; then
             missing_secrets+=("GH_API_TOKENS")
           fi
@@ -317,8 +345,8 @@ jobs:
           echo "🌍 Updating DNS record for ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }} to ${LB_IP}"
           
           # DNS project details
-          DNS_PROJECT_ID="flash-asset-460518-v4"
-          DNS_ZONE="flamingo-cx"
+          DNS_PROJECT_ID="${{ secrets.DNS_PROJECT_ID }}"
+          DNS_ZONE="${{ secrets.DNS_ZONE }}"
           
           # Set project context to DNS project
           gcloud config set project $DNS_PROJECT_ID

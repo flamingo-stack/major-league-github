@@ -7,9 +7,9 @@ This will allow your GitHub Actions workflow to automatically update DNS records
 Run these commands to grant your service account DNS access to the flamingo.cx project:
 
 ```bash
-# Your MLG project details
-MLG_PROJECT_ID="major-league-github"  # Replace with your actual project ID
-DNS_PROJECT_ID="flash-asset-460518-v4"
+# Get your project IDs from GitHub secrets values
+MLG_PROJECT_ID="your-mlg-project-id"    # Same as GCP_PROJECT_ID secret
+DNS_PROJECT_ID="flash-asset-460518-v4"  # Same as DNS_PROJECT_ID secret
 
 # Service account email
 SA_EMAIL="github-actions@${MLG_PROJECT_ID}.iam.gserviceaccount.com"
