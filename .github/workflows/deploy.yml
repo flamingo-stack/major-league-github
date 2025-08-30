@@ -293,10 +293,10 @@ jobs:
           envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           
-          # Process and apply load balancer (replaces ingress)
-          echo "🚀 Processing load balancer..."
-          envsubst < kubernetes/base/load-balancer.yaml > processed_k8s/load-balancer.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/load-balancer.yaml
+          # Process and apply simple load balancers (replaces nginx proxy)
+          echo "🚀 Processing simple load balancers..."
+          envsubst < kubernetes/base/simple-load-balancers.yaml > processed_k8s/simple-load-balancers.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/simple-load-balancers.yaml
           
           # Clean up any pending pods from previous deployments first
           echo "🧹 Cleaning up any stuck/pending pods..."
@@ -323,7 +323,6 @@ jobs:
           kubectl wait --for=condition=available deployment/web-service -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
-          kubectl wait --for=condition=available deployment/nginx-proxy -n ${{ env.NAMESPACE }} --timeout=300s
           
           # Cleanup
           rm -rf processed_k8s
@@ -341,28 +340,38 @@ jobs:
           kubectl -n ${{ env.NAMESPACE }} get services
           
           echo "LoadBalancer Status:"
-          kubectl -n ${{ env.NAMESPACE }} get services nginx-proxy-service -o wide
+          kubectl -n ${{ env.NAMESPACE }} get services frontend-load-balancer backend-load-balancer -o wide
           
-          # Wait for load balancer IP to be assigned
-          echo "🔍 Waiting for Load Balancer IP..."
+          # Wait for frontend load balancer IP to be assigned
+          echo "🔍 Waiting for Frontend Load Balancer IP..."
           for i in {1..30}; do
-            LB_IP=$(kubectl get service nginx-proxy-service -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            LB_IP=$(kubectl get service frontend-load-balancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
             if [ ! -z "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
               echo "✅ Load Balancer IP: ${LB_IP}"
               break
             fi
             if [ $i -eq 30 ]; then
               echo "❌ Timeout waiting for Load Balancer IP"
-              kubectl get service nginx-proxy-service -n ${{ env.NAMESPACE }} -o yaml
+              kubectl get service frontend-load-balancer -n ${{ env.NAMESPACE }} -o yaml
               exit 1
             fi
             echo "⏳ Waiting for Load Balancer IP... (attempt $i/30)"
             sleep 10
           done
           
-          # Save IP for DNS step
+          # Get backend load balancer IP too
+          echo "🔍 Getting Backend Load Balancer IP..."
+          BACKEND_LB_IP=$(kubectl get service backend-load-balancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
+          echo "Backend Load Balancer IP: ${BACKEND_LB_IP}"
+          
+          # Save IPs for DNS step and summary
           echo "LB_IP=${LB_IP}" >> $GITHUB_ENV
-          echo "Your app will be available at: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+          echo "BACKEND_LB_IP=${BACKEND_LB_IP}" >> $GITHUB_ENV
+          
+          echo "✅ Migration Complete!"
+          echo "Frontend: http://${LB_IP}"
+          echo "Backend API: http://${BACKEND_LB_IP}:8080"
+          echo "Domain (once DNS is configured): https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
 
       - name: Update DNS Record (Cross-Project) 🌍
         run: |
