@@ -21,6 +21,9 @@ env:
   # GitHub Container Registry
   REGISTRY: ghcr.io
   REGISTRY_NAME: ${{ github.repository }}
+  
+  # Kubernetes namespace (convert repo name to valid namespace)
+  NAMESPACE: ${{ github.event.repository.name }}
 
   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
   DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
@@ -236,11 +239,11 @@ jobs:
       - name: Create Kubernetes namespace and secrets 🔐
         run: |
           # Create namespace
-          kubectl create namespace ${{ env.REGISTRY_NAME }} --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
           
           # Create application secrets
           kubectl create secret generic app-secrets \
-            --namespace=${{ env.REGISTRY_NAME }} \
+            --namespace=${{ env.NAMESPACE }} \
             --from-literal=github.tokens="${{ env.GH_API_TOKENS }}" \
             --from-literal=linkedin.client.id="${{ env.LINKEDIN_CLIENT_ID }}" \
             --from-literal=linkedin.client.secret="${{ env.LINKEDIN_CLIENT_SECRET }}" \
@@ -269,37 +272,37 @@ jobs:
           # Process config files
           echo "🚀 Processing config.yaml..."
           envsubst < kubernetes/base/config.yaml > processed_k8s/config.yaml
-          kubectl apply -n ${{ env.REGISTRY_NAME }} -f processed_k8s/config.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/config.yaml
           
           # Process and apply web service
           echo "🚀 Processing web service..."
           SERVICE_NAME=web-service \
           SERVER_PORT=8080 \
             envsubst < kubernetes/base/backend-service.yaml > processed_k8s/web-service.yaml
-          kubectl apply -n ${{ env.REGISTRY_NAME }} -f processed_k8s/web-service.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/web-service.yaml
           
           # Process and apply cache updater
           echo "🚀 Processing cache updater..."
           SERVICE_NAME=cache-updater \
           SERVER_PORT=8081 \
             envsubst < kubernetes/base/backend-service.yaml > processed_k8s/cache-updater.yaml
-          kubectl apply -n ${{ env.REGISTRY_NAME }} -f processed_k8s/cache-updater.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
           
           # Process and apply frontend
           echo "🚀 Processing frontend..."
           envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
-          kubectl apply -n ${{ env.REGISTRY_NAME }} -f processed_k8s/frontend.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           
           # Process and apply ingress
           echo "🚀 Processing ingress..."
           envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
-          kubectl apply -n ${{ env.REGISTRY_NAME }} -f processed_k8s/ingress.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
           
           # Wait for deployments to be ready
           echo "🚀 Waiting for deployments to be ready..."
-          kubectl wait --for=condition=available deployment/web-service -n ${{ env.REGISTRY_NAME }} --timeout=300s
-          kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.REGISTRY_NAME }} --timeout=300s
-          kubectl wait --for=condition=available deployment/frontend -n ${{ env.REGISTRY_NAME }} --timeout=300s
+          kubectl wait --for=condition=available deployment/web-service -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl wait --for=condition=available deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
           
           # Cleanup
           rm -rf processed_k8s
@@ -311,25 +314,25 @@ jobs:
           echo "🔍 Checking deployment status..."
           
           echo "Pod Status:"
-          kubectl -n ${{ env.REGISTRY_NAME }} get pods -o wide
+          kubectl -n ${{ env.NAMESPACE }} get pods -o wide
           
           echo "Service Status:"
-          kubectl -n ${{ env.REGISTRY_NAME }} get services
+          kubectl -n ${{ env.NAMESPACE }} get services
           
           echo "Ingress Status:"
-          kubectl -n ${{ env.REGISTRY_NAME }} get ingress
+          kubectl -n ${{ env.NAMESPACE }} get ingress
           
           # Wait for load balancer IP to be assigned
           echo "🔍 Waiting for Load Balancer IP..."
           for i in {1..30}; do
-            LB_IP=$(kubectl get ingress -n ${{ env.REGISTRY_NAME }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            LB_IP=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}' 2>/dev/null)
             if [ ! -z "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
               echo "✅ Load Balancer IP: ${LB_IP}"
               break
             fi
             if [ $i -eq 30 ]; then
               echo "❌ Timeout waiting for Load Balancer IP"
-              kubectl get ingress -n ${{ env.REGISTRY_NAME }} -o yaml
+              kubectl get ingress -n ${{ env.NAMESPACE }} -o yaml
               exit 1
             fi
             echo "⏳ Waiting for Load Balancer IP... (attempt $i/30)"
