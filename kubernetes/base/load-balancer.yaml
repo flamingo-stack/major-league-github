@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: main-load-balancer
+  labels:
+    app: main-load-balancer
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: frontend
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: api
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    # This will need to be handled via an nginx proxy or similar
+    # For now, we'll point to frontend and handle API routing differently
+    app: frontend
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-proxy-config
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    
+    http {
+        upstream frontend {
+            server frontend-service:80;
+        }
+        
+        upstream api {
+            server web-service-service:8080;
+        }
+        
+        server {
+            listen 80;
+            
+            location /api {
+                proxy_pass http://api;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+            
+            location / {
+                proxy_pass http://frontend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-proxy
+  labels:
+    app: nginx-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-proxy
+  template:
+    metadata:
+      labels:
+        app: nginx-proxy
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 128Mi
+              cpu: 100m
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-proxy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-proxy-service
+  labels:
+    app: nginx-proxy
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: nginx-proxy
