@@ -38,15 +38,15 @@ env:
   BACKEND_REPLICAS: 1
   FRONTEND_REPLICAS: 1
   
-  # Backend resources (reduced for single-node cluster)
-  BACKEND_REQUEST_MEMORY: 512Mi
-  BACKEND_REQUEST_CPU: 100m
-  BACKEND_LIMIT_MEMORY: 1.375Gi
+  # Backend resources (minimal for single-node cluster)
+  BACKEND_REQUEST_MEMORY: 256Mi
+  BACKEND_REQUEST_CPU: 50m
+  BACKEND_LIMIT_MEMORY: 1Gi
   BACKEND_LIMIT_CPU: 500m
   
-  # Frontend resources (reduced for single-node cluster)
-  FRONTEND_REQUEST_MEMORY: 128Mi
-  FRONTEND_REQUEST_CPU: 50m
+  # Frontend resources (minimal for single-node cluster)
+  FRONTEND_REQUEST_MEMORY: 64Mi
+  FRONTEND_REQUEST_CPU: 25m
   FRONTEND_LIMIT_MEMORY: 256Mi
   FRONTEND_LIMIT_CPU: 200m
   
@@ -297,6 +297,13 @@ jobs:
           echo "🚀 Processing ingress..."
           envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
+          
+          # Clean up any pending pods from previous deployments first
+          echo "🧹 Cleaning up any stuck/pending pods..."
+          kubectl delete pods -n ${{ env.NAMESPACE }} --field-selector status.phase=Pending --force --grace-period=0 || true
+          
+          # Wait a moment for cleanup
+          sleep 5
           
           # Check deployment status immediately after creation
           echo "🔍 Immediate deployment status check..."
