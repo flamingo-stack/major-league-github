@@ -39,7 +39,7 @@ data:
             # Health check endpoint
             location /nginx-health {
                 access_log off;
-                return 200 "healthy\n";
+                return 200 "healthy";
                 add_header Content-Type text/plain;
             }
             
