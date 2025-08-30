@@ -18,13 +18,13 @@
     "@tanstack/query-core": "5.64.0",
     "@types/lodash": "^4.17.14",
     "@types/react-query": "1.2.9",
-    "axios": "^1.7.9",
+    "axios": "^1.8.2",
     "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.0",
+    "jspdf": "^3.0.2",
     "lodash": "^4.17.21",
     "react": "18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.1.1"
+    "react-router-dom": "^7.8.2"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -53,6 +53,6 @@
     "vite-plugin-svgr": "^4.3.0",
     "webpack": "^5.90.0",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.2"
+    "webpack-dev-server": "^5.2.1"
   }
 }
