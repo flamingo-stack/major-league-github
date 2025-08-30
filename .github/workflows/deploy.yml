@@ -298,8 +298,21 @@ jobs:
           envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
           
+          # Check deployment status immediately after creation
+          echo "🔍 Immediate deployment status check..."
+          kubectl get deployments -n ${{ env.NAMESPACE }} -o wide
+          kubectl get pods -n ${{ env.NAMESPACE }} -o wide
+          kubectl get events -n ${{ env.NAMESPACE }} --sort-by='.lastTimestamp' | tail -20
+          
+          echo "🔍 Cache-updater specific details:"
+          kubectl describe deployment/cache-updater -n ${{ env.NAMESPACE }}
+          echo "🔍 Cache-updater pod details:"
+          kubectl describe pods -n ${{ env.NAMESPACE }} -l app=cache-updater
+          echo "🔍 Cache-updater logs (if any):"
+          kubectl logs -n ${{ env.NAMESPACE }} -l app=cache-updater --tail=50 || echo "No logs yet"
+          
           # Wait for deployments to be ready
-          echo "🚀 Waiting for deployments to be ready..."
+          echo "🚀 Now waiting for deployments to be ready..."
           kubectl wait --for=condition=available deployment/web-service -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
