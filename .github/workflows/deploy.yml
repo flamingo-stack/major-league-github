@@ -298,9 +298,15 @@ jobs:
           envsubst < kubernetes/base/simple-load-balancers.yaml > processed_k8s/simple-load-balancers.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/simple-load-balancers.yaml
           
-          # Clean up any pending pods from previous deployments first
+          # Clean up any pending pods and old nginx deployments
           echo "🧹 Cleaning up any stuck/pending pods..."
           kubectl delete pods -n ${{ env.NAMESPACE }} --field-selector status.phase=Pending --force --grace-period=0 || true
+          
+          # Remove old nginx-proxy resources if they exist
+          echo "🧹 Cleaning up old nginx-proxy resources..."
+          kubectl delete deployment nginx-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          kubectl delete service nginx-proxy-service -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          kubectl delete configmap nginx-proxy-config -n ${{ env.NAMESPACE }} --ignore-not-found=true
           
           # Wait a moment for cleanup
           sleep 5
@@ -405,19 +411,39 @@ jobs:
           if [ ! -z "$EXISTING_IP" ] && [ "$EXISTING_IP" != "null" ] && [ "$EXISTING_IP" != "$LB_IP" ]; then
             echo "🌍 Updating existing A record from $EXISTING_IP to $LB_IP"
             
-            # Use transaction to update the record
-            gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-            gcloud dns record-sets transaction remove "$EXISTING_IP" \
-              --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
-              --ttl=300 \
-              --type=A \
-              --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-            gcloud dns record-sets transaction add "$LB_IP" \
-              --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
-              --ttl=300 \
-              --type=A \
-              --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-            gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+            # Get the existing record with full details including TTL
+            EXISTING_RECORD=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." --type=A --format="value(ttl,rrdatas[].join(' '))" 2>/dev/null || echo "")
+            
+            if [ ! -z "$EXISTING_RECORD" ]; then
+              EXISTING_TTL=$(echo "$EXISTING_RECORD" | cut -d' ' -f1)
+              EXISTING_DATA=$(echo "$EXISTING_RECORD" | cut -d' ' -f2-)
+              
+              echo "Found existing record: TTL=$EXISTING_TTL, Data=$EXISTING_DATA"
+              
+              # Use transaction to update the record with exact existing values
+              gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              gcloud dns record-sets transaction remove "$EXISTING_DATA" \
+                --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
+                --ttl=$EXISTING_TTL \
+                --type=A \
+                --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              gcloud dns record-sets transaction add "$LB_IP" \
+                --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
+                --ttl=300 \
+                --type=A \
+                --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+            else
+              echo "Could not find existing record details, will create new record instead"
+              # Fall back to creating new record
+              gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              gcloud dns record-sets transaction add "$LB_IP" \
+                --name="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}." \
+                --ttl=300 \
+                --type=A \
+                --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+            fi
             
           elif [ -z "$EXISTING_IP" ] || [ "$EXISTING_IP" = "null" ]; then
             echo "🌍 Creating new A record pointing to $LB_IP"
