@@ -177,8 +177,8 @@ jobs:
           # Get the last successful workflow run SHA
           LAST_SUCCESS_SHA=$(gh run list --workflow=deploy.yml --status=success --limit=1 --json headSha --jq='.[0].headSha' || echo "")
           
-          if [ -z "$LAST_SUCCESS_SHA" ] || [ "$LAST_SUCCESS_SHA" = "null" ]; then
-            echo "No previous successful build found, building all images"
+          if [ -z "$LAST_SUCCESS_SHA" ] || [ "$LAST_SUCCESS_SHA" = "null" ] || [ "true" = "true" ]; then
+            echo "Forcing rebuild due to critical frontend API fix"
             echo "build_backend=true" >> $GITHUB_OUTPUT
             echo "build_cache_updater=true" >> $GITHUB_OUTPUT
             echo "build_frontend=true" >> $GITHUB_OUTPUT
