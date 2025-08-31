@@ -350,8 +350,8 @@ jobs:
           # Create static IP if it doesn't exist
           echo "🚀 Ensuring static IP exists..."
           if ! gcloud compute addresses describe main-ingress-ip --global >/dev/null 2>&1; then
-            echo "Creating static IP main-ingress-ip..."
-            gcloud compute addresses create main-ingress-ip --global
+            echo "Creating static IP main-ingress-ip with address ${STATIC_IP_ADDRESS}..."
+            gcloud compute addresses create main-ingress-ip --global --addresses=${STATIC_IP_ADDRESS}
           else
             echo "Static IP main-ingress-ip already exists"
           fi
