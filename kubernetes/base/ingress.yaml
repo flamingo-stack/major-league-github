@@ -4,7 +4,7 @@ metadata:
   name: main-ingress
   annotations:
     kubernetes.io/ingress.class: "gce"
-    ingress.gcp.kubernetes.io/static-ip-name: "${STATIC_IP_ADDRESS}"
+    kubernetes.io/ingress.global-static-ip-name: "main-ingress-ip"
 spec:
   rules:
   - host: major-league-github.flamingo.cx
