@@ -293,10 +293,7 @@ jobs:
           envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           
-          # Process and apply simple load balancers (backend services)
-          echo "🚀 Processing simple load balancers..."
-          envsubst < kubernetes/base/simple-load-balancers.yaml > processed_k8s/simple-load-balancers.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/simple-load-balancers.yaml
+          # Frontend and backend services are already ClusterIP from their respective files
           
           # Process and apply unified proxy (single domain with /api routing)
           echo "🚀 Processing unified proxy..."
@@ -307,10 +304,13 @@ jobs:
           echo "🧹 Cleaning up any stuck/pending pods..."
           kubectl delete pods -n ${{ env.NAMESPACE }} --field-selector status.phase=Pending --force --grace-period=0 || true
           
-          # Remove old nginx-proxy resources if they exist
-          echo "🧹 Cleaning up old nginx-proxy resources..."
+          # Remove old resources if they exist
+          echo "🧹 Cleaning up old resources..."
           kubectl delete deployment nginx-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true
           kubectl delete service nginx-proxy-service -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          kubectl delete service frontend-load-balancer -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          kubectl delete service backend-load-balancer -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          kubectl delete service main-load-balancer -n ${{ env.NAMESPACE }} --ignore-not-found=true
           kubectl delete configmap nginx-proxy-config -n ${{ env.NAMESPACE }} --ignore-not-found=true
           
           # Wait a moment for cleanup
@@ -352,7 +352,7 @@ jobs:
           kubectl -n ${{ env.NAMESPACE }} get services
           
           echo "LoadBalancer Status:"
-          kubectl -n ${{ env.NAMESPACE }} get services frontend-load-balancer backend-load-balancer unified-proxy-service -o wide
+          kubectl -n ${{ env.NAMESPACE }} get services unified-proxy-service -o wide
           
           # Wait for unified proxy load balancer IP to be assigned  
           echo "🔍 Waiting for Unified Proxy Load Balancer IP..."
@@ -371,23 +371,17 @@ jobs:
             sleep 10
           done
           
-          # Get individual service IPs for reference
-          FRONTEND_LB_IP=$(kubectl get service frontend-load-balancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
-          BACKEND_LB_IP=$(kubectl get service backend-load-balancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
-          
-          # Save IPs for DNS step and summary
+          # Save IP for DNS step and summary
           echo "LB_IP=${LB_IP}" >> $GITHUB_ENV
-          echo "BACKEND_LB_IP=${BACKEND_LB_IP}" >> $GITHUB_ENV
-          echo "FRONTEND_LB_IP=${FRONTEND_LB_IP}" >> $GITHUB_ENV
           
-          echo "✅ Migration Complete!"
-          echo "🌐 Unified Proxy (Single Domain): http://${LB_IP}"
+          echo "✅ Migration Complete - Proper Kubernetes Architecture!"
+          echo "🌐 Single External Gateway: http://${LB_IP}"
           echo "   - Frontend: http://${LB_IP}/"
           echo "   - API: http://${LB_IP}/api"
           echo ""
-          echo "📡 Individual Services (Direct Access):"
-          echo "   - Frontend: http://${FRONTEND_LB_IP}"  
-          echo "   - Backend: http://${BACKEND_LB_IP}:8080"
+          echo "🔒 Internal Services (ClusterIP only):"
+          echo "   - frontend-service:80 (internal)"
+          echo "   - web-service-service:8080 (internal)"
           echo ""
           echo "🌍 Domain: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
 
