@@ -300,7 +300,13 @@ jobs:
           envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
           
-          # Clean up any pending pods and old nginx deployments
+          # Clean up old unified-proxy resources before deploying ingress
+          echo "🧹 Cleaning up old unified-proxy resources..."
+          kubectl delete deployment unified-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          kubectl delete service unified-proxy-service -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          kubectl delete configmap unified-proxy-config -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          
+          # Clean up any pending pods
           echo "🧹 Cleaning up any stuck/pending pods..."
           kubectl delete pods -n ${{ env.NAMESPACE }} --field-selector status.phase=Pending --force --grace-period=0 || true
           
