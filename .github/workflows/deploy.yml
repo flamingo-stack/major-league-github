@@ -169,6 +169,52 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check for changes 🔍
+        id: changes
+        run: |
+          echo "🔍 Checking for changes since last successful build..."
+          
+          # Get the last successful workflow run SHA
+          LAST_SUCCESS_SHA=$(gh run list --workflow=deploy.yml --status=success --limit=1 --json headSha --jq='.[0].headSha' || echo "")
+          
+          if [ -z "$LAST_SUCCESS_SHA" ] || [ "$LAST_SUCCESS_SHA" = "null" ]; then
+            echo "No previous successful build found, building all images"
+            echo "build_backend=true" >> $GITHUB_OUTPUT
+            echo "build_cache_updater=true" >> $GITHUB_OUTPUT
+            echo "build_frontend=true" >> $GITHUB_OUTPUT
+          else
+            echo "Comparing changes since $LAST_SUCCESS_SHA"
+            
+            # Check for backend changes
+            if git diff --name-only $LAST_SUCCESS_SHA..HEAD | grep -E '^backend/|^kubernetes/.*backend|^\.github/workflows/deploy\.yml$' > /dev/null; then
+              echo "Backend changes detected"
+              echo "build_backend=true" >> $GITHUB_OUTPUT
+            else
+              echo "No backend changes detected"
+              echo "build_backend=false" >> $GITHUB_OUTPUT
+            fi
+            
+            # Check for cache updater changes (same as backend since it uses same source)
+            if git diff --name-only $LAST_SUCCESS_SHA..HEAD | grep -E '^backend/|^kubernetes/.*cache|^\.github/workflows/deploy\.yml$' > /dev/null; then
+              echo "Cache updater changes detected"
+              echo "build_cache_updater=true" >> $GITHUB_OUTPUT
+            else
+              echo "No cache updater changes detected"
+              echo "build_cache_updater=false" >> $GITHUB_OUTPUT
+            fi
+            
+            # Check for frontend changes
+            if git diff --name-only $LAST_SUCCESS_SHA..HEAD | grep -E '^frontend/|^kubernetes/.*frontend|^\.github/workflows/deploy\.yml$' > /dev/null; then
+              echo "Frontend changes detected"
+              echo "build_frontend=true" >> $GITHUB_OUTPUT
+            else
+              echo "No frontend changes detected"
+              echo "build_frontend=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set Webapp Environment Variables 🎨
         run: |
           # Set OG Meta Tags environment variables
@@ -183,6 +229,7 @@ jobs:
           echo "WEBAPP_EXTRA_BUTTON_TEXT=Why MLG?" >> $GITHUB_ENV
 
       - name: Build and push backend service image 🏗️
+        if: steps.changes.outputs.build_backend == 'true'
         run: |
           echo "🚀 Building backend service image..."
           docker build \
@@ -195,7 +242,12 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend-service:${{ env.VERSION }}
           docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend-service:latest
 
+      - name: Skip backend service build 🏗️
+        if: steps.changes.outputs.build_backend == 'false'
+        run: echo "⏩ Skipping backend service build - no changes detected"
+
       - name: Build and push cache updater image 🏗️
+        if: steps.changes.outputs.build_cache_updater == 'true'
         run: |
           echo "🚀 Building cache updater image..."
           docker build \
@@ -208,7 +260,12 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/cache-updater:${{ env.VERSION }}
           docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/cache-updater:latest
 
+      - name: Skip cache updater build 🏗️
+        if: steps.changes.outputs.build_cache_updater == 'false'
+        run: echo "⏩ Skipping cache updater build - no changes detected"
+
       - name: Build and push frontend image 🎨
+        if: steps.changes.outputs.build_frontend == 'true'
         env:
           OG_TITLE: ${{ env.OG_TITLE }}
           OG_DESCRIPTION: ${{ env.OG_DESCRIPTION }}
@@ -237,6 +294,10 @@ jobs:
           echo "🚀 Pushing frontend images..."
           docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:${{ env.VERSION }}
           docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:latest
+
+      - name: Skip frontend build 🎨
+        if: steps.changes.outputs.build_frontend == 'false'
+        run: echo "⏩ Skipping frontend build - no changes detected"
 
       - name: Create Kubernetes namespace and secrets 🔐
         run: |
@@ -490,3 +551,55 @@ jobs:
           environment: production
           initial-status: success
           environment-url: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}
+
+      - name: Cleanup old container images 🧹
+        if: always()
+        run: |
+          echo "🧹 Cleaning up old container images..."
+          
+          # Define image repositories
+          REPOS=(
+            "${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend-service"
+            "${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/cache-updater"
+            "${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend"
+          )
+          
+          for repo in "${REPOS[@]}"; do
+            echo "🔍 Cleaning up $repo..."
+            
+            # Get all tags except 'latest' and current version, keep only 3 most recent
+            TAGS_TO_DELETE=$(gh api \
+              -H "Accept: application/vnd.github.v3+json" \
+              "/orgs/$(echo $repo | cut -d'/' -f2)/packages/container/$(echo $repo | cut -d'/' -f3)/versions" \
+              --jq '.[] | select(.metadata.container.tags[] | . != "latest" and . != "${{ env.VERSION }}") | .metadata.container.tags[0]' \
+              2>/dev/null | sort -V -r | tail -n +4 || echo "")
+            
+            if [ ! -z "$TAGS_TO_DELETE" ]; then
+              echo "🗑️ Deleting old tags for $repo:"
+              echo "$TAGS_TO_DELETE"
+              
+              for tag in $TAGS_TO_DELETE; do
+                # Get version ID for the tag
+                VERSION_ID=$(gh api \
+                  -H "Accept: application/vnd.github.v3+json" \
+                  "/orgs/$(echo $repo | cut -d'/' -f2)/packages/container/$(echo $repo | cut -d'/' -f3)/versions" \
+                  --jq ".[] | select(.metadata.container.tags[]? == \"$tag\") | .id" \
+                  2>/dev/null || echo "")
+                
+                if [ ! -z "$VERSION_ID" ]; then
+                  echo "🗑️ Deleting version $VERSION_ID (tag: $tag)"
+                  gh api \
+                    --method DELETE \
+                    -H "Accept: application/vnd.github.v3+json" \
+                    "/orgs/$(echo $repo | cut -d'/' -f2)/packages/container/$(echo $repo | cut -d'/' -f3)/versions/$VERSION_ID" \
+                    2>/dev/null || echo "Failed to delete version $VERSION_ID"
+                fi
+              done
+            else
+              echo "✅ No old images to clean up for $repo"
+            fi
+          done
+          
+          echo "✅ Container image cleanup completed"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
