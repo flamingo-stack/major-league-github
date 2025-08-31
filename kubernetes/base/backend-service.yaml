@@ -86,4 +86,4 @@ spec:
     - name: http
       port: ${SERVER_PORT}
       targetPort: ${SERVER_PORT}
-  type: ClusterIP 
+  type: NodePort 
