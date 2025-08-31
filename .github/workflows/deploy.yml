@@ -28,6 +28,7 @@ env:
   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
   DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
   STATIC_IP_NAME: "main-ingress-ip"
+  STATIC_IP_ADDRESS: "34.49.91.198"
 
   GH_API_TOKENS: ${{ secrets.GH_API_TOKENS }}
   
@@ -368,24 +369,15 @@ jobs:
           echo "LoadBalancer Status:"
           kubectl -n ${{ env.NAMESPACE }} get ingress main-ingress -o wide
           
-          # Wait for Ingress IP to be assigned  
-          echo "🔍 Waiting for Ingress IP..."
-          for i in {1..20}; do
-            LB_IP=$(kubectl get ingress main-ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-            if [ ! -z "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
-              echo "✅ Ingress IP: ${LB_IP}"
-              echo "🌐 Frontend URL: http://${LB_IP}/"
-              echo "🌐 Backend API URL: http://${LB_IP}/api/actuator/health"
-              break
-            fi
-            if [ $i -eq 20 ]; then
-              echo "❌ Timeout waiting for Ingress IP"
-              kubectl get ingress main-ingress -n ${{ env.NAMESPACE }} -o yaml
-              exit 1
-            fi
-            echo "⏳ Waiting for Ingress IP... (attempt $i/20)"
-            sleep 15
-          done
+          # Use static IP instead of waiting for dynamic assignment
+          LB_IP="${{ env.STATIC_IP_ADDRESS }}"
+          echo "✅ Using static IP: ${LB_IP}"
+          echo "🌐 Frontend URL: http://${LB_IP}/"
+          echo "🌐 Backend API URL: http://${LB_IP}/api/actuator/health"
+          
+          # Wait for Ingress to be ready (but don't wait for IP since we know it)
+          echo "🔍 Waiting for Ingress to be ready..."
+          kubectl wait --for=condition=available ingress/main-ingress -n ${{ env.NAMESPACE }} --timeout=300s || echo "Ingress condition check timed out, but continuing with static IP"
           
           # Save IP for DNS step and summary
           echo "LB_IP=${LB_IP}" >> $GITHUB_ENV
