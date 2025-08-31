@@ -5,7 +5,13 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "gce"
     kubernetes.io/ingress.global-static-ip-name: "main-ingress-ip"
+    kubernetes.io/ingress.allow-http: "false"
+    ingress.gcp.kubernetes.io/pre-shared-cert: "main-ingress-ssl-cert"
 spec:
+  tls:
+  - hosts:
+    - major-league-github.flamingo.cx
+    secretName: main-ingress-ssl-cert
   rules:
   - host: major-league-github.flamingo.cx
     http:

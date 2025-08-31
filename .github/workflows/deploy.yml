@@ -412,6 +412,17 @@ jobs:
             echo "Static IP main-ingress-ip already exists"
           fi
           
+          # Create SSL certificate if it doesn't exist
+          echo "🔒 Ensuring SSL certificate exists..."
+          if ! gcloud compute ssl-certificates describe main-ingress-ssl-cert --global >/dev/null 2>&1; then
+            echo "Creating SSL certificate for ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}..."
+            gcloud compute ssl-certificates create main-ingress-ssl-cert \
+              --domains="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
+              --global
+          else
+            echo "SSL certificate main-ingress-ssl-cert already exists"
+          fi
+          
           # Create ingress AFTER all services exist with static IP
           echo "🚀 Processing ingress after services are ready..."
           envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
