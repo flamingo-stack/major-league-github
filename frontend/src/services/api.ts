@@ -222,4 +222,4 @@ export const getJobOpenings = async (): Promise<JobOpening[]> => {
     throw new Error(response.data.message);
   }
   return response.data.data;
-}; 
+}; // Force rebuild Sun Aug 31 19:49:51 EDT 2025

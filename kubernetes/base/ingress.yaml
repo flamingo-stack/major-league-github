@@ -15,6 +15,7 @@ metadata:
     kubernetes.io/ingress.global-static-ip-name: "main-ingress-ip"
     networking.gke.io/managed-certificates: "main-ingress-ssl-cert"
     ingress.gcp.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/ingress.allow-http: "false"
 spec:
   rules:
   - host: ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
