@@ -265,6 +265,7 @@ jobs:
           WEB_SERVICE_PORT: "8080"
           CACHE_UPDATER_PORT: "8081"
           FRONTEND_PORT: "80"
+          STATIC_IP_ADDRESS: ${{ secrets.STATIC_IP_ADDRESS }}
         run: |
           echo "🚀 Processing and applying Kubernetes configurations..."
           
@@ -348,7 +349,7 @@ jobs:
           
           # Create ingress AFTER all services exist with static IP
           echo "🚀 Processing ingress after services are ready..."
-          STATIC_IP_ADDRESS="${{ env.STATIC_IP_ADDRESS }}" envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
+          envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
           
           # Cleanup
