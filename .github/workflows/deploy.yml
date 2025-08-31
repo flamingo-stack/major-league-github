@@ -419,18 +419,13 @@ jobs:
           DOMAIN_SUFFIX="${{ env.DOMAIN_SUFFIX }}" \
             envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
           
-          # Check if ManagedCertificate already exists and is valid
+          # Check if ManagedCertificate already exists (never recreate if it exists)
           if kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} >/dev/null 2>&1; then
-            CERT_STATUS=$(kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} -o jsonpath='{.status.certificateStatus}' 2>/dev/null || echo "")
-            if [ "$CERT_STATUS" = "Active" ]; then
-              echo "✅ ManagedCertificate already exists and is Active - skipping recreation"
-              # Apply only the ingress part, not the ManagedCertificate
-              kubectl apply -f processed_k8s/ingress.yaml --selector='!networking.gke.io/managed-certificates' -n ${{ env.NAMESPACE }} || \
-              kubectl apply -f <(sed '/^apiVersion: networking.gke.io\/v1/,/^---$/d' processed_k8s/ingress.yaml) -n ${{ env.NAMESPACE }}
-            else
-              echo "🔄 ManagedCertificate exists but not Active (status: $CERT_STATUS) - applying full config"
-              kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
-            fi
+            CERT_STATUS=$(kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} -o jsonpath='{.status.certificateStatus}' 2>/dev/null || echo "Unknown")
+            echo "✅ ManagedCertificate already exists (status: $CERT_STATUS) - skipping recreation"
+            # Apply only the ingress part, not the ManagedCertificate
+            kubectl apply -f processed_k8s/ingress.yaml --selector='!networking.gke.io/managed-certificates' -n ${{ env.NAMESPACE }} || \
+            kubectl apply -f <(sed '/^apiVersion: networking.gke.io\/v1/,/^---$/d' processed_k8s/ingress.yaml) -n ${{ env.NAMESPACE }}
           else
             echo "🆕 ManagedCertificate doesn't exist - creating new one"
             kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
