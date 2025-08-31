@@ -572,46 +572,53 @@ jobs:
           echo "🧹 Cleaning up old container images..."
           
           # Define image repositories
-          REPOS=(
-            "${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend-service"
-            "${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/cache-updater"
-            "${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend"
-          )
+          REPOS=("backend-service" "cache-updater" "frontend")
+          ORG_NAME="flamingo-stack" 
+          KEEP_COUNT=3  # Keep this many most recent versioned images (plus 'latest')
           
           for repo in "${REPOS[@]}"; do
-            echo "🔍 Cleaning up $repo..."
+            echo "🔍 Cleaning up ${ORG_NAME}/${repo}..."
             
-            # Get all tags except 'latest' and current version, keep only 3 most recent
-            TAGS_TO_DELETE=$(gh api \
-              -H "Accept: application/vnd.github.v3+json" \
-              "/orgs/$(echo $repo | cut -d'/' -f2)/packages/container/$(echo $repo | cut -d'/' -f3)/versions" \
-              --jq '.[] | select(.metadata.container.tags[] | . != "latest" and . != "${{ env.VERSION }}") | .metadata.container.tags[0]' \
-              2>/dev/null | sort -V -r | tail -n +4 || echo "")
+            # Get all versions with their metadata
+            ALL_VERSIONS=$(gh api \
+              "/orgs/${ORG_NAME}/packages/container/${repo}/versions" \
+              --jq 'sort_by(.created_at) | reverse' 2>/dev/null || echo "[]")
             
-            if [ ! -z "$TAGS_TO_DELETE" ]; then
-              echo "🗑️ Deleting old tags for $repo:"
-              echo "$TAGS_TO_DELETE"
-              
-              for tag in $TAGS_TO_DELETE; do
-                # Get version ID for the tag
-                VERSION_ID=$(gh api \
-                  -H "Accept: application/vnd.github.v3+json" \
-                  "/orgs/$(echo $repo | cut -d'/' -f2)/packages/container/$(echo $repo | cut -d'/' -f3)/versions" \
-                  --jq ".[] | select(.metadata.container.tags[]? == \"$tag\") | .id" \
-                  2>/dev/null || echo "")
-                
-                if [ ! -z "$VERSION_ID" ]; then
-                  echo "🗑️ Deleting version $VERSION_ID (tag: $tag)"
-                  gh api \
-                    --method DELETE \
-                    -H "Accept: application/vnd.github.v3+json" \
-                    "/orgs/$(echo $repo | cut -d'/' -f2)/packages/container/$(echo $repo | cut -d'/' -f3)/versions/$VERSION_ID" \
-                    2>/dev/null || echo "Failed to delete version $VERSION_ID"
-                fi
-              done
-            else
-              echo "✅ No old images to clean up for $repo"
+            if [ "$ALL_VERSIONS" = "[]" ]; then
+              echo "✅ No versions found for ${repo}"
+              continue
             fi
+            
+            # Get versions to keep (latest + current + N most recent versioned)
+            KEEP_LATEST=$(echo "$ALL_VERSIONS" | jq -r '.[] | select(.metadata.container.tags[] == "latest") | .id' | head -1)
+            KEEP_CURRENT=$(echo "$ALL_VERSIONS" | jq -r --arg version "${{ env.VERSION }}" '.[] | select(.metadata.container.tags[] == $version) | .id' | head -1)
+            
+            # Get versioned images (exclude latest and current), keep only most recent N
+            VERSIONED_TO_KEEP=$(echo "$ALL_VERSIONS" | jq -r --arg version "${{ env.VERSION }}" '.[] | select((.metadata.container.tags[] != "latest") and (.metadata.container.tags[] != $version)) | .id' | head -$KEEP_COUNT)
+            
+            # Combine all IDs to keep
+            KEEP_IDS=""
+            [ ! -z "$KEEP_LATEST" ] && KEEP_IDS="$KEEP_IDS $KEEP_LATEST"
+            [ ! -z "$KEEP_CURRENT" ] && KEEP_IDS="$KEEP_CURRENT $KEEP_IDS"
+            KEEP_IDS="$KEEP_IDS $VERSIONED_TO_KEEP"
+            
+            echo "📋 Will keep versions: $KEEP_IDS"
+            
+            # Delete versions not in keep list
+            echo "$ALL_VERSIONS" | jq -r '.[] | .id' | while read version_id; do
+              if echo "$KEEP_IDS" | grep -q "$version_id"; then
+                TAGS=$(echo "$ALL_VERSIONS" | jq -r --arg id "$version_id" '.[] | select(.id == $id) | .metadata.container.tags[]' | tr '\n' ',' | sed 's/,$//')
+                echo "⏩ Keeping version $version_id (tags: $TAGS)"
+              else
+                TAGS=$(echo "$ALL_VERSIONS" | jq -r --arg id "$version_id" '.[] | select(.id == $id) | .metadata.container.tags[]' | tr '\n' ',' | sed 's/,$//')
+                echo "🗑️ Deleting version $version_id (tags: $TAGS)"
+                gh api --method DELETE "/orgs/${ORG_NAME}/packages/container/${repo}/versions/$version_id" 2>/dev/null \
+                  && echo "✅ Successfully deleted $version_id" \
+                  || echo "❌ Failed to delete $version_id"
+              fi
+            done
+            
+            echo "✅ Cleanup completed for $repo"
           done
           
           echo "✅ Container image cleanup completed"
