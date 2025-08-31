@@ -295,10 +295,10 @@ jobs:
           
           # Frontend and backend services are already ClusterIP from their respective files
           
-          # Process and apply loadbalancer
-          echo "🚀 Processing loadbalancer..."
-          envsubst < kubernetes/base/loadbalancer.yaml > processed_k8s/loadbalancer.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/loadbalancer.yaml
+          # Process and apply ingress
+          echo "🚀 Processing ingress..."
+          envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
           
           # Clean up old unified-proxy resources before deploying ingress
           echo "🧹 Cleaning up old unified-proxy resources..."
@@ -358,28 +358,25 @@ jobs:
           kubectl -n ${{ env.NAMESPACE }} get services
           
           echo "LoadBalancer Status:"
-          kubectl -n ${{ env.NAMESPACE }} get services -l cloud.google.com/load-balancer-type=External -o wide
+          kubectl -n ${{ env.NAMESPACE }} get ingress main-ingress -o wide
           
-          # Wait for LoadBalancer IPs to be assigned  
-          echo "🔍 Waiting for LoadBalancer IPs..."
-          for i in {1..15}; do
-            FRONTEND_IP=$(kubectl get service frontend-loadbalancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-            BACKEND_IP=$(kubectl get service backend-loadbalancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-            if [ ! -z "$FRONTEND_IP" ] && [ "$FRONTEND_IP" != "null" ] && [ ! -z "$BACKEND_IP" ] && [ "$BACKEND_IP" != "null" ]; then
-              echo "✅ Frontend IP: ${FRONTEND_IP}"
-              echo "✅ Backend IP: ${BACKEND_IP}"
-              echo "🌐 Frontend URL: http://${FRONTEND_IP}"
-              echo "🌐 Backend URL: http://${BACKEND_IP}/actuator/health"
-              LB_IP="${FRONTEND_IP}"
+          # Wait for Ingress IP to be assigned  
+          echo "🔍 Waiting for Ingress IP..."
+          for i in {1..20}; do
+            LB_IP=$(kubectl get ingress main-ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ ! -z "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
+              echo "✅ Ingress IP: ${LB_IP}"
+              echo "🌐 Frontend URL: http://${LB_IP}/"
+              echo "🌐 Backend API URL: http://${LB_IP}/api/actuator/health"
               break
             fi
-            if [ $i -eq 15 ]; then
-              echo "❌ Timeout waiting for LoadBalancer IPs"
-              kubectl get services -n ${{ env.NAMESPACE }} -o wide
+            if [ $i -eq 20 ]; then
+              echo "❌ Timeout waiting for Ingress IP"
+              kubectl get ingress main-ingress -n ${{ env.NAMESPACE }} -o yaml
               exit 1
             fi
-            echo "⏳ Waiting for LoadBalancer IPs... (attempt $i/15)"
-            sleep 10
+            echo "⏳ Waiting for Ingress IP... (attempt $i/20)"
+            sleep 15
           done
           
           # Save IP for DNS step and summary
