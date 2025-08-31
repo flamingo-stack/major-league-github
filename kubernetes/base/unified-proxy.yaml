@@ -1,0 +1,103 @@
+# Unified reverse proxy - single domain with /api routing
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unified-proxy-config
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+        
+        # Health check
+        location /health {
+            return 200 "OK";
+            add_header Content-Type text/plain;
+        }
+        
+        # API routes - proxy to backend LoadBalancer
+        location /api {
+            proxy_pass http://34.171.198.245:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        
+        # Everything else - proxy to frontend LoadBalancer  
+        location / {
+            proxy_pass http://35.226.230.49;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unified-proxy
+  labels:
+    app: unified-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unified-proxy
+  template:
+    metadata:
+      labels:
+        app: unified-proxy
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 128Mi
+              cpu: 100m
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: unified-proxy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unified-proxy-service
+  labels:
+    app: unified-proxy
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: unified-proxy

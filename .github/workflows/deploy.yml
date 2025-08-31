@@ -293,10 +293,15 @@ jobs:
           envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           
-          # Process and apply simple load balancers (replaces nginx proxy)
+          # Process and apply simple load balancers (backend services)
           echo "🚀 Processing simple load balancers..."
           envsubst < kubernetes/base/simple-load-balancers.yaml > processed_k8s/simple-load-balancers.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/simple-load-balancers.yaml
+          
+          # Process and apply unified proxy (single domain with /api routing)
+          echo "🚀 Processing unified proxy..."
+          envsubst < kubernetes/base/unified-proxy.yaml > processed_k8s/unified-proxy.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/unified-proxy.yaml
           
           # Clean up any pending pods and old nginx deployments
           echo "🧹 Cleaning up any stuck/pending pods..."
@@ -329,6 +334,7 @@ jobs:
           kubectl wait --for=condition=available deployment/web-service -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl wait --for=condition=available deployment/unified-proxy -n ${{ env.NAMESPACE }} --timeout=300s
           
           # Cleanup
           rm -rf processed_k8s
@@ -346,38 +352,44 @@ jobs:
           kubectl -n ${{ env.NAMESPACE }} get services
           
           echo "LoadBalancer Status:"
-          kubectl -n ${{ env.NAMESPACE }} get services frontend-load-balancer backend-load-balancer -o wide
+          kubectl -n ${{ env.NAMESPACE }} get services frontend-load-balancer backend-load-balancer unified-proxy-service -o wide
           
-          # Wait for frontend load balancer IP to be assigned
-          echo "🔍 Waiting for Frontend Load Balancer IP..."
+          # Wait for unified proxy load balancer IP to be assigned  
+          echo "🔍 Waiting for Unified Proxy Load Balancer IP..."
           for i in {1..30}; do
-            LB_IP=$(kubectl get service frontend-load-balancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            LB_IP=$(kubectl get service unified-proxy-service -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
             if [ ! -z "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
               echo "✅ Load Balancer IP: ${LB_IP}"
               break
             fi
             if [ $i -eq 30 ]; then
               echo "❌ Timeout waiting for Load Balancer IP"
-              kubectl get service frontend-load-balancer -n ${{ env.NAMESPACE }} -o yaml
+              kubectl get service unified-proxy-service -n ${{ env.NAMESPACE }} -o yaml
               exit 1
             fi
             echo "⏳ Waiting for Load Balancer IP... (attempt $i/30)"
             sleep 10
           done
           
-          # Get backend load balancer IP too
-          echo "🔍 Getting Backend Load Balancer IP..."
+          # Get individual service IPs for reference
+          FRONTEND_LB_IP=$(kubectl get service frontend-load-balancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
           BACKEND_LB_IP=$(kubectl get service backend-load-balancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
-          echo "Backend Load Balancer IP: ${BACKEND_LB_IP}"
           
           # Save IPs for DNS step and summary
           echo "LB_IP=${LB_IP}" >> $GITHUB_ENV
           echo "BACKEND_LB_IP=${BACKEND_LB_IP}" >> $GITHUB_ENV
+          echo "FRONTEND_LB_IP=${FRONTEND_LB_IP}" >> $GITHUB_ENV
           
           echo "✅ Migration Complete!"
-          echo "Frontend: http://${LB_IP}"
-          echo "Backend API: http://${BACKEND_LB_IP}:8080"
-          echo "Domain (once DNS is configured): https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+          echo "🌐 Unified Proxy (Single Domain): http://${LB_IP}"
+          echo "   - Frontend: http://${LB_IP}/"
+          echo "   - API: http://${LB_IP}/api"
+          echo ""
+          echo "📡 Individual Services (Direct Access):"
+          echo "   - Frontend: http://${FRONTEND_LB_IP}"  
+          echo "   - Backend: http://${BACKEND_LB_IP}:8080"
+          echo ""
+          echo "🌍 Domain: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
 
       - name: Update DNS Record (Cross-Project) 🌍
         run: |
