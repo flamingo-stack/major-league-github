@@ -345,30 +345,11 @@ jobs:
         run: |
           echo "🚀 Processing and applying Kubernetes configurations..."
           
-          # Determine image versions based on what was built
-          if [ "${{ steps.changes.outputs.build_backend }}" = "true" ]; then
-            BACKEND_VERSION="${{ env.VERSION }}"
-            echo "✅ Using new backend version: $BACKEND_VERSION"
-          else
-            BACKEND_VERSION="latest"
-            echo "⏩ Using existing backend version: $BACKEND_VERSION"
-          fi
-          
-          if [ "${{ steps.changes.outputs.build_cache_updater }}" = "true" ]; then
-            CACHE_UPDATER_VERSION="${{ env.VERSION }}"
-            echo "✅ Using new cache updater version: $CACHE_UPDATER_VERSION"
-          else
-            CACHE_UPDATER_VERSION="latest"
-            echo "⏩ Using existing cache updater version: $CACHE_UPDATER_VERSION"
-          fi
-          
-          if [ "${{ steps.changes.outputs.build_frontend }}" = "true" ]; then
-            FRONTEND_VERSION="${{ env.VERSION }}"
-            echo "✅ Using new frontend version: $FRONTEND_VERSION"
-          else
-            FRONTEND_VERSION="latest"
-            echo "⏩ Using existing frontend version: $FRONTEND_VERSION"
-          fi
+          # Always use 'latest' tag for active K8s deployments for simplicity
+          BACKEND_VERSION="latest"
+          CACHE_UPDATER_VERSION="latest" 
+          FRONTEND_VERSION="latest"
+          echo "🏷️ Using 'latest' tags for all K8s deployments"
           
           # Create temporary directory
           mkdir -p processed_k8s
@@ -569,58 +550,57 @@ jobs:
       - name: Cleanup old container images 🧹
         if: always()
         run: |
-          echo "🧹 Cleaning up old container images..."
+          echo "🧹 Cleaning up old container images for repository: ${{ github.repository }}..."
           
-          # Define image repositories
-          REPOS=("backend-service" "cache-updater" "frontend")
-          ORG_NAME="flamingo-stack" 
-          KEEP_COUNT=3  # Keep this many most recent versioned images (plus 'latest')
+          # Extract owner and repo name from github.repository (format: owner/repo)
+          OWNER=$(echo "${{ github.repository }}" | cut -d'/' -f1)
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
           
-          for repo in "${REPOS[@]}"; do
-            echo "🔍 Cleaning up ${ORG_NAME}/${repo}..."
+          echo "🔍 Looking for container packages in ${OWNER}/${REPO_NAME}..."
+          
+          # Get all container packages for this repository
+          PACKAGES=$(gh api "/orgs/${OWNER}/packages?package_type=container" --jq '.[] | select(.repository.name == "'${REPO_NAME}'") | .name' 2>/dev/null || echo "")
+          
+          if [ -z "$PACKAGES" ]; then
+            echo "✅ No container packages found for this repository"
+            exit 0
+          fi
+          
+          echo "📦 Found packages: $(echo $PACKAGES | tr '\n' ' ')"
+          
+          # Process each package
+          for package in $PACKAGES; do
+            echo "🔍 Cleaning up ${OWNER}/${package}..."
             
-            # Get all versions with their metadata
-            ALL_VERSIONS=$(gh api \
-              "/orgs/${ORG_NAME}/packages/container/${repo}/versions" \
-              --jq 'sort_by(.created_at) | reverse' 2>/dev/null || echo "[]")
+            # Get all versions for this package
+            ALL_VERSIONS=$(gh api "/orgs/${OWNER}/packages/container/${package}/versions" --jq 'sort_by(.created_at) | reverse' 2>/dev/null || echo "[]")
             
             if [ "$ALL_VERSIONS" = "[]" ]; then
-              echo "✅ No versions found for ${repo}"
+              echo "✅ No versions found for ${package}"
               continue
             fi
             
-            # Get versions to keep (latest + current + N most recent versioned)
-            KEEP_LATEST=$(echo "$ALL_VERSIONS" | jq -r '.[] | select(.metadata.container.tags[] == "latest") | .id' | head -1)
-            KEEP_CURRENT=$(echo "$ALL_VERSIONS" | jq -r --arg version "${{ env.VERSION }}" '.[] | select(.metadata.container.tags[] == $version) | .id' | head -1)
+            # Delete ALL versions except the most recent one, then tag it as 'latest'
+            MOST_RECENT_ID=$(echo "$ALL_VERSIONS" | jq -r '.[0].id')
+            echo "📋 Most recent version ID: $MOST_RECENT_ID"
             
-            # Get versioned images (exclude latest and current), keep only most recent N
-            VERSIONED_TO_KEEP=$(echo "$ALL_VERSIONS" | jq -r --arg version "${{ env.VERSION }}" '.[] | select((.metadata.container.tags[] != "latest") and (.metadata.container.tags[] != $version)) | .id' | head -$KEEP_COUNT)
-            
-            # Combine all IDs to keep
-            KEEP_IDS=""
-            [ ! -z "$KEEP_LATEST" ] && KEEP_IDS="$KEEP_IDS $KEEP_LATEST"
-            [ ! -z "$KEEP_CURRENT" ] && KEEP_IDS="$KEEP_CURRENT $KEEP_IDS"
-            KEEP_IDS="$KEEP_IDS $VERSIONED_TO_KEEP"
-            
-            echo "📋 Will keep versions: $KEEP_IDS"
-            
-            # Delete versions not in keep list
+            # Delete all other versions
             echo "$ALL_VERSIONS" | jq -r '.[] | .id' | while read version_id; do
-              if echo "$KEEP_IDS" | grep -q "$version_id"; then
+              if [ "$version_id" = "$MOST_RECENT_ID" ]; then
                 TAGS=$(echo "$ALL_VERSIONS" | jq -r --arg id "$version_id" '.[] | select(.id == $id) | .metadata.container.tags[]' | tr '\n' ',' | sed 's/,$//')
-                echo "⏩ Keeping version $version_id (tags: $TAGS)"
+                echo "⏩ Keeping most recent version $version_id (tags: $TAGS) - this will become 'latest'"
               else
                 TAGS=$(echo "$ALL_VERSIONS" | jq -r --arg id "$version_id" '.[] | select(.id == $id) | .metadata.container.tags[]' | tr '\n' ',' | sed 's/,$//')
-                echo "🗑️ Deleting version $version_id (tags: $TAGS)"
-                gh api --method DELETE "/orgs/${ORG_NAME}/packages/container/${repo}/versions/$version_id" 2>/dev/null \
+                echo "🗑️ Deleting old version $version_id (tags: $TAGS)"
+                gh api --method DELETE "/orgs/${OWNER}/packages/container/${package}/versions/$version_id" 2>/dev/null \
                   && echo "✅ Successfully deleted $version_id" \
                   || echo "❌ Failed to delete $version_id"
               fi
             done
             
-            echo "✅ Cleanup completed for $repo"
+            echo "✅ Cleanup completed for ${package}"
           done
           
-          echo "✅ Container image cleanup completed"
+          echo "✅ Container image cleanup completed - only most recent versions remain"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
