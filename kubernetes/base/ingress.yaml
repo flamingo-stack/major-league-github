@@ -9,8 +9,8 @@ spec:
   - host: major-league-github.flamingo.cx
     http:
       paths:
-      - path: /api
-        pathType: Prefix
+      - path: /api/*
+        pathType: ImplementationSpecific
         backend:
           service:
             name: web-service-service
