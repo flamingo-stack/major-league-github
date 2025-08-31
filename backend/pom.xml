@@ -78,12 +78,12 @@
 
     <profiles>
         <profile>
-            <id>web-service</id>
+            <id>backend-service</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <spring.profiles.active>web-service</spring.profiles.active>
+                <spring.profiles.active>backend-service</spring.profiles.active>
             </properties>
         </profile>
         <profile>

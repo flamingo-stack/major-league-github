@@ -182,18 +182,18 @@ jobs:
           echo "WEBAPP_EXTRA_BUTTON_LINK=https://medium.com/@michaelassraf/major-league-github-the-open-source-talent-leaderboard-ca2c6d7dcbeb" >> $GITHUB_ENV
           echo "WEBAPP_EXTRA_BUTTON_TEXT=Why MLG?" >> $GITHUB_ENV
 
-      - name: Build and push web service image 🏗️
+      - name: Build and push backend service image 🏗️
         run: |
-          echo "🚀 Building web service image..."
+          echo "🚀 Building backend service image..."
           docker build \
-            --build-arg PROFILE=web-service \
-            -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/web-service:${{ env.VERSION }} \
-            -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/web-service:latest \
+            --build-arg PROFILE=backend-service \
+            -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend-service:${{ env.VERSION }} \
+            -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend-service:latest \
             backend
           
-          echo "🚀 Pushing web service images..."
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/web-service:${{ env.VERSION }}
-          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/web-service:latest
+          echo "🚀 Pushing backend service images..."
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend-service:${{ env.VERSION }}
+          docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend-service:latest
 
       - name: Build and push cache updater image 🏗️
         run: |
@@ -260,9 +260,9 @@ jobs:
           DOMAIN_NAME: ${{ env.DOMAIN_NAME }}
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           VERSION: ${{ env.VERSION }}
-          WEB_SERVICE_NAME: "web-service"
+          BACKEND_SERVICE_NAME: "backend-service"
           CACHE_UPDATER_NAME: "cache-updater" 
-          WEB_SERVICE_PORT: "8080"
+          BACKEND_SERVICE_PORT: "8080"
           CACHE_UPDATER_PORT: "8081"
           FRONTEND_PORT: "80"
           STATIC_IP_ADDRESS: ${{ secrets.STATIC_IP_ADDRESS }}
@@ -277,12 +277,12 @@ jobs:
           envsubst < kubernetes/base/config.yaml > processed_k8s/config.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/config.yaml
           
-          # Process and apply web service
-          echo "🚀 Processing web service..."
-          SERVICE_NAME=web-service \
+          # Process and apply backend service
+          echo "🚀 Processing backend service..."
+          SERVICE_NAME=backend-service \
           SERVER_PORT=8080 \
-            envsubst < kubernetes/base/backend-service.yaml > processed_k8s/web-service.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/web-service.yaml
+            envsubst < kubernetes/base/backend-service.yaml > processed_k8s/backend-service.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/backend-service.yaml
           
           # Process and apply cache updater
           echo "🚀 Processing cache updater..."
@@ -343,7 +343,7 @@ jobs:
           
           # Wait for deployments to be ready
           echo "🚀 Now waiting for deployments to be ready..."
-          kubectl wait --for=condition=available deployment/web-service -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl wait --for=condition=available deployment/backend-service -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
           
@@ -392,7 +392,7 @@ jobs:
           echo ""
           echo "🔒 Internal Services (ClusterIP only):"
           echo "   - frontend-service:80 (internal)"
-          echo "   - web-service-service:8080 (internal)"
+          echo "   - backend-service-service:8080 (internal)"
           echo ""
           echo "🌍 Domain: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
 

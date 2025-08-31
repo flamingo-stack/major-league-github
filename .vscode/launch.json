@@ -2,8 +2,8 @@
     "version": "0.2.0",
     "compounds": [
         {
-            "name": "Full Stack: Web Service",
-            "configurations": ["Debug Web Service", "Debug Frontend"],
+            "name": "Full Stack: Backend Service",
+            "configurations": ["Debug Backend Service", "Debug Frontend"],
             "presentation": {
                 "hidden": false,
                 "group": "fullstack"
@@ -66,13 +66,13 @@
             }
         },
         {
-            "name": "Debug Web Service",
+            "name": "Debug Backend Service",
             "type": "java",
             "request": "launch",
             "mainClass": "cx.flamingo.analysis.MajorLeagueGithubApplication",
             "projectName": "major-league-github",
             "env": {
-                "SPRING_PROFILES_ACTIVE": "web-service",
+                "SPRING_PROFILES_ACTIVE": "backend-service",
                 "SERVER_PORT": "8080",
                 "LOGGING_LEVEL_ROOT": "INFO",
                 "LOGGING_LEVEL_CX_FLAMINGO": "DEBUG",
@@ -81,13 +81,13 @@
             }
         },
         {
-            "name": "Debug Web Service (Production)",
+            "name": "Debug Backend Service (Production)",
             "type": "java",
             "request": "launch",
             "mainClass": "cx.flamingo.analysis.MajorLeagueGithubApplication",
             "projectName": "major-league-github",
             "env": {
-                "SPRING_PROFILES_ACTIVE": "web-service",
+                "SPRING_PROFILES_ACTIVE": "backend-service",
                 "SERVER_PORT": "8080",
                 "LOGGING_LEVEL_ROOT": "INFO",
                 "LOGGING_LEVEL_CX_FLAMINGO": "DEBUG",

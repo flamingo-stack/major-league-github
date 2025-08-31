@@ -5,8 +5,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 @Configuration
-@Profile("web-service")
+@Profile("backend-service")
 @EnableWebMvc
-public class WebServiceConfig {
-    // Web-specific configuration can be added here
+public class BackendServiceConfig {
+    // Backend-specific configuration can be added here
 } 
