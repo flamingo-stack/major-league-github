@@ -373,7 +373,7 @@ jobs:
           SERVER_PORT=8080 \
           VERSION=$BACKEND_VERSION \
             envsubst < kubernetes/base/backend-service.yaml > processed_k8s/backend-service.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/backend-service.yaml
+          kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/backend-service.yaml
           
           # Process and apply cache updater
           echo "🚀 Processing cache updater..."
@@ -381,13 +381,13 @@ jobs:
           SERVER_PORT=8081 \
           VERSION=$CACHE_UPDATER_VERSION \
             envsubst < kubernetes/base/cache-updater-service.yaml > processed_k8s/cache-updater.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
+          kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
           
           # Process and apply frontend (creates frontend-service as ClusterIP with NEG)
           echo "🚀 Processing frontend..."
           VERSION=$FRONTEND_VERSION \
             envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
+          kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           echo "✅ Frontend applied successfully"
           
           echo "✅ All resources cleanup completed"
