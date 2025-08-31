@@ -71,6 +71,20 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3 
 ---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: ${SERVICE_NAME}-config
+spec:
+  healthCheck:
+    checkIntervalSec: 15
+    timeoutSec: 15
+    healthyThreshold: 1
+    unhealthyThreshold: 2
+    type: HTTP
+    requestPath: /actuator/health
+    port: ${SERVER_PORT}
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -79,6 +93,7 @@ metadata:
     app: ${SERVICE_NAME}
   annotations:
     cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "${SERVICE_NAME}-config"}'
 spec:
   selector:
     app: ${SERVICE_NAME}
