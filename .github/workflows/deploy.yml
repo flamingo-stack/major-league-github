@@ -288,14 +288,7 @@ jobs:
             envsubst < kubernetes/base/backend-service.yaml > processed_k8s/cache-updater.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
           
-          # Process and apply frontend
-          echo "🚀 Processing frontend..."
-          envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
-          
-          # Frontend and backend services are already ClusterIP from their respective files
-          
-          # Clean up ALL old LoadBalancer and proxy resources before deploying ingress
+          # Clean up ALL old resources first
           echo "🧹 Cleaning up old resources..."
           kubectl delete deployment unified-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true
           kubectl delete service unified-proxy-service -n ${{ env.NAMESPACE }} --ignore-not-found=true
@@ -304,19 +297,17 @@ jobs:
           kubectl delete service frontend-loadbalancer -n ${{ env.NAMESPACE }} --ignore-not-found=true
           kubectl delete service backend-loadbalancer -n ${{ env.NAMESPACE }} --ignore-not-found=true
           kubectl delete ingress main-ingress -n ${{ env.NAMESPACE }} --ignore-not-found=true
-          
-          # Delete existing services to force recreation as NodePort
           kubectl delete service frontend-service -n ${{ env.NAMESPACE }} --ignore-not-found=true
           kubectl delete service web-service-service -n ${{ env.NAMESPACE }} --ignore-not-found=true
           
-          # Wait a bit for cleanup to complete
+          # Wait for cleanup to complete
           echo "⏳ Waiting for cleanup to complete..."
           sleep 10
           
-          # Process and apply ingress
-          echo "🚀 Processing ingress..."
-          envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
+          # Process and apply frontend (creates frontend-service as NodePort)
+          echo "🚀 Processing frontend..."
+          envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           
           # Clean up any pending pods
           echo "🧹 Cleaning up any stuck/pending pods..."
@@ -352,7 +343,11 @@ jobs:
           kubectl wait --for=condition=available deployment/web-service -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
-          kubectl wait --for=condition=complete job/ingress-setup -n ${{ env.NAMESPACE }} --timeout=300s || echo "No ingress setup job found"
+          
+          # Create ingress AFTER all services exist
+          echo "🚀 Processing ingress after services are ready..."
+          envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
           
           # Cleanup
           rm -rf processed_k8s
