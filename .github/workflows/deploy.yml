@@ -565,7 +565,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          package: ${{ env.REGISTRY_NAME }}/backend-service
+          package: backend-service
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,${{ env.VERSION }}
@@ -575,7 +575,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          package: ${{ env.REGISTRY_NAME }}/cache-updater
+          package: cache-updater
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,${{ env.VERSION }}
@@ -585,7 +585,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          package: ${{ env.REGISTRY_NAME }}/frontend
+          package: frontend
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,${{ env.VERSION }}
