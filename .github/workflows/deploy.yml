@@ -360,8 +360,8 @@ jobs:
           echo "LoadBalancer Status:"
           kubectl -n ${{ env.NAMESPACE }} get ingress main-ingress -o wide
           
-          # Wait for unified proxy load balancer IP to be assigned  
-          echo "🔍 Waiting for Unified Proxy Load Balancer IP..."
+          # Wait for ingress load balancer IP to be assigned  
+          echo "🔍 Waiting for Ingress Load Balancer IP..."
           for i in {1..30}; do
             LB_IP=$(kubectl get ingress main-ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
             if [ ! -z "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
