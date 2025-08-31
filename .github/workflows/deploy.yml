@@ -346,9 +346,9 @@ jobs:
           kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
           
-          # Create ingress AFTER all services exist
+          # Create ingress AFTER all services exist with static IP
           echo "🚀 Processing ingress after services are ready..."
-          envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
+          STATIC_IP_ADDRESS="${{ env.STATIC_IP_ADDRESS }}" envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
           
           # Cleanup
