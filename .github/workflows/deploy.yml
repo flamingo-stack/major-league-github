@@ -347,6 +347,15 @@ jobs:
           kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
           
+          # Create static IP if it doesn't exist
+          echo "🚀 Ensuring static IP exists..."
+          if ! gcloud compute addresses describe main-ingress-ip --global >/dev/null 2>&1; then
+            echo "Creating static IP main-ingress-ip..."
+            gcloud compute addresses create main-ingress-ip --global
+          else
+            echo "Static IP main-ingress-ip already exists"
+          fi
+          
           # Create ingress AFTER all services exist with static IP
           echo "🚀 Processing ingress after services are ready..."
           envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
