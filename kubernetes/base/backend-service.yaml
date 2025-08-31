@@ -30,6 +30,9 @@ spec:
                 name: ${SERVICE_NAME}-config
             - secretRef:
                 name: app-secrets
+          ports:
+            - containerPort: ${SERVER_PORT}
+              name: http
           env:
             - name: GITHUB_TOKENS
               valueFrom:
