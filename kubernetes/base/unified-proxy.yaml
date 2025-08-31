@@ -7,30 +7,17 @@ data:
   default.conf: |
     server {
         listen 80;
-        server_name _;
         
-        # Health check
         location /health {
-            return 200 'healthy';
-            add_header Content-Type text/plain;
+            return 200;
         }
         
-        # API routes - proxy to backend service (internal)
-        location /api {
-            proxy_pass http://web-service-service:8080;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+        location /api/ {
+            proxy_pass http://web-service-service:8080/;
         }
         
-        # Everything else - proxy to frontend service (internal)
         location / {
             proxy_pass http://frontend-service:80;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
 ---
