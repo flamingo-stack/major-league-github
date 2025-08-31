@@ -560,3 +560,33 @@ jobs:
           initial-status: success
           environment-url: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}
 
+      - name: Cleanup old backend-service images 🧹
+        if: always()
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        continue-on-error: true
+        with:
+          package: ${{ env.REGISTRY_NAME }}/backend-service
+          delete-ghost-images: true
+          delete-tags: "*"
+          exclude-tags: latest,${{ env.VERSION }}
+
+      - name: Cleanup old cache-updater images 🧹
+        if: always()
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        continue-on-error: true
+        with:
+          package: ${{ env.REGISTRY_NAME }}/cache-updater
+          delete-ghost-images: true
+          delete-tags: "*"
+          exclude-tags: latest,${{ env.VERSION }}
+
+      - name: Cleanup old frontend images 🧹
+        if: always()
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        continue-on-error: true
+        with:
+          package: ${{ env.REGISTRY_NAME }}/frontend
+          delete-ghost-images: true
+          delete-tags: "*"
+          exclude-tags: latest,${{ env.VERSION }}
+
