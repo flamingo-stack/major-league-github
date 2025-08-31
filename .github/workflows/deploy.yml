@@ -294,7 +294,7 @@ jobs:
             --build-arg OG_IMAGE_URL="${{ env.OG_IMAGE_URL }}" \
             --build-arg OG_URL="https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
             --build-arg OG_SITE_NAME="${{ env.OG_SITE_NAME }}" \
-            --build-arg WEBAPP_EXTRA_BUTTON_LINK="${{ env.WEBAPP_EXTRA_BUTTON_TEXT }}" \
+            --build-arg WEBAPP_EXTRA_BUTTON_LINK="${{ env.WEBAPP_EXTRA_BUTTON_LINK }}" \
             --build-arg WEBAPP_EXTRA_BUTTON_TEXT="${{ env.WEBAPP_EXTRA_BUTTON_TEXT }}" \
             -t "${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:${{ env.VERSION }}" \
             -t "${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:latest"
