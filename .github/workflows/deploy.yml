@@ -285,7 +285,7 @@ jobs:
           echo "🚀 Processing cache updater..."
           SERVICE_NAME=cache-updater \
           SERVER_PORT=8081 \
-            envsubst < kubernetes/base/backend-service.yaml > processed_k8s/cache-updater.yaml
+            envsubst < kubernetes/base/cache-updater-service.yaml > processed_k8s/cache-updater.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
           
           # Clean up old resources

@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${SERVICE_NAME}
+  labels:
+    app: ${SERVICE_NAME}
+spec:
+  replicas: ${BACKEND_REPLICAS}
+  selector:
+    matchLabels:
+      app: ${SERVICE_NAME}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: ${SERVICE_NAME}
+    spec:
+      containers:
+        - name: ${SERVICE_NAME}
+          image: ghcr.io/flamingo-stack/major-league-github/${SERVICE_NAME}:${VERSION}
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - configMapRef:
+                name: ${SERVICE_NAME}-config
+            - secretRef:
+                name: app-secrets
+          ports:
+            - containerPort: ${SERVER_PORT}
+              name: http
+          env:
+            - name: GITHUB_TOKENS
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: github.tokens
+            - name: SPRING_REDIS_HOST
+              value: "${REDIS_HOST}"
+            - name: SPRING_REDIS_PORT
+              value: "6379"
+            - name: JAVA_MIN_HEAP
+              value: "${JAVA_MIN_HEAP}"
+            - name: JAVA_MAX_HEAP
+              value: "${JAVA_MAX_HEAP}"
+          resources:
+            requests:
+              memory: ${BACKEND_REQUEST_MEMORY}
+              cpu: ${BACKEND_REQUEST_CPU}
+            limits:
+              memory: ${BACKEND_LIMIT_MEMORY}
+              cpu: ${BACKEND_LIMIT_CPU}
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: ${SERVER_PORT}
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: ${SERVER_PORT}
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${SERVICE_NAME}-service
+  labels:
+    app: ${SERVICE_NAME}
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  selector:
+    app: ${SERVICE_NAME}
+  ports:
+    - name: http
+      port: ${SERVER_PORT}
+      targetPort: ${SERVER_PORT}
+  type: ClusterIP 
