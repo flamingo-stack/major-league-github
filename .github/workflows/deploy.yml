@@ -295,10 +295,10 @@ jobs:
           
           # Frontend and backend services are already ClusterIP from their respective files
           
-          # Process and apply unified proxy (single domain with /api routing)
-          echo "🚀 Processing unified proxy..."
-          envsubst < kubernetes/base/unified-proxy.yaml > processed_k8s/unified-proxy.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/unified-proxy.yaml
+          # Process and apply ingress (single domain with /api routing)
+          echo "🚀 Processing ingress..."
+          envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
           
           # Clean up any pending pods and old nginx deployments
           echo "🧹 Cleaning up any stuck/pending pods..."
@@ -334,7 +334,7 @@ jobs:
           kubectl wait --for=condition=available deployment/web-service -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/cache-updater -n ${{ env.NAMESPACE }} --timeout=300s
           kubectl wait --for=condition=available deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
-          kubectl wait --for=condition=available deployment/unified-proxy -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl wait --for=condition=complete job/ingress-setup -n ${{ env.NAMESPACE }} --timeout=300s || echo "No ingress setup job found"
           
           # Cleanup
           rm -rf processed_k8s
@@ -352,19 +352,19 @@ jobs:
           kubectl -n ${{ env.NAMESPACE }} get services
           
           echo "LoadBalancer Status:"
-          kubectl -n ${{ env.NAMESPACE }} get services unified-proxy-service -o wide
+          kubectl -n ${{ env.NAMESPACE }} get ingress main-ingress -o wide
           
           # Wait for unified proxy load balancer IP to be assigned  
           echo "🔍 Waiting for Unified Proxy Load Balancer IP..."
           for i in {1..30}; do
-            LB_IP=$(kubectl get service unified-proxy-service -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            LB_IP=$(kubectl get ingress main-ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
             if [ ! -z "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
               echo "✅ Load Balancer IP: ${LB_IP}"
               break
             fi
             if [ $i -eq 30 ]; then
               echo "❌ Timeout waiting for Load Balancer IP"
-              kubectl get service unified-proxy-service -n ${{ env.NAMESPACE }} -o yaml
+              kubectl get ingress main-ingress -n ${{ env.NAMESPACE }} -o yaml
               exit 1
             fi
             echo "⏳ Waiting for Load Balancer IP... (attempt $i/30)"
