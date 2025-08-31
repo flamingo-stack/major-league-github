@@ -1,3 +1,11 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: main-ingress-ssl-cert
+spec:
+  domains:
+    - ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -5,8 +13,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "gce"
     kubernetes.io/ingress.global-static-ip-name: "main-ingress-ip"
-    kubernetes.io/ingress.allow-http: "true"
-    ingress.gcp.kubernetes.io/ssl-cert: "main-ingress-ssl-cert"
+    networking.gke.io/managed-certificates: "main-ingress-ssl-cert"
 spec:
   rules:
   - host: ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
