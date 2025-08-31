@@ -27,6 +27,7 @@ env:
 
   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
   DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
+  STATIC_IP_NAME: "main-ingress-ip"
 
   GH_API_TOKENS: ${{ secrets.GH_API_TOKENS }}
   
