@@ -278,7 +278,7 @@ jobs:
           echo "🚀 Building frontend image..."
           docker build frontend \
             --build-arg NODE_ENV=production \
-            --build-arg BACKEND_API_URL="https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}" \
+            --build-arg BACKEND_API_URL="/" \
             --build-arg GTM_ID="${{ env.GTM_ID }}" \
             --build-arg OG_TITLE="${{ env.OG_TITLE }}" \
             --build-arg OG_DESCRIPTION="${{ env.OG_DESCRIPTION }}" \
