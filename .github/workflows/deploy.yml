@@ -358,22 +358,27 @@ jobs:
           kubectl -n ${{ env.NAMESPACE }} get services
           
           echo "LoadBalancer Status:"
-          kubectl -n ${{ env.NAMESPACE }} get services main-loadbalancer -o wide
+          kubectl -n ${{ env.NAMESPACE }} get services -l cloud.google.com/load-balancer-type=External -o wide
           
-          # Wait for LoadBalancer IP to be assigned  
-          echo "🔍 Waiting for LoadBalancer IP..."
+          # Wait for LoadBalancer IPs to be assigned  
+          echo "🔍 Waiting for LoadBalancer IPs..."
           for i in {1..15}; do
-            LB_IP=$(kubectl get service main-loadbalancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-            if [ ! -z "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
-              echo "✅ Load Balancer IP: ${LB_IP}"
+            FRONTEND_IP=$(kubectl get service frontend-loadbalancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            BACKEND_IP=$(kubectl get service backend-loadbalancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ ! -z "$FRONTEND_IP" ] && [ "$FRONTEND_IP" != "null" ] && [ ! -z "$BACKEND_IP" ] && [ "$BACKEND_IP" != "null" ]; then
+              echo "✅ Frontend IP: ${FRONTEND_IP}"
+              echo "✅ Backend IP: ${BACKEND_IP}"
+              echo "🌐 Frontend URL: http://${FRONTEND_IP}"
+              echo "🌐 Backend URL: http://${BACKEND_IP}/actuator/health"
+              LB_IP="${FRONTEND_IP}"
               break
             fi
             if [ $i -eq 15 ]; then
-              echo "❌ Timeout waiting for Load Balancer IP"
-              kubectl get service main-loadbalancer -n ${{ env.NAMESPACE }} -o yaml
+              echo "❌ Timeout waiting for LoadBalancer IPs"
+              kubectl get services -n ${{ env.NAMESPACE }} -o wide
               exit 1
             fi
-            echo "⏳ Waiting for Load Balancer IP... (attempt $i/15)"
+            echo "⏳ Waiting for LoadBalancer IPs... (attempt $i/15)"
             sleep 10
           done
           
