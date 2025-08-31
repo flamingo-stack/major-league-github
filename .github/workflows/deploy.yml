@@ -565,7 +565,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          owner: flamingo-stack
+          owner: ${{ github.repository_owner }}
           package: backend-service
           delete-ghost-images: true
           delete-tags: "*"
@@ -576,7 +576,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          owner: flamingo-stack
+          owner: ${{ github.repository_owner }}
           package: cache-updater
           delete-ghost-images: true
           delete-tags: "*"
@@ -587,7 +587,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
-          owner: flamingo-stack
+          owner: ${{ github.repository_owner }}
           package: frontend
           delete-ghost-images: true
           delete-tags: "*"
