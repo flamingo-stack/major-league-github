@@ -5,6 +5,8 @@ metadata:
   name: unified-proxy-config
 data:
   default.conf: |
+    resolver kube-dns.kube-system.svc.cluster.local valid=10s;
+    
     server {
         listen 80;
         
