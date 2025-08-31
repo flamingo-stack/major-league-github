@@ -372,10 +372,10 @@ jobs:
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           echo "✅ Frontend applied successfully"
           
-          # Clean up any pending pods
-          echo "🧹 Cleaning up any stuck/pending pods..."
-          kubectl delete pods -n ${{ env.NAMESPACE }} --field-selector status.phase=Pending --force --grace-period=0 || echo "No pending pods to clean up"
-          echo "✅ Cleanup completed"
+          # Clean up all old pods in namespace
+          echo "🧹 Cleaning up all old pods in namespace..."
+          kubectl delete pods --all -n ${{ env.NAMESPACE }} --force --grace-period=0 || echo "No pods to clean up"
+          echo "✅ Pod cleanup completed"
           
           # Remove old resources if they exist
           echo "🧹 Cleaning up old resources..."
