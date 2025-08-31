@@ -352,19 +352,15 @@ jobs:
             envsubst < kubernetes/base/cache-updater-service.yaml > processed_k8s/cache-updater.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
           
-          # Clean up old resources
-          echo "🧹 Cleaning up old resources..."
-          kubectl delete ingress main-ingress -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No old ingress found"
-          kubectl delete service unified-proxy-service -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No old unified-proxy-service found"  
-          kubectl delete service main-loadbalancer -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No old main-loadbalancer found"
-          kubectl delete service frontend-loadbalancer -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No old frontend-loadbalancer found"
-          kubectl delete service backend-loadbalancer -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No old backend-loadbalancer found"
-          kubectl delete deployment unified-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No old unified-proxy found"
-          kubectl delete configmap unified-proxy-config -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No old unified-proxy-config found"
+          # Clean up all resources in namespace (except secrets and configmaps we'll recreate)
+          echo "🧹 Cleaning up all resources in namespace..."
+          kubectl delete all --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No resources to clean up"
+          kubectl delete ingress --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No ingress to clean up"
+          kubectl delete backendconfig --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No backendconfig to clean up"
           
           # Wait for cleanup to complete
           echo "⏳ Waiting for cleanup to complete..."
-          sleep 5
+          sleep 10
           
           # Process and apply frontend (creates frontend-service as ClusterIP with NEG)
           echo "🚀 Processing frontend..."
@@ -372,22 +368,7 @@ jobs:
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           echo "✅ Frontend applied successfully"
           
-          # Clean up all old pods in namespace
-          echo "🧹 Cleaning up all old pods in namespace..."
-          kubectl delete pods --all -n ${{ env.NAMESPACE }} --force --grace-period=0 || echo "No pods to clean up"
-          echo "✅ Pod cleanup completed"
-          
-          # Remove old resources if they exist
-          echo "🧹 Cleaning up old resources..."
-          kubectl delete deployment nginx-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true
-          kubectl delete service nginx-proxy-service -n ${{ env.NAMESPACE }} --ignore-not-found=true
-          kubectl delete service frontend-load-balancer -n ${{ env.NAMESPACE }} --ignore-not-found=true
-          kubectl delete service backend-load-balancer -n ${{ env.NAMESPACE }} --ignore-not-found=true
-          kubectl delete service main-load-balancer -n ${{ env.NAMESPACE }} --ignore-not-found=true
-          kubectl delete configmap nginx-proxy-config -n ${{ env.NAMESPACE }} --ignore-not-found=true
-          
-          # Wait a moment for cleanup
-          sleep 5
+          echo "✅ All resources cleanup completed"
           
           # Check deployment status immediately after creation
           echo "🔍 Immediate deployment status check..."
