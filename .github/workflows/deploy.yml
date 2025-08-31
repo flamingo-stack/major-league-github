@@ -563,57 +563,44 @@ jobs:
       - name: Cleanup old container images 🧹
         if: always()
         run: |
-          echo "🧹 Cleaning up old container images for repository: ${{ github.repository }}..."
+          echo "🧹 Cleaning up old container images..."
           
-          # Extract owner and repo name from github.repository (format: owner/repo)
-          OWNER=$(echo "${{ github.repository }}" | cut -d'/' -f1)
-          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          # Define the packages we know exist for this repo
+          PACKAGES="backend-service cache-updater frontend"
+          ORG="flamingo-stack"
           
-          echo "🔍 Looking for container packages in ${OWNER}/${REPO_NAME}..."
-          
-          # Get all container packages for this repository
-          PACKAGES=$(gh api "/orgs/${OWNER}/packages?package_type=container" --jq '.[] | select(.repository.name == "'${REPO_NAME}'") | .name' 2>/dev/null || echo "")
-          
-          if [ -z "$PACKAGES" ]; then
-            echo "✅ No container packages found for this repository"
-            exit 0
-          fi
-          
-          echo "📦 Found packages: $(echo $PACKAGES | tr '\n' ' ')"
-          
-          # Process each package
           for package in $PACKAGES; do
-            echo "🔍 Cleaning up ${OWNER}/${package}..."
+            echo "🔍 Processing package: $package"
             
-            # Get all versions for this package
-            ALL_VERSIONS=$(gh api "/orgs/${OWNER}/packages/container/${package}/versions" --jq 'sort_by(.created_at) | reverse' 2>/dev/null || echo "[]")
+            # Get package versions using GitHub CLI
+            VERSIONS=$(gh api "orgs/$ORG/packages/container/$package/versions" --jq '.[].id' 2>/dev/null || echo "")
             
-            if [ "$ALL_VERSIONS" = "[]" ]; then
-              echo "✅ No versions found for ${package}"
+            if [ -z "$VERSIONS" ]; then
+              echo "⏩ No versions found for $package"
               continue
             fi
             
-            # Delete ALL versions except the most recent one, then tag it as 'latest'
-            MOST_RECENT_ID=$(echo "$ALL_VERSIONS" | jq -r '.[0].id')
-            echo "📋 Most recent version ID: $MOST_RECENT_ID"
+            # Count total versions
+            VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
+            echo "📋 Found $VERSION_COUNT versions for $package"
+            
+            # Keep only the most recent version (first in the list)
+            KEEP_VERSION=$(echo "$VERSIONS" | head -1)
+            echo "⏩ Keeping version: $KEEP_VERSION"
             
             # Delete all other versions
-            echo "$ALL_VERSIONS" | jq -r '.[] | .id' | while read version_id; do
-              if [ "$version_id" = "$MOST_RECENT_ID" ]; then
-                TAGS=$(echo "$ALL_VERSIONS" | jq -r --arg id "$version_id" '.[] | select(.id == $id) | .metadata.container.tags[]' | tr '\n' ',' | sed 's/,$//')
-                echo "⏩ Keeping most recent version $version_id (tags: $TAGS) - this will become 'latest'"
-              else
-                TAGS=$(echo "$ALL_VERSIONS" | jq -r --arg id "$version_id" '.[] | select(.id == $id) | .metadata.container.tags[]' | tr '\n' ',' | sed 's/,$//')
-                echo "🗑️ Deleting old version $version_id (tags: $TAGS)"
-                gh api --method DELETE "/orgs/${OWNER}/packages/container/${package}/versions/$version_id" 2>/dev/null \
-                  && echo "✅ Successfully deleted $version_id" \
+            echo "$VERSIONS" | tail -n +2 | while read version_id; do
+              if [ ! -z "$version_id" ]; then
+                echo "🗑️ Deleting version: $version_id"
+                gh api --method DELETE "orgs/$ORG/packages/container/$package/versions/$version_id" \
+                  && echo "✅ Deleted $version_id" \
                   || echo "❌ Failed to delete $version_id"
               fi
             done
             
-            echo "✅ Cleanup completed for ${package}"
+            echo "✅ Cleanup completed for $package"
           done
           
-          echo "✅ Container image cleanup completed - only most recent versions remain"
+          echo "✅ Container image cleanup completed"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
