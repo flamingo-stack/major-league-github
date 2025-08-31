@@ -5,7 +5,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "gce"
     kubernetes.io/ingress.global-static-ip-name: "main-ingress-ip"
-    kubernetes.io/ingress.allow-http: "false"
+    kubernetes.io/ingress.allow-http: "true"
     ingress.gcp.kubernetes.io/ssl-cert: "main-ingress-ssl-cert"
 spec:
   rules:
