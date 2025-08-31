@@ -330,6 +330,16 @@ jobs:
         run: |
           echo "🚀 Processing and applying Kubernetes configurations..."
           
+          # Clean up all resources in namespace first (except secrets and configmaps we'll recreate)
+          echo "🧹 Cleaning up all resources in namespace..."
+          kubectl delete all --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No resources to clean up"
+          kubectl delete ingress --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No ingress to clean up"
+          kubectl delete backendconfig --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No backendconfig to clean up"
+          
+          # Wait for NEG cleanup to complete (they take time to detach from load balancers)
+          echo "⏳ Waiting for NEG cleanup to complete..."
+          sleep 30
+          
           # Create temporary directory
           mkdir -p processed_k8s
           
@@ -351,16 +361,6 @@ jobs:
           SERVER_PORT=8081 \
             envsubst < kubernetes/base/cache-updater-service.yaml > processed_k8s/cache-updater.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
-          
-          # Clean up all resources in namespace (except secrets and configmaps we'll recreate)
-          echo "🧹 Cleaning up all resources in namespace..."
-          kubectl delete all --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No resources to clean up"
-          kubectl delete ingress --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No ingress to clean up"
-          kubectl delete backendconfig --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No backendconfig to clean up"
-          
-          # Wait for cleanup to complete
-          echo "⏳ Waiting for cleanup to complete..."
-          sleep 10
           
           # Process and apply frontend (creates frontend-service as ClusterIP with NEG)
           echo "🚀 Processing frontend..."
