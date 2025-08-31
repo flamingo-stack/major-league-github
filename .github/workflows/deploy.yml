@@ -561,7 +561,7 @@ jobs:
           environment-url: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}
 
       - name: Cleanup old backend-service images 🧹
-        if: always()
+        if: always() && steps.changes.outputs.build_backend == 'true'
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
@@ -572,7 +572,7 @@ jobs:
           exclude-tags: latest,${{ env.VERSION }}
 
       - name: Cleanup old cache-updater images 🧹
-        if: always()
+        if: always() && steps.changes.outputs.build_cache_updater == 'true'
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
@@ -583,7 +583,7 @@ jobs:
           exclude-tags: latest,${{ env.VERSION }}
 
       - name: Cleanup old frontend images 🧹
-        if: always()
+        if: always() && steps.changes.outputs.build_frontend == 'true'
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
