@@ -12,18 +12,16 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+      maxSurge: 0
+      maxUnavailable: 1
   template:
     metadata:
       labels:
         app: frontend
     spec:
-      imagePullSecrets:
-        - name: registry-credentials
       containers:
         - name: frontend
-          image: ${REGISTRY}/${REGISTRY_NAME}/frontend:${VERSION}
+          image: ghcr.io/flamingo-stack/major-league-github/frontend:${VERSION}
           imagePullPolicy: Always
           env:
             - name: OG_TITLE
@@ -91,6 +89,8 @@ metadata:
   name: frontend-service
   labels:
     app: frontend
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
 spec:
   selector:
     app: frontend
