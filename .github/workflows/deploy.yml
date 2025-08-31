@@ -560,36 +560,37 @@ jobs:
           initial-status: success
           environment-url: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}
 
-      - name: Cleanup old backend-service images 🧹
-        if: always() && steps.changes.outputs.build_backend == 'true'
+      - name: Cleanup old images 🧹
+        if: always()
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
           owner: ${{ github.repository_owner }}
-          package: backend-service
+          package: ${{ github.event.repository.name }}/backend-service
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,${{ env.VERSION }}
 
-      - name: Cleanup old cache-updater images 🧹
-        if: always() && steps.changes.outputs.build_cache_updater == 'true'
+      - name: Cleanup old images 🧹
+        if: always()
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
           owner: ${{ github.repository_owner }}
-          package: cache-updater
+          package: ${{ github.event.repository.name }}/cache-updater
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,${{ env.VERSION }}
 
-      - name: Cleanup old frontend images 🧹
-        if: always() && steps.changes.outputs.build_frontend == 'true'
+      - name: Cleanup old images 🧹
+        if: always()
         uses: dataaxiom/ghcr-cleanup-action@v1
         continue-on-error: true
         with:
           owner: ${{ github.repository_owner }}
-          package: frontend
+          package: ${{ github.event.repository.name }}/frontend
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,${{ env.VERSION }}
+
 
