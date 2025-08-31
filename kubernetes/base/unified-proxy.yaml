@@ -11,7 +11,7 @@ data:
         
         # Health check
         location /health {
-            return 200 "OK";
+            return 200 'healthy';
             add_header Content-Type text/plain;
         }
         
