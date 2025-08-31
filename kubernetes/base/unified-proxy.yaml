@@ -17,8 +17,6 @@ data:
         location /api/ {
             rewrite ^/api/(.*)$ /$1 break;
             proxy_pass http://web-service-service:8080;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
         }
         
         location / {
