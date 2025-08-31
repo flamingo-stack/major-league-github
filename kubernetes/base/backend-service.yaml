@@ -77,6 +77,8 @@ metadata:
   name: ${SERVICE_NAME}-service
   labels:
     app: ${SERVICE_NAME}
+  annotations:
+    cloud.google.com/neg: '{"ingress": false}'
 spec:
   selector:
     app: ${SERVICE_NAME}
