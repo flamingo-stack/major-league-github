@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  BACKEND_URL: "http://${WEB_SERVICE_NAME}-service:${WEB_SERVICE_PORT}"
+  BACKEND_URL: "http://${BACKEND_SERVICE_NAME}-service:${BACKEND_SERVICE_PORT}"
   DOMAIN_NAME: "${DOMAIN_NAME}"
   ENVIRONMENT: "${ENVIRONMENT}"
   JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
@@ -14,10 +14,10 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ${WEB_SERVICE_NAME}-config
+  name: ${BACKEND_SERVICE_NAME}-config
 data:
-  SERVER_PORT: "${WEB_SERVICE_PORT}"
-  SPRING_PROFILES_ACTIVE: "${WEB_SERVICE_NAME}"
+  SERVER_PORT: "${BACKEND_SERVICE_PORT}"
+  SPRING_PROFILES_ACTIVE: "${BACKEND_SERVICE_NAME}"
 ---
 apiVersion: v1
 kind: ConfigMap
