@@ -6,12 +6,8 @@ metadata:
     kubernetes.io/ingress.class: "gce"
     kubernetes.io/ingress.global-static-ip-name: "main-ingress-ip"
     kubernetes.io/ingress.allow-http: "false"
-    ingress.gcp.kubernetes.io/pre-shared-cert: "main-ingress-ssl-cert"
+    ingress.gcp.kubernetes.io/ssl-cert: "main-ingress-ssl-cert"
 spec:
-  tls:
-  - hosts:
-    - ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
-    secretName: main-ingress-ssl-cert
   rules:
   - host: ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
     http:
