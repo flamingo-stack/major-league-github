@@ -375,9 +375,6 @@ jobs:
           echo "🌐 Frontend URL: http://${LB_IP}/"
           echo "🌐 Backend API URL: http://${LB_IP}/api/actuator/health"
           
-          # Save IP for DNS step and summary
-          echo "LB_IP=${LB_IP}" >> $GITHUB_ENV
-          
           echo "✅ Migration Complete - Proper Kubernetes Architecture!"
           echo "🌐 Single External Gateway: http://${LB_IP}"
           echo "   - Frontend: http://${LB_IP}/"
@@ -391,6 +388,7 @@ jobs:
 
       - name: Update DNS Record (Cross-Project) 🌍
         run: |
+          LB_IP="${{ env.STATIC_IP_ADDRESS }}"
           echo "🌍 Updating DNS record for ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }} to ${LB_IP}"
           
           # DNS project details
