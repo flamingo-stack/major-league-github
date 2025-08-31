@@ -305,6 +305,10 @@ jobs:
           kubectl delete service backend-loadbalancer -n ${{ env.NAMESPACE }} --ignore-not-found=true
           kubectl delete ingress main-ingress -n ${{ env.NAMESPACE }} --ignore-not-found=true
           
+          # Delete existing services to force recreation as NodePort
+          kubectl delete service frontend-service -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          kubectl delete service web-service-service -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          
           # Wait a bit for cleanup to complete
           echo "⏳ Waiting for cleanup to complete..."
           sleep 10
