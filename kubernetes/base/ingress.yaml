@@ -10,10 +10,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - major-league-github.flamingo.cx
+    - ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
     secretName: main-ingress-ssl-cert
   rules:
-  - host: major-league-github.flamingo.cx
+  - host: ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
     http:
       paths:
       - path: /api

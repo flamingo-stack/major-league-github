@@ -425,7 +425,9 @@ jobs:
           
           # Create ingress AFTER all services exist with static IP
           echo "🚀 Processing ingress after services are ready..."
-          envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
+          DOMAIN_NAME="${{ env.DOMAIN_NAME }}" \
+          DOMAIN_SUFFIX="${{ env.DOMAIN_SUFFIX }}" \
+            envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
           
           # Cleanup
