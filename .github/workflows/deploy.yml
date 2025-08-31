@@ -375,10 +375,6 @@ jobs:
           echo "🌐 Frontend URL: http://${LB_IP}/"
           echo "🌐 Backend API URL: http://${LB_IP}/api/actuator/health"
           
-          # Wait for Ingress to be ready (but don't wait for IP since we know it)
-          echo "🔍 Waiting for Ingress to be ready..."
-          kubectl wait --for=condition=available ingress/main-ingress -n ${{ env.NAMESPACE }} --timeout=300s || echo "Ingress condition check timed out, but continuing with static IP"
-          
           # Save IP for DNS step and summary
           echo "LB_IP=${LB_IP}" >> $GITHUB_ENV
           
