@@ -295,10 +295,10 @@ jobs:
           
           # Frontend and backend services are already ClusterIP from their respective files
           
-          # Process and apply ingress (single domain with /api routing)
-          echo "🚀 Processing ingress..."
-          envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
-          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
+          # Process and apply loadbalancer
+          echo "🚀 Processing loadbalancer..."
+          envsubst < kubernetes/base/loadbalancer.yaml > processed_k8s/loadbalancer.yaml
+          kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/loadbalancer.yaml
           
           # Clean up old unified-proxy resources before deploying ingress
           echo "🧹 Cleaning up old unified-proxy resources..."
@@ -358,22 +358,22 @@ jobs:
           kubectl -n ${{ env.NAMESPACE }} get services
           
           echo "LoadBalancer Status:"
-          kubectl -n ${{ env.NAMESPACE }} get ingress main-ingress -o wide
+          kubectl -n ${{ env.NAMESPACE }} get services main-loadbalancer -o wide
           
-          # Wait for ingress load balancer IP to be assigned  
-          echo "🔍 Waiting for Ingress Load Balancer IP..."
-          for i in {1..30}; do
-            LB_IP=$(kubectl get ingress main-ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+          # Wait for LoadBalancer IP to be assigned  
+          echo "🔍 Waiting for LoadBalancer IP..."
+          for i in {1..15}; do
+            LB_IP=$(kubectl get service main-loadbalancer -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
             if [ ! -z "$LB_IP" ] && [ "$LB_IP" != "null" ]; then
               echo "✅ Load Balancer IP: ${LB_IP}"
               break
             fi
-            if [ $i -eq 30 ]; then
+            if [ $i -eq 15 ]; then
               echo "❌ Timeout waiting for Load Balancer IP"
-              kubectl get ingress main-ingress -n ${{ env.NAMESPACE }} -o yaml
+              kubectl get service main-loadbalancer -n ${{ env.NAMESPACE }} -o yaml
               exit 1
             fi
-            echo "⏳ Waiting for Load Balancer IP... (attempt $i/30)"
+            echo "⏳ Waiting for Load Balancer IP... (attempt $i/15)"
             sleep 10
           done
           
