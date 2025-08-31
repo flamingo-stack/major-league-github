@@ -78,7 +78,7 @@ metadata:
   labels:
     app: ${SERVICE_NAME}
   annotations:
-    cloud.google.com/neg: '{"ingress": false}'
+    cloud.google.com/neg: '{"ingress": true}'
 spec:
   selector:
     app: ${SERVICE_NAME}
@@ -86,4 +86,4 @@ spec:
     - name: http
       port: ${SERVER_PORT}
       targetPort: ${SERVER_PORT}
-  type: NodePort 
+  type: ClusterIP 

@@ -89,6 +89,8 @@ metadata:
   name: frontend-service
   labels:
     app: frontend
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
 spec:
   selector:
     app: frontend
@@ -96,4 +98,4 @@ spec:
     - name: http
       port: 80
       targetPort: http
-  type: NodePort 
+  type: ClusterIP 
