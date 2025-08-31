@@ -345,6 +345,31 @@ jobs:
         run: |
           echo "🚀 Processing and applying Kubernetes configurations..."
           
+          # Determine image versions based on what was built
+          if [ "${{ steps.changes.outputs.build_backend }}" = "true" ]; then
+            BACKEND_VERSION="${{ env.VERSION }}"
+            echo "✅ Using new backend version: $BACKEND_VERSION"
+          else
+            BACKEND_VERSION="latest"
+            echo "⏩ Using existing backend version: $BACKEND_VERSION"
+          fi
+          
+          if [ "${{ steps.changes.outputs.build_cache_updater }}" = "true" ]; then
+            CACHE_UPDATER_VERSION="${{ env.VERSION }}"
+            echo "✅ Using new cache updater version: $CACHE_UPDATER_VERSION"
+          else
+            CACHE_UPDATER_VERSION="latest"
+            echo "⏩ Using existing cache updater version: $CACHE_UPDATER_VERSION"
+          fi
+          
+          if [ "${{ steps.changes.outputs.build_frontend }}" = "true" ]; then
+            FRONTEND_VERSION="${{ env.VERSION }}"
+            echo "✅ Using new frontend version: $FRONTEND_VERSION"
+          else
+            FRONTEND_VERSION="latest"
+            echo "⏩ Using existing frontend version: $FRONTEND_VERSION"
+          fi
+          
           # Create temporary directory
           mkdir -p processed_k8s
           
@@ -357,6 +382,7 @@ jobs:
           echo "🚀 Processing backend service..."
           SERVICE_NAME=backend-service \
           SERVER_PORT=8080 \
+          VERSION=$BACKEND_VERSION \
             envsubst < kubernetes/base/backend-service.yaml > processed_k8s/backend-service.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/backend-service.yaml
           
@@ -364,12 +390,14 @@ jobs:
           echo "🚀 Processing cache updater..."
           SERVICE_NAME=cache-updater \
           SERVER_PORT=8081 \
+          VERSION=$CACHE_UPDATER_VERSION \
             envsubst < kubernetes/base/cache-updater-service.yaml > processed_k8s/cache-updater.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
           
           # Process and apply frontend (creates frontend-service as ClusterIP with NEG)
           echo "🚀 Processing frontend..."
-          envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
+          VERSION=$FRONTEND_VERSION \
+            envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           echo "✅ Frontend applied successfully"
           
