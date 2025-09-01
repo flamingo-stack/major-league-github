@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 viewBox="0 0 1080 1081.4" style="enable-background:new 0 0 1080 1081.4;" xml:space="preserve">
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg"
+	xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	viewBox="0 0 1080 1081.4" style="enable-background:new 0 0 1080 1081.4;" xml:space="preserve">
 <style type="text/css">
 	.st0{fill:black;}
 </style>
+<!-- White background with rounded corners -->
+<rect x="0" y="0" width="1080" height="1081.4" rx="108" ry="108" fill="white"/>
 <g>
 	<path d="M534.4,893.1c0,0-20.9,3.6-50.8,3.6c-75.3,0-99.1-48.1-110.5-75c-14.7-35-33.9-51.5-54.2-64.6
 		c-12.5-8.1-15.4-17.6-0.9-20.3c66.7-12.6,83.7,75.6,128.2,89.6c31.8,10,72.6,5.7,92.9-7.4c2.7-26.9,22.1-50.2,38.3-62.5
