@@ -170,58 +170,22 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check for changes 🔍
+        uses: dorny/paths-filter@v3
         id: changes
-        run: |
-          echo "🔍 Checking for changes since last successful build..."
-          
-          # Get the last successful workflow run SHA
-          LAST_SUCCESS_SHA=$(gh run list --workflow=deploy.yml --status=success --limit=1 --json headSha --jq='.[0].headSha' || echo "")
-          
-          if [ -z "$LAST_SUCCESS_SHA" ] || [ "$LAST_SUCCESS_SHA" = "null" ]; then
-            echo "No previous successful build found, building all images"
-            echo "build_backend=true" >> $GITHUB_OUTPUT
-            echo "build_cache_updater=true" >> $GITHUB_OUTPUT
-            echo "build_frontend=true" >> $GITHUB_OUTPUT
-          else
-            echo "Comparing changes since $LAST_SUCCESS_SHA"
-            
-            # Check for backend changes
-            if git diff --name-only $LAST_SUCCESS_SHA..HEAD | grep -E '^backend/|^kubernetes/.*backend|^\.github/workflows/deploy\.yml$' > /dev/null; then
-              echo "Backend changes detected"
-              echo "build_backend=true" >> $GITHUB_OUTPUT
-            else
-              echo "No backend changes detected"
-              echo "build_backend=false" >> $GITHUB_OUTPUT
-            fi
-            
-            # Check for cache updater changes (same as backend since it uses same source)
-            if git diff --name-only $LAST_SUCCESS_SHA..HEAD | grep -E '^backend/|^kubernetes/.*cache|^\.github/workflows/deploy\.yml$' > /dev/null; then
-              echo "Cache updater changes detected"
-              echo "build_cache_updater=true" >> $GITHUB_OUTPUT
-            else
-              echo "No cache updater changes detected"
-              echo "build_cache_updater=false" >> $GITHUB_OUTPUT
-            fi
-            
-            # Check for frontend changes
-            FRONTEND_CHANGES=$(git diff --name-only $LAST_SUCCESS_SHA..HEAD | grep -E '^frontend/|^kubernetes/.*frontend' || echo "")
-            WORKFLOW_CHANGES=$(git diff --name-only $LAST_SUCCESS_SHA..HEAD | grep -E '^\.github/workflows/deploy\.yml$' || echo "")
-            
-            if [ -n "$FRONTEND_CHANGES" ] || [ -n "$WORKFLOW_CHANGES" ]; then
-              if [ -n "$FRONTEND_CHANGES" ]; then
-                echo "Frontend source changes detected: $FRONTEND_CHANGES"
-              fi
-              if [ -n "$WORKFLOW_CHANGES" ]; then
-                echo "Workflow changes detected - may affect build args"
-              fi
-              echo "build_frontend=true" >> $GITHUB_OUTPUT
-            else
-              echo "No frontend changes detected"
-              echo "build_frontend=false" >> $GITHUB_OUTPUT
-            fi
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'kubernetes/**/*backend*'
+              - '.github/workflows/deploy.yml'
+            cache_updater:
+              - 'backend/**'
+              - 'kubernetes/**/*cache*'
+              - '.github/workflows/deploy.yml'
+            frontend:
+              - 'frontend/**'
+              - 'kubernetes/**/*frontend*'
+              - '.github/workflows/deploy.yml'
 
       - name: Set Webapp Environment Variables 🎨
         run: |
@@ -237,7 +201,7 @@ jobs:
           echo "WEBAPP_EXTRA_BUTTON_TEXT=Why MLG?" >> $GITHUB_ENV
 
       - name: Build and push backend service image 🏗️
-        if: steps.changes.outputs.build_backend == 'true'
+        if: steps.changes.outputs.backend == 'true'
         run: |
           echo "🚀 Building backend service image..."
           docker build \
@@ -251,11 +215,11 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/backend-service:latest
 
       - name: Skip backend service build 🏗️
-        if: steps.changes.outputs.build_backend == 'false'
+        if: steps.changes.outputs.backend == 'false'
         run: echo "⏩ Skipping backend service build - no changes detected"
 
       - name: Build and push cache updater image 🏗️
-        if: steps.changes.outputs.build_cache_updater == 'true'
+        if: steps.changes.outputs.cache_updater == 'true'
         run: |
           echo "🚀 Building cache updater image..."
           docker build \
@@ -269,11 +233,11 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/cache-updater:latest
 
       - name: Skip cache updater build 🏗️
-        if: steps.changes.outputs.build_cache_updater == 'false'
+        if: steps.changes.outputs.cache_updater == 'false'
         run: echo "⏩ Skipping cache updater build - no changes detected"
 
       - name: Build and push frontend image 🎨
-        if: steps.changes.outputs.build_frontend == 'true'
+        if: steps.changes.outputs.frontend == 'true'
         env:
           OG_TITLE: ${{ env.OG_TITLE }}
           OG_DESCRIPTION: ${{ env.OG_DESCRIPTION }}
@@ -304,7 +268,7 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/frontend:latest
 
       - name: Skip frontend build 🎨
-        if: steps.changes.outputs.build_frontend == 'false'
+        if: steps.changes.outputs.frontend == 'false'
         run: echo "⏩ Skipping frontend build - no changes detected"
 
       - name: Create Kubernetes namespace and secrets 🔐
