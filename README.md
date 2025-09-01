@@ -28,7 +28,7 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 - Spring WebFlux for reactive programming
 - Maven for dependency management
 - Microservice Architecture:
-  - Web Service: Handles API requests and data serving
+  - Backend Service: Handles API requests and data serving
   - Cache Updater: Background service for maintaining GitHub data freshness
 - Redis for distributed caching
 
@@ -55,7 +55,7 @@ graph TD
     end
 
     subgraph "Backend Services"
-        WS[Web Service]
+        BS[Backend Service]
         CU[Cache Updater]
         RC[(Redis Cache)]
     end
@@ -65,11 +65,11 @@ graph TD
         LI[LinkedIn API]
     end
 
-    UI --> |HTTP/REST| WS
-    WS --> |Read| RC
+    UI --> |HTTP/REST| BS
+    BS --> |Read| RC
     CU --> |Write| RC
     CU --> |Fetch Data| GH
-    WS --> |Fetch Jobs| LI
+    BS --> |Fetch Jobs| LI
 ```
 
 ## Prerequisites
@@ -93,8 +93,8 @@ graph TD
 cd backend
 ./mvnw clean install
 
-# Run Web Service
-./mvnw spring-boot:run -Pwebservice
+# Run Backend Service
+./mvnw spring-boot:run -Pbackend-service
 
 # Run Cache Updater (in a separate terminal)
 ./mvnw spring-boot:run -Pcache-updater
@@ -136,7 +136,7 @@ OG_SITE_NAME=Major League GitHub
 ```bash
 # Build backend services
 cd backend
-docker build -t major-league-github-webservice --build-arg PROFILE=web-service .
+docker build -t major-league-github-backend-service --build-arg PROFILE=backend-service .
 docker build -t major-league-github-cache-updater --build-arg PROFILE=cache-updater .
 
 # Build frontend
@@ -183,7 +183,7 @@ kubectl apply -k .
 ## How It Works 🛠️
 1. **Data Collection**: The Cache Updater service continuously fetches and updates contributor data from GitHub API
 2. **Data Storage**: Redis serves as a distributed cache for storing contributor data and API responses
-3. **Web Service**: Handles API requests, data filtering, and serving content to the frontend
+3. **Backend Service**: Handles API requests, data filtering, and serving content to the frontend
 4. **Mapping with Teams**: Contributors are matched to nearby MLS teams based on location
 5. **Interactive UI**: A sleek interface allows filtering by language, region, city, and team
 

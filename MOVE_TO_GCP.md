@@ -14,7 +14,7 @@ This document outlines the complete migration plan from DigitalOcean to Google C
 
 ### Application Architecture
 - **Backend Services**:
-  - `web-service`: Main API service (port 8450)
+  - `backend-service`: Main API service (port 8450)
   - `cache-updater`: Background GitHub data updater (port 8451)
 - **Frontend**: React application served via Nginx
 - **Data Store**: Redis for caching GitHub data
