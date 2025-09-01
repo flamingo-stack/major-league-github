@@ -6,6 +6,15 @@ spec:
   domains:
     - ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
 ---
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: main-ingress-frontend-config
+spec:
+  redirectToHttps:
+    enabled: true
+    responseCodeName: MOVED_PERMANENTLY_DEFAULT
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -14,7 +23,7 @@ metadata:
     kubernetes.io/ingress.class: "gce"
     kubernetes.io/ingress.global-static-ip-name: "main-ingress-ip"
     networking.gke.io/managed-certificates: "main-ingress-ssl-cert"
-    ingress.gcp.kubernetes.io/force-ssl-redirect: "true"
+    networking.gke.io/v1beta1.FrontendConfig: "main-ingress-frontend-config"
 spec:
   rules:
   - host: ${DOMAIN_NAME}.${DOMAIN_SUFFIX}
