@@ -10,7 +10,8 @@ Major League GitHub is a full-stack application that creates leaderboards for Gi
   - Backend Service: Handles API requests and data serving (port 8450)
   - Cache Updater: Background service for maintaining GitHub data freshness (port 8451)
 - **Frontend**: React 18 + TypeScript + Material-UI with Webpack 5 bundling
-- **Infrastructure**: Redis for distributed caching, Docker + Kubernetes for deployment
+- **Infrastructure**: Redis for distributed caching, Docker + Kubernetes for deployment on GKE
+- **Deployment**: GitHub Actions CI/CD with automated builds and deployment to Google Cloud Platform
 
 ## Development Commands
 
@@ -81,3 +82,24 @@ Frontend supports optional environment variables for Google Tag Manager and Open
 - Backend Cache Updater: http://localhost:8451  
 - Frontend Development: http://localhost:3000
 - Redis: localhost:6379
+
+## Production Deployment
+- **Live Site**: https://major-league-github.flamingo.cx
+- **Platform**: Google Kubernetes Engine (GKE)
+- **SSL**: Google-managed certificates with automatic HTTP→HTTPS redirect
+- **Build Optimization**: Uses dorny/paths-filter for intelligent build skipping
+- **Container Registry**: GitHub Container Registry (ghcr.io)
+
+## CI/CD Pipeline
+The deployment is fully automated via GitHub Actions:
+- **Trigger**: Push to main branch
+- **Build Optimization**: Only rebuilds changed services (backend/cache-updater/frontend)
+- **Deployment**: Automated deployment to GKE with proper service updates
+- **SSL Management**: Automatic certificate provisioning and renewal
+- **Image Cleanup**: Automatic cleanup of old container images to save costs
+
+## Key Files
+- `.github/workflows/deploy.yml`: Main CI/CD pipeline
+- `kubernetes/base/`: Kubernetes manifests for GKE deployment
+- `frontend/src/services/api.ts`: API service configuration (uses relative paths)
+- Backend profiles configured in `pom.xml` and `application-*.properties` files

@@ -11,6 +11,8 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 
 🌐 **Live Demo**: [major-league-github.flamingo.cx](https://major-league-github.flamingo.cx/)
 
+[![Deploy Status](https://img.shields.io/github/actions/workflow/status/flamingo-stack/major-league-github/deploy.yml?branch=main&label=deployment&style=flat-square)](https://github.com/flamingo-stack/major-league-github/actions/workflows/deploy.yml)
+
 ## Features 🚀
 - **Filter by Soccer Teams**: Discover top contributors near MLS stadiums, connecting coding and soccer fans.
 - **Programming Language Leaderboards**: Focus on specific languages (e.g., Java) to find standout developers.
@@ -37,10 +39,13 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 - React Query for data fetching
 - Webpack 5 for bundling
 
-### Infrastructure
-- Docker for containerization
-- Kubernetes for orchestration
-- Nginx for frontend serving
+### Infrastructure & Deployment
+- **Platform**: Google Kubernetes Engine (GKE)
+- **CI/CD**: GitHub Actions with automated deployment
+- **SSL**: Google-managed certificates with HTTP→HTTPS redirect
+- **Container Registry**: GitHub Container Registry (ghcr.io)
+- **Build Optimization**: Intelligent build skipping using dorny/paths-filter
+- **Monitoring**: Real-time deployment status and health checks
 
 ## Architecture
 ```mermaid
@@ -68,12 +73,18 @@ graph TD
 ```
 
 ## Prerequisites
+
+### For Local Development
 - Java Development Kit (JDK) 21
 - Node.js 18+ and npm
 - Docker and Docker Compose
-- Kubernetes cluster (for deployment)
 - GitHub API tokens
 - Redis instance
+
+### For Production Deployment
+- Google Cloud Platform account with GKE enabled
+- GitHub repository with proper secrets configured
+- Domain name for SSL certificate provisioning
 
 ## Getting Started
 
@@ -133,17 +144,36 @@ cd frontend
 docker build -t major-league-github-frontend .
 ```
 
-### Kubernetes Deployment
+### Production Deployment
+
+The application is automatically deployed to Google Kubernetes Engine via GitHub Actions. Every push to the `main` branch triggers:
+
+1. **Intelligent Build Process**: Only rebuilds services that have changed
+2. **Container Image Push**: Images pushed to GitHub Container Registry
+3. **Kubernetes Deployment**: Automated deployment to GKE with zero-downtime updates
+4. **SSL Certificate Management**: Automatic provisioning and renewal of Google-managed certificates
+5. **DNS Updates**: Cross-project DNS record management
+6. **Health Checks**: Verification that all services are running correctly
+
+#### Manual Deployment (if needed)
 ```bash
 cd kubernetes/base
 kubectl apply -k .
 ```
 
 ## Development
-- Backend Web Service runs on `http://localhost:8450`
+
+### Local Development
+- Backend Service runs on `http://localhost:8450`
 - Backend Cache Updater runs on `http://localhost:8451`
 - Frontend development server runs on `http://localhost:3000`
 - Redis should be running on `localhost:6379`
+
+### Production Environment
+- **Live Application**: https://major-league-github.flamingo.cx
+- **Automatic HTTPS**: All HTTP traffic redirected to HTTPS
+- **High Availability**: Multi-replica deployment with load balancing
+- **Monitoring**: Real-time health checks and deployment status
 
 ## Why Major League GitHub?
 1. **Attract Talent**: Showcase top open-source contributors and connect with experienced engineers.
