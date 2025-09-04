@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const FaviconGeneratorPlugin = require('./webpack-plugins/favicon-generator-plugin');
 
 // Read environment variables with fallbacks
 const PORT = process.env.PORT || '8450';
@@ -94,6 +95,11 @@ module.exports = (env, argv) => {
       modules: [path.resolve(__dirname, 'src'), 'node_modules']
     },
     plugins: [
+      new FaviconGeneratorPlugin({
+        svgPath: 'public/favicon.svg',
+        icoPath: 'public/favicon.ico',
+        size: 60
+      }),
       new webpack.DefinePlugin({
         'process.env': JSON.stringify(process.env),
       }),
