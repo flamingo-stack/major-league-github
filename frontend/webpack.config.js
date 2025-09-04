@@ -110,7 +110,7 @@ module.exports = (env, argv) => {
       }),
       new HtmlWebpackPlugin({
         template: 'index.html',
-        favicon: 'public/favicon.svg',
+        favicon: 'public/favicon.ico',
         templateParameters: {
           process: {
             env: {
