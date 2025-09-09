@@ -49,6 +49,9 @@ npm run lint
 
 # Type checking
 npm run type-check
+
+# Generate favicon from SVG
+npm run generate-favicon
 ```
 
 ## Key Technical Details
@@ -75,7 +78,9 @@ Backend requires `.env` file with:
 - `LINKEDIN_CLIENT_ID/SECRET`: LinkedIn API credentials
 - `REDIS_HOST/PORT`: Redis connection details
 
-Frontend supports optional environment variables for Google Tag Manager and Open Graph meta tags.
+Frontend supports optional environment variables for Google Tag Manager and Open Graph meta tags:
+- `GTM_ID`: Google Tag Manager container ID
+- `OG_TITLE`, `OG_DESCRIPTION`, `OG_TYPE`, `OG_IMAGE_URL`, `OG_SITE_NAME`: Open Graph meta tags
 
 ## Development Ports
 - Backend Service: http://localhost:8450
