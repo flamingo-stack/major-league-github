@@ -91,8 +91,9 @@ module.exports = (env, argv) => {
       extensions: ['.tsx', '.ts', '.js'],
       alias: {
         '@': path.resolve(__dirname, 'src'),
+        '@flamingo/ui-kit': path.resolve(__dirname, 'ui-kit/src'),
       },
-      modules: [path.resolve(__dirname, 'src'), 'node_modules']
+      modules: [path.resolve(__dirname, 'src'), path.resolve(__dirname, 'ui-kit/src'), 'node_modules']
     },
     plugins: [
       new FaviconGeneratorPlugin({
@@ -159,13 +160,12 @@ module.exports = (env, argv) => {
       port: parseInt(PORT, 10),
       historyApiFallback: true,
       hot: true,
-      proxy: {
-        '/api': {
-          target: BACKEND_API_URL,
-          changeOrigin: true,
-          secure: false,
-        }
-      },
+      proxy: [{
+        context: ['/api'],
+        target: BACKEND_API_URL,
+        changeOrigin: true,
+        secure: false,
+      }],
       client: {
         overlay: {
           errors: true,

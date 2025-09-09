@@ -1,7 +1,7 @@
-@import './assets/fonts/fonts.css';
+@import '@flamingo/ui-kit/styles';
 
 :root {
-  font-family: 'Mona Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 

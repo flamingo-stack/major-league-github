@@ -21,13 +21,13 @@ export const LoadingSpinner = ({ message = 'Loading...' }: LoadingSpinnerProps) 
         size={40}
         thickness={4}
         sx={{
-          color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da'
+          color: '#58a6ff'
         }}
       />
       <Typography
         variant="body2"
         sx={{
-          color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+          color: 'rgba(255, 255, 255, 0.7)',
           fontWeight: 500
         }}
       >

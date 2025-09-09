@@ -35,9 +35,10 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 ### Frontend
 - React 18
 - TypeScript
-- Material-UI (MUI)
+- Material-UI (MUI) with @flamingo/ui-kit components
 - React Query for data fetching
 - Webpack 5 for bundling
+- Dark theme only design
 
 ### Infrastructure & Deployment
 - **Platform**: Google Kubernetes Engine (GKE)
@@ -130,6 +131,10 @@ OG_DESCRIPTION=GitHub Scouting Report: Major League Edition
 OG_TYPE=website
 OG_IMAGE_URL=/og-image.png
 OG_SITE_NAME=Major League GitHub
+
+# Optional: Custom blog link and text
+WEBAPP_EXTRA_BUTTON_LINK=https://www.flamingo.run/blog/major-league-github-the-open-source-talent-leaderboard
+WEBAPP_EXTRA_BUTTON_TEXT=Why MLG?
 ```
 
 ### Docker Build

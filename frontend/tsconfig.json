@@ -5,7 +5,7 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -17,11 +17,12 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@flamingo/ui-kit/*": ["ui-kit/src/*"]
     },
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true
   },
-  "include": ["src"],
+  "include": ["src", "ui-kit/src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

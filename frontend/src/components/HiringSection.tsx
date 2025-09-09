@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Paper, Typography, Link, Avatar, Chip, useTheme, IconButton, Collapse, Stack, Skeleton } from '@mui/material';
+import { systemGreys } from '../styles/colors';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
-import GitHubIcon from '@mui/icons-material/GitHub';
+import { GitHubIcon, FlamingoLogo } from '@flamingo/ui-kit/components/icons';
 import WorkIcon from '@mui/icons-material/Work';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -41,7 +42,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
       case 'twitter':
         return <TwitterIcon fontSize="small" />;
       case 'github':
-        return <GitHubIcon fontSize="small" />;
+        return <GitHubIcon width={16} height={16} />;
       case 'facebook':
         return <FacebookIcon fontSize="small" />;
       case 'instagram':
@@ -63,7 +64,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
           gap: 0,
           py: 2,
           px: { xs: 1, sm: 1.5 },
-          bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+          bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
           position: 'relative',
           zIndex: 2
         }}
@@ -83,7 +84,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
             <Typography
               component="div"
               sx={{
-                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                color: 'var(--color-text-primary)',
                 fontSize: '0.875rem',
                 lineHeight: '24px',
                 display: 'flex',
@@ -91,21 +92,12 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                 gap: 0.5,
               }}
             >
-              Made with ❤️ by <span style={{ display: 'inline-flex' }}>🦩 team </span> in{' '}
-              <Link
-                href="https://www.google.com/maps/place/Miami+Beach,+FL"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  }
-                }}
-              >
-                Miami Beach
-              </Link>
+              Made with love by{' '}
+              <FlamingoLogo 
+                fill="var(--ods-flamingo-pink-base)" 
+                style={{ display: 'inline', width: '16px', height: '16px', verticalAlign: 'middle', margin: '0 4px' }}
+              />
+              <span style={{ fontFamily: '"Azeret Mono", monospace', fontWeight: 600, color: 'var(--color-text-primary)' }}>Flamingo</span>
             </Typography>
           </Box>
 
@@ -115,7 +107,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
             <Typography
               component="div"
               sx={{
-                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                color: 'var(--color-text-primary)',
                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 lineHeight: '24px',
                 display: 'flex',
@@ -123,7 +115,12 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                 gap: 0.5,
               }}
             >
-              Made with ❤️ by <span style={{ display: 'inline-flex' }}>🦩</span>
+              Made with love by{' '}
+              <FlamingoLogo 
+                fill="var(--ods-flamingo-pink-base)" 
+                style={{ display: 'inline', width: '14px', height: '14px', verticalAlign: 'middle', margin: '0 2px' }}
+              />
+              <span style={{ fontFamily: '"Azeret Mono", monospace', fontWeight: 600, fontSize: '0.75rem', color: 'var(--color-text-primary)' }}>Flamingo</span>
             </Typography>
           </Box>
 
@@ -205,34 +202,18 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
           height: 24,
         }}>
           <Box sx={{
-            display: { xs: 'block', sm: 'none' },
+            display: 'flex',
+            alignItems: 'center',
           }}>
             <Typography
               component="div"
               sx={{
-                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                color: 'var(--color-text-secondary)',
+                fontSize: { xs: '0.625rem', sm: '0.75rem' },
                 lineHeight: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
               }}
             >
-              in{' '}
-              <Link
-                href="https://www.google.com/maps/place/Miami+Beach,+FL"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  }
-                }}
-              >
-                Miami Beach
-              </Link>
+              © {new Date().getFullYear()} Flamingo AI, Inc. All rights reserved.
             </Typography>
           </Box>
 
@@ -278,7 +259,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               border: '1px solid',
               borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
               borderRadius: '6px',
-              bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+              bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
               mb: 2,
               position: 'relative',
               maxHeight: { xs: 'calc(100vh - 200px)', sm: 'none' },
@@ -290,7 +271,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               display: { xs: 'block', sm: 'none' },
               position: 'sticky',
               top: 0,
-              bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+              bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
               borderBottom: '1px solid',
               borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
               p: 2,
@@ -451,7 +432,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                             border: '1px solid',
                             borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                             borderRadius: '6px',
-                            bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
+                            bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
                             '&:hover': {
                               borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
                             },

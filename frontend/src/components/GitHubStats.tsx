@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography, Theme } from '@mui/material';
+import { systemGreys } from '../styles/colors';
 import StarIcon from '@mui/icons-material/Star';
 import ForkRightIcon from '@mui/icons-material/ForkRight';
 import CommitIcon from '@mui/icons-material/Commit';
@@ -37,7 +38,7 @@ const StatItem = ({ icon, value, color }: { icon: React.ReactNode; value: string
       px: 0.75,
       minWidth: 0,
       height: '22px',
-      bgcolor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(13, 17, 23, 0.6)' : '#f6f8fa',
+      bgcolor: (theme: Theme) => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
       border: '1px solid',
       borderColor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)',
     }}>
@@ -207,7 +208,7 @@ export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) =
     <Box sx={{ 
       mb: 2,
       borderRadius: '6px',
-      bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
+      bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
       border: '1px solid',
       borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
       display: { xs: 'block', sm: 'block' },

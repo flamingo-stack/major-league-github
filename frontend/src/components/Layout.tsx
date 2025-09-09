@@ -1,16 +1,16 @@
 import React from 'react';
-import { Box, Container, useTheme } from '@mui/material';
+import { Box, Container } from '@mui/material';
 import { HiringSection } from './HiringSection';
 import { useHiring } from '../hooks/useHiring';
 import Header from './Header';
+import { HeroSection } from './HeroSection';
+import { systemGreys } from '../styles/colors';
 
 interface LayoutProps {
-  onToggleTheme: () => void;
   children: React.ReactNode;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
-  const theme = useTheme();
+export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { hiringManager, jobOpenings, isLoading: isLoadingHiring } = useHiring();
 
   return (
@@ -19,13 +19,14 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
         display: 'flex', 
         flexDirection: 'column', 
         minHeight: '100vh',
-        bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+        bgcolor: systemGreys.background,
         position: 'relative',
       }}
     >
-      <Header onToggleTheme={onToggleTheme} />
+      <Header />
+      <HeroSection />
       <Container 
-        maxWidth="lg" 
+        maxWidth="xl" 
         sx={{ 
           flex: 1,
           py: 4,
@@ -46,17 +47,15 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
             bottom: 0,
             left: 0,
             right: 0,
-            bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+            bgcolor: systemGreys.background,
             borderTop: '1px solid',
-            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-            boxShadow: theme => theme.palette.mode === 'dark' 
-              ? '0 -4px 12px rgba(0, 0, 0, 0.3)'
-              : '0 -4px 12px rgba(0, 0, 0, 0.1)',
+            borderColor: '#30363d',
+            boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.3)',
             transition: 'transform 0.3s ease-in-out',
             zIndex: 2000,
           }}
         >
-          <Container maxWidth="lg">
+          <Container maxWidth="xl">
             <HiringSection
               hiringManager={hiringManager}
               jobOpenings={jobOpenings}
