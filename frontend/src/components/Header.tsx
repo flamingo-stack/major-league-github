@@ -4,7 +4,7 @@ import { GitHubIcon } from '@flamingo/ui-kit/components/icons';
 import { Logo } from './Logo';
 import { systemGreys } from '../styles/colors';
 
-const BLOG_LINK = process.env.WEBAPP_EXTRA_BUTTON_LINK || '/blog/why-we-built-mlg';
+const BLOG_LINK = process.env.WEBAPP_EXTRA_BUTTON_LINK || 'https://www.flamingo.run/blog/major-league-github-the-open-source-talent-leaderboard';
 const BLOG_TEXT = process.env.WEBAPP_EXTRA_BUTTON_TEXT || 'Why MLG?';
 
 const Header = () => {

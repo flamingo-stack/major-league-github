@@ -57,7 +57,7 @@ const LogoContainer = styled(Box)(({ theme }) => ({
 }));
 
 const GITHUB_LINK = 'https://github.com/flamingo-stack/major-league-github';
-const BLOG_LINK = process.env.WEBAPP_EXTRA_BUTTON_LINK || 'https://medium.com/@michaelassraf/major-league-github-the-open-source-talent-leaderboard-ca2c6d7dcbeb';
+const BLOG_LINK = process.env.WEBAPP_EXTRA_BUTTON_LINK || 'https://www.flamingo.run/blog/major-league-github-the-open-source-talent-leaderboard';
 const BLOG_TEXT = process.env.WEBAPP_EXTRA_BUTTON_TEXT || 'Why MLG?';
 
 export const HeroSection: React.FC = () => {
