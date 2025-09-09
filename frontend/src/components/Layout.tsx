@@ -4,14 +4,13 @@ import { HiringSection } from './HiringSection';
 import { useHiring } from '../hooks/useHiring';
 import Header from './Header';
 import { HeroSection } from './HeroSection';
-import { odsColors } from '@flamingo/ui-kit/styles/ods-colors';
+import { systemGreys } from '../styles/colors';
 
 interface LayoutProps {
-  onToggleTheme: () => void;
   children: React.ReactNode;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
+export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { hiringManager, jobOpenings, isLoading: isLoadingHiring } = useHiring();
 
   return (
@@ -20,11 +19,11 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
         display: 'flex', 
         flexDirection: 'column', 
         minHeight: '100vh',
-        bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
+        bgcolor: systemGreys.background,
         position: 'relative',
       }}
     >
-      <Header onToggleTheme={onToggleTheme} />
+      <Header />
       <HeroSection />
       <Container 
         maxWidth="xl" 
@@ -48,12 +47,10 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
             bottom: 0,
             left: 0,
             right: 0,
-            bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
+            bgcolor: systemGreys.background,
             borderTop: '1px solid',
-            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-            boxShadow: theme => theme.palette.mode === 'dark' 
-              ? '0 -4px 12px rgba(0, 0, 0, 0.3)'
-              : '0 -4px 12px rgba(0, 0, 0, 0.1)',
+            borderColor: '#30363d',
+            boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.3)',
             transition: 'transform 0.3s ease-in-out',
             zIndex: 2000,
           }}

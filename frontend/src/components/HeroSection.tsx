@@ -1,9 +1,8 @@
 import React from 'react';
 import { Box, Typography, Container, Link } from '@mui/material';
-import { odsColors } from '@flamingo/ui-kit/styles/ods-colors';
-import { MlgGitHubIcon } from '@flamingo/ui-kit/components/icons';
-import { MlgLogo } from '@flamingo/ui-kit/components/logos';
+import { systemGreys, flamingo } from '../styles/colors';
 import { styled } from '@mui/material/styles';
+import { GitHubIcon, MlgLogo } from '@flamingo/ui-kit/components/icons';
 
 // External link icon component (simplified version from Figma)
 const ExternalLinkIcon = () => (
@@ -25,7 +24,7 @@ const StyledTitle = styled(Typography)(({ theme }) => ({
   fontSize: '56px',
   lineHeight: '64px',
   letterSpacing: '-1.12px',
-  color: odsColors.white,
+  color: systemGreys.white,
   marginBottom: '40px',
   [theme.breakpoints.down('md')]: {
     fontSize: '32px',
@@ -39,7 +38,7 @@ const StyledDescription = styled(Typography)(({ theme }) => ({
   fontWeight: 500,
   fontSize: '18px',
   lineHeight: '24px',
-  color: odsColors.white,
+  color: systemGreys.white,
   maxWidth: '675px',
   marginBottom: '40px',
   [theme.breakpoints.down('md')]: {
@@ -66,11 +65,11 @@ export const HeroSection: React.FC = () => {
   return (
     <Box
       sx={{
-        backgroundColor: odsColors.background,
+        backgroundColor: systemGreys.background,
         minHeight: '600px',
         display: 'flex',
         alignItems: 'center',
-        borderBottom: `1px solid ${odsColors.softGrey}`,
+        borderBottom: `1px solid ${systemGreys.soft_grey}`,
         py: { xs: 6, md: 10 },
       }}
     >
@@ -87,9 +86,9 @@ export const HeroSection: React.FC = () => {
           {/* Left content */}
           <Box sx={{ flex: 1, maxWidth: { lg: '800px' } }}>
             <StyledTitle>
-              <span style={{ color: odsColors.flamingoPink }}>Major</span>
+              <span style={{ color: flamingo.pink_base }}>Major</span>
               {' '}
-              <span style={{ color: odsColors.flamingoCyan }}>League</span>
+              <span style={{ color: flamingo.cyan_base }}>League</span>
               {' '}
               Github
             </StyledTitle>
@@ -119,9 +118,9 @@ export const HeroSection: React.FC = () => {
                   py: { xs: 1.5, sm: 2 },
                   borderRadius: '6px',
                   border: '1px solid',
-                  borderColor: odsColors.flamingoPink,
-                  color: odsColors.black,
-                  bgcolor: odsColors.flamingoPink,
+                  borderColor: flamingo.pink_base,
+                  color: systemGreys.black,
+                  bgcolor: flamingo.pink_base,
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
                   fontSize: { xs: '1rem', sm: '1.125rem' },
@@ -129,10 +128,10 @@ export const HeroSection: React.FC = () => {
                   minHeight: { xs: 48, sm: 52 },
                   transition: 'all 0.2s',
                   '&:hover': {
-                    bgcolor: '#e044a8',
-                    borderColor: '#e044a8',
+                    bgcolor: flamingo.pink_hover,
+                    borderColor: flamingo.pink_hover,
                     textDecoration: 'none',
-                    color: odsColors.black,
+                    color: systemGreys.black,
                   }
                 }}
               >
@@ -152,9 +151,9 @@ export const HeroSection: React.FC = () => {
                   py: { xs: 1.5, sm: 2 },
                   borderRadius: '6px',
                   border: '1px solid',
-                  borderColor: odsColors.softGrey,
-                  color: odsColors.white,
-                  bgcolor: odsColors.black,
+                  borderColor: systemGreys.soft_grey,
+                  color: systemGreys.white,
+                  bgcolor: systemGreys.black,
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
                   fontSize: { xs: '1rem', sm: '1.125rem' },
@@ -162,14 +161,14 @@ export const HeroSection: React.FC = () => {
                   minHeight: { xs: 48, sm: 52 },
                   transition: 'all 0.2s',
                   '&:hover': {
-                    bgcolor: odsColors.softGrey,
-                    borderColor: odsColors.grey,
+                    bgcolor: systemGreys.soft_grey,
+                    borderColor: systemGreys.grey,
                     textDecoration: 'none',
-                    color: odsColors.white,
+                    color: systemGreys.white,
                   }
                 }}
               >
-                <MlgGitHubIcon size={24} color={odsColors.white} />
+                <GitHubIcon width={24} height={24} className="text-current" />
                 Github Repo
               </Link>
             </Box>
@@ -186,7 +185,7 @@ export const HeroSection: React.FC = () => {
           }}>
             <MlgLogo 
               size={240}
-              color={odsColors.white}
+              color={systemGreys.white}
             />
           </Box>
         </Box>

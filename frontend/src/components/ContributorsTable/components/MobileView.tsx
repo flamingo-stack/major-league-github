@@ -16,7 +16,7 @@ import ForkRightIcon from '@mui/icons-material/ForkRight';
 import UpdateIcon from '@mui/icons-material/Update';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
-import GitHubIcon from '@mui/icons-material/GitHub';
+import { GitHubIcon } from '@flamingo/ui-kit/components/icons';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import EmailIcon from '@mui/icons-material/Email';
@@ -37,7 +37,7 @@ const getSocialIcon = (platform: string) => {
         case 'twitter':
             return <TwitterIcon fontSize="small" />;
         case 'github':
-            return <GitHubIcon fontSize="small" />;
+            return <GitHubIcon width={16} height={16} />;
         case 'facebook':
             return <FacebookIcon fontSize="small" />;
         case 'instagram':

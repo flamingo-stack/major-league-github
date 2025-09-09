@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "generate-favicon": "node scripts/generate-favicon.js",
-    "setup:ui-kit": "cd ui-kit && npm install"
+    "setup:ui-kit": "cd ui-kit && npm install",
+    "copy:colors": "node scripts/extract-ui-kit-colors.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

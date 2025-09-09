@@ -1,6 +1,6 @@
-import { createTheme, PaletteMode } from '@mui/material';
+import { createTheme } from '@mui/material';
 
-// GitHub color scales - high contrast version
+// GitHub color scales - dark theme only
 const githubColors = {
     neutral: {
         0: '#0d1117', // Darkest - main dark background
@@ -14,9 +14,9 @@ const githubColors = {
         8: '#ffffff'  // White
     },
     blue: {
-        main: '#0969da', // GitHub blue for light mode
-        light: '#58a6ff', // Light mode hover
-        dark: '#0550ae'  // Light mode active
+        main: '#0969da',
+        light: '#58a6ff',
+        dark: '#0550ae'
     },
     green: {
         main: '#1a7f37',
@@ -25,53 +25,31 @@ const githubColors = {
     }
 };
 
-export const getTheme = (mode: PaletteMode) => createTheme({
+export const getTheme = () => createTheme({
     palette: {
-        mode,
-        ...(mode === 'dark' ? {
-            primary: {
-                main: githubColors.blue.main,
-                light: githubColors.blue.light,
-                dark: githubColors.blue.dark
-            },
-            success: {
-                main: githubColors.green.main,
-                light: githubColors.green.light,
-                dark: githubColors.green.dark
-            },
-            background: {
-                default: githubColors.neutral[1],
-                paper: githubColors.neutral[1]
-            },
-            text: {
-                primary: githubColors.neutral[6],
-                secondary: githubColors.neutral[4]
-            },
-            divider: githubColors.neutral[2]
-        } : {
-            primary: {
-                main: githubColors.blue.main,
-                light: githubColors.blue.light,
-                dark: githubColors.blue.dark
-            },
-            success: {
-                main: githubColors.green.main,
-                light: githubColors.green.light,
-                dark: githubColors.green.dark
-            },
-            background: {
-                default: '#f6f8fa',
-                paper: githubColors.neutral[8]
-            },
-            text: {
-                primary: '#24292f',
-                secondary: '#57606a'
-            },
-            divider: 'rgba(27, 31, 36, 0.15)'
-        })
+        mode: 'dark',
+        primary: {
+            main: githubColors.blue.main,
+            light: githubColors.blue.light,
+            dark: githubColors.blue.dark
+        },
+        success: {
+            main: githubColors.green.main,
+            light: githubColors.green.light,
+            dark: githubColors.green.dark
+        },
+        background: {
+            default: githubColors.neutral[1],
+            paper: githubColors.neutral[1]
+        },
+        text: {
+            primary: githubColors.neutral[6],
+            secondary: githubColors.neutral[4]
+        },
+        divider: githubColors.neutral[2]
     },
     typography: {
-        fontFamily: '"Mona Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+        fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
         fontWeightLight: 350,
         fontWeightRegular: 400,
         fontWeightMedium: 500,
@@ -81,38 +59,38 @@ export const getTheme = (mode: PaletteMode) => createTheme({
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: mode === 'dark' ? githubColors.neutral[8] : '#24292f'
+            color: githubColors.neutral[8]
         },
         h2: {
             fontSize: '1.5rem',
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: mode === 'dark' ? githubColors.neutral[8] : '#24292f'
+            color: githubColors.neutral[8]
         },
         h3: {
             fontSize: '1.25rem',
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: mode === 'dark' ? githubColors.neutral[8] : '#24292f'
+            color: githubColors.neutral[8]
         },
         h4: {
             fontSize: '1rem',
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: mode === 'dark' ? githubColors.neutral[8] : '#24292f'
+            color: githubColors.neutral[8]
         },
         body1: {
             fontSize: '1rem',
             lineHeight: 1.5,
-            color: mode === 'dark' ? githubColors.neutral[6] : '#24292f'
+            color: githubColors.neutral[6]
         },
         body2: {
             fontSize: '0.875rem',
             lineHeight: 1.5,
-            color: mode === 'dark' ? githubColors.neutral[5] : '#57606a'
+            color: githubColors.neutral[5]
         },
         button: {
             textTransform: 'none',
@@ -124,8 +102,8 @@ export const getTheme = (mode: PaletteMode) => createTheme({
         MuiCssBaseline: {
             styleOverrides: {
                 body: {
-                    backgroundColor: mode === 'dark' ? githubColors.neutral[1] : githubColors.neutral[8],
-                    color: mode === 'dark' ? githubColors.neutral[6] : githubColors.neutral[1]
+                    backgroundColor: githubColors.neutral[1],
+                    color: githubColors.neutral[6]
                 }
             }
         },
@@ -135,19 +113,19 @@ export const getTheme = (mode: PaletteMode) => createTheme({
                     borderRadius: '6px',
                     padding: '5px 16px',
                     border: '1px solid',
-                    borderColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.15)',
+                    borderColor: githubColors.neutral[2],
                     fontWeight: 600,
                     '&:hover': {
-                        borderColor: mode === 'dark' ? githubColors.neutral[3] : 'rgba(27, 31, 36, 0.15)',
-                        backgroundColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.04)'
+                        borderColor: githubColors.neutral[3],
+                        backgroundColor: githubColors.neutral[2]
                     }
                 },
                 contained: {
-                    backgroundColor: mode === 'dark' ? githubColors.neutral[2] : '#f6f8fa',
-                    color: mode === 'dark' ? githubColors.neutral[6] : '#24292f',
+                    backgroundColor: githubColors.neutral[2],
+                    color: githubColors.neutral[6],
                     boxShadow: 'none',
                     '&:hover': {
-                        backgroundColor: mode === 'dark' ? githubColors.neutral[3] : '#f3f4f6',
+                        backgroundColor: githubColors.neutral[3],
                         boxShadow: 'none'
                     }
                 },
@@ -156,7 +134,7 @@ export const getTheme = (mode: PaletteMode) => createTheme({
                     color: githubColors.neutral[8],
                     border: 'none',
                     '&:hover': {
-                        backgroundColor: mode === 'dark' ? githubColors.blue.light : githubColors.blue.dark
+                        backgroundColor: githubColors.blue.light
                     }
                 }
             }
@@ -165,15 +143,15 @@ export const getTheme = (mode: PaletteMode) => createTheme({
             styleOverrides: {
                 root: {
                     borderBottom: '1px solid',
-                    borderColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.15)',
+                    borderColor: githubColors.neutral[2],
                     padding: '16px',
                     fontSize: '0.875rem',
-                    color: mode === 'dark' ? githubColors.neutral[6] : '#24292f'
+                    color: githubColors.neutral[6]
                 },
                 head: {
                     fontWeight: 600,
-                    backgroundColor: mode === 'dark' ? githubColors.neutral[1] : '#f6f8fa',
-                    color: mode === 'dark' ? githubColors.neutral[6] : '#24292f'
+                    backgroundColor: githubColors.neutral[1],
+                    color: githubColors.neutral[6]
                 }
             }
         },
@@ -181,23 +159,21 @@ export const getTheme = (mode: PaletteMode) => createTheme({
             styleOverrides: {
                 root: {
                     backgroundImage: 'none',
-                    backgroundColor: mode === 'dark' ? githubColors.neutral[1] : githubColors.neutral[8],
+                    backgroundColor: githubColors.neutral[1],
                     border: '1px solid',
-                    borderColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.15)',
+                    borderColor: githubColors.neutral[2],
                     borderRadius: '6px',
-                    boxShadow: mode === 'dark' 
-                        ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                        : '0 8px 24px rgba(140, 149, 159, 0.2)'
+                    boxShadow: '0 8px 24px rgba(1, 4, 9, 0.75)'
                 }
             }
         },
         MuiAppBar: {
             styleOverrides: {
                 root: {
-                    backgroundColor: mode === 'dark' ? githubColors.neutral[1] : githubColors.neutral[8],
+                    backgroundColor: githubColors.neutral[1],
                     borderBottom: '1px solid',
-                    borderColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.15)',
-                    color: mode === 'dark' ? githubColors.neutral[6] : '#24292f',
+                    borderColor: githubColors.neutral[2],
+                    color: githubColors.neutral[6],
                     boxShadow: 'none'
                 }
             }
@@ -206,19 +182,19 @@ export const getTheme = (mode: PaletteMode) => createTheme({
             styleOverrides: {
                 root: {
                     '& .MuiOutlinedInput-root': {
-                        backgroundColor: mode === 'dark' ? githubColors.neutral[1] : githubColors.neutral[8],
+                        backgroundColor: githubColors.neutral[1],
                         borderRadius: '6px',
                         border: '1px solid',
-                        borderColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.15)',
+                        borderColor: githubColors.neutral[2],
                         '& fieldset': {
                             border: 'none'
                         },
                         '&:hover': {
-                            borderColor: mode === 'dark' ? githubColors.neutral[3] : 'rgba(27, 31, 36, 0.3)'
+                            borderColor: githubColors.neutral[3]
                         },
                         '&.Mui-focused': {
                             borderColor: githubColors.blue.main,
-                            boxShadow: `0 0 0 3px ${mode === 'dark' ? 'rgba(33, 136, 255, 0.15)' : 'rgba(9, 105, 218, 0.15)'}`
+                            boxShadow: '0 0 0 3px rgba(33, 136, 255, 0.15)'
                         },
                         '& .MuiInputAdornment-root': {
                             marginTop: '0 !important',
@@ -234,19 +210,17 @@ export const getTheme = (mode: PaletteMode) => createTheme({
         MuiAutocomplete: {
             styleOverrides: {
                 paper: {
-                    backgroundColor: mode === 'dark' ? githubColors.neutral[1] : githubColors.neutral[8],
-                    boxShadow: mode === 'dark' 
-                        ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                        : '0 8px 24px rgba(140, 149, 159, 0.2)',
+                    backgroundColor: githubColors.neutral[1],
+                    boxShadow: '0 8px 24px rgba(1, 4, 9, 0.75)',
                     border: '1px solid',
-                    borderColor: mode === 'dark' ? githubColors.neutral[2] : 'rgba(27, 31, 36, 0.15)'
+                    borderColor: githubColors.neutral[2]
                 },
                 option: {
                     '&:hover': {
-                        backgroundColor: mode === 'dark' ? githubColors.neutral[2] : '#f3f4f6'
+                        backgroundColor: githubColors.neutral[2]
                     },
                     '&[aria-selected="true"]': {
-                        backgroundColor: mode === 'dark' ? githubColors.neutral[3] : '#f3f4f6'
+                        backgroundColor: githubColors.neutral[3]
                     }
                 }
             }
@@ -254,10 +228,10 @@ export const getTheme = (mode: PaletteMode) => createTheme({
         MuiLink: {
             styleOverrides: {
                 root: {
-                    color: mode === 'dark' ? githubColors.blue.light : githubColors.blue.main,
+                    color: githubColors.blue.light,
                     textDecoration: 'none',
                     '&:hover': {
-                        color: mode === 'dark' ? githubColors.blue.light : githubColors.blue.dark,
+                        color: githubColors.blue.light,
                         textDecoration: 'underline'
                     }
                 }

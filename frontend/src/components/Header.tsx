@@ -1,34 +1,23 @@
 import React from 'react';
-import { useTheme } from '@mui/material/styles';
-import { useMediaQuery } from '@mui/material';
-import { Box, Typography, Link, IconButton, Container } from '@mui/material';
-import { LightMode, DarkMode, GitHub } from '@mui/icons-material';
+import { Box, Typography, Link, Container } from '@mui/material';
+import { GitHubIcon } from '@flamingo/ui-kit/components/icons';
 import { Logo } from './Logo';
-import { odsColors } from '@flamingo/ui-kit/styles/ods-colors';
-
-interface HeaderProps {
-    onToggleTheme: () => void;
-}
+import { systemGreys } from '../styles/colors';
 
 const BLOG_LINK = process.env.WEBAPP_EXTRA_BUTTON_LINK || '/blog/why-we-built-mlg';
 const BLOG_TEXT = process.env.WEBAPP_EXTRA_BUTTON_TEXT || 'Why MLG?';
 
-const Header = ({ onToggleTheme }: HeaderProps) => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const isDarkMode = theme.palette.mode === 'dark';
+const Header = () => {
 
     return (
         <Box sx={{ 
             borderBottom: '1px solid',
-            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-            bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
+            borderColor: '#30363d',
+            bgcolor: systemGreys.background,
             position: 'sticky',
             top: 0,
             zIndex: 1000,
-            boxShadow: theme => theme.palette.mode === 'dark' 
-              ? '0 4px 12px rgba(0, 0, 0, 0.3)'
-              : '0 4px 12px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
         }}>
             <Container maxWidth="xl">
                 <Box sx={{ 
@@ -49,7 +38,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                         <Logo 
                             sx={{ 
                                 fontSize: { xs: 24, sm: 28 },
-                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                color: '#e6edf3',
                                 flexShrink: 0
                             }}
                         />
@@ -59,7 +48,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                                 fontWeight: 600,
                                 fontSize: { xs: '1.1rem', sm: '1.1rem' },
                                 letterSpacing: '-0.025em',
-                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                color: '#e6edf3',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis'
@@ -89,17 +78,17 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                                 py: { xs: 0.75, sm: 1 },
                                 borderRadius: '6px',
                                 border: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                                bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
+                                borderColor: '#30363d',
+                                color: '#7d8590',
+                                bgcolor: systemGreys.background,
                                 textDecoration: 'none',
                                 whiteSpace: 'nowrap',
                                 fontSize: { xs: '0.875rem', sm: '0.875rem' },
                                 height: { xs: 32, sm: 36 },
                                 transition: 'all 0.2s',
                                 '&:hover': {
-                                    borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                    borderColor: '#539bf5',
+                                    color: '#539bf5',
                                 }
                             }}
                         >
@@ -121,38 +110,22 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                                 py: { xs: 0.75, sm: 1 },
                                 borderRadius: '6px',
                                 border: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                                bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
+                                borderColor: '#30363d',
+                                color: '#7d8590',
+                                bgcolor: systemGreys.background,
                                 textDecoration: 'none',
                                 whiteSpace: 'nowrap',
                                 minWidth: { xs: 32, sm: 36 },
                                 height: { xs: 32, sm: 36 },
                                 transition: 'all 0.2s',
                                 '&:hover': {
-                                    borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                    borderColor: '#539bf5',
+                                    color: '#539bf5',
                                 }
                             }}
                         >
-                            <GitHub sx={{ fontSize: '1.25rem' }} />
+                            <GitHubIcon width={20} height={19} />
                         </Link>
-                        <IconButton 
-                            onClick={onToggleTheme}
-                            size="small"
-                            sx={{
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                                p: 0.75,
-                                '&:hover': {
-                                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                                }
-                            }}
-                        >
-                            {isDarkMode ? 
-                                <LightMode sx={{ fontSize: '1.25rem' }} /> : 
-                                <DarkMode sx={{ fontSize: '1.25rem' }} />
-                            }
-                        </IconButton>
                     </Box>
                 </Box>
             </Container>

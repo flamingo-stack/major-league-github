@@ -1,5 +1,5 @@
-import { CssBaseline, ThemeProvider, useMediaQuery } from '@mui/material';
-import { useMemo, useState, useEffect } from 'react';
+import { CssBaseline, ThemeProvider } from '@mui/material';
+import { useMemo, useEffect } from 'react';
 import { getTheme } from './theme';
 import { Layout } from './components/Layout';
 import { FiltersPanel } from './components/FiltersPanel';
@@ -22,20 +22,7 @@ const queryClient = new QueryClient({
 });
 
 const MainApp = () => {
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  
-  // Initialize theme from localStorage or system preference
-  const [mode, setMode] = useState<'light' | 'dark'>(() => {
-    const savedMode = localStorage.getItem('themeMode');
-    return savedMode ? (savedMode as 'light' | 'dark') : (prefersDarkMode ? 'dark' : 'light');
-  });
-  
-  // Save theme mode to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('themeMode', mode);
-  }, [mode]);
-  
-  const theme = useMemo(() => getTheme(mode), [mode]);
+  const theme = useMemo(() => getTheme(), []);
 
   const { urlState } = useUrlState();
 
@@ -75,14 +62,10 @@ const MainApp = () => {
     refetchOnWindowFocus: false
   });
 
-  const handleToggleTheme = () => {
-    setMode(prevMode => prevMode === 'light' ? 'dark' : 'light');
-  };
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Layout onToggleTheme={handleToggleTheme}>
+      <Layout>
         <FiltersPanel />
         <ContributorsTable
           contributors={contributors}

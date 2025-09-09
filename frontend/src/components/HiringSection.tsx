@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Paper, Typography, Link, Avatar, Chip, useTheme, IconButton, Collapse, Stack, Skeleton } from '@mui/material';
-import { odsColors } from '@flamingo/ui-kit/styles/ods-colors';
+import { systemGreys } from '../styles/colors';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
-import GitHubIcon from '@mui/icons-material/GitHub';
+import { GitHubIcon } from '@flamingo/ui-kit/components/icons';
 import WorkIcon from '@mui/icons-material/Work';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -42,7 +42,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
       case 'twitter':
         return <TwitterIcon fontSize="small" />;
       case 'github':
-        return <GitHubIcon fontSize="small" />;
+        return <GitHubIcon width={16} height={16} />;
       case 'facebook':
         return <FacebookIcon fontSize="small" />;
       case 'instagram':
@@ -64,7 +64,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
           gap: 0,
           py: 2,
           px: { xs: 1, sm: 1.5 },
-          bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
+          bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
           position: 'relative',
           zIndex: 2
         }}
@@ -279,7 +279,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               border: '1px solid',
               borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
               borderRadius: '6px',
-              bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
+              bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
               mb: 2,
               position: 'relative',
               maxHeight: { xs: 'calc(100vh - 200px)', sm: 'none' },
@@ -291,7 +291,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               display: { xs: 'block', sm: 'none' },
               position: 'sticky',
               top: 0,
-              bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
+              bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
               borderBottom: '1px solid',
               borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
               p: 2,
@@ -452,7 +452,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                             border: '1px solid',
                             borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                             borderRadius: '6px',
-                            bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
+                            bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
                             '&:hover': {
                               borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
                             },
