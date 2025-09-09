@@ -9,7 +9,7 @@ Major League GitHub is a full-stack application that creates leaderboards for Gi
 - **Backend**: Java 21 + Spring Boot 3.4 with two microservices:
   - Backend Service: Handles API requests and data serving (port 8450)
   - Cache Updater: Background service for maintaining GitHub data freshness (port 8451)
-- **Frontend**: React 18 + TypeScript + Material-UI with Webpack 5 bundling
+- **Frontend**: React 18 + TypeScript + Material-UI with Webpack 5 bundling using @flamingo/ui-kit components
 - **Infrastructure**: Redis for distributed caching, Docker + Kubernetes for deployment on GKE
 - **Deployment**: GitHub Actions CI/CD with automated builds and deployment to Google Cloud Platform
 
@@ -64,8 +64,16 @@ The backend uses Maven profiles to run different microservices:
 ### Frontend Build System
 Uses Webpack 5 instead of Vite, configured with:
 - TypeScript support via ts-loader
-- React + Material-UI components
+- React + Material-UI components with @flamingo/ui-kit integration
 - Custom webpack configuration for production builds
+- Dark theme only (light theme support removed)
+
+### UI Kit Integration
+The frontend uses @flamingo/ui-kit for consistency:
+- **Fonts**: Uses @flamingo/ui-kit/styles instead of local fonts (DM Sans primary)
+- **Icons**: GitHubIcon and MlgLogo components from ui-kit replace Material-UI equivalents
+- **Theme**: Dark theme only implementation (all light theme code removed)
+- **Components**: Consistent styling across Header and HeroSection components
 
 ### Data Flow
 1. Cache Updater fetches data from GitHub API and stores in Redis
@@ -81,6 +89,8 @@ Backend requires `.env` file with:
 Frontend supports optional environment variables for Google Tag Manager and Open Graph meta tags:
 - `GTM_ID`: Google Tag Manager container ID
 - `OG_TITLE`, `OG_DESCRIPTION`, `OG_TYPE`, `OG_IMAGE_URL`, `OG_SITE_NAME`: Open Graph meta tags
+- `WEBAPP_EXTRA_BUTTON_LINK`: Custom blog link URL (defaults to Flamingo blog)
+- `WEBAPP_EXTRA_BUTTON_TEXT`: Custom blog button text (defaults to "Why MLG?")
 
 ## Development Ports
 - Backend Service: http://localhost:8450
@@ -107,4 +117,15 @@ The deployment is fully automated via GitHub Actions:
 - `.github/workflows/deploy.yml`: Main CI/CD pipeline
 - `kubernetes/base/`: Kubernetes manifests for GKE deployment
 - `frontend/src/services/api.ts`: API service configuration (uses relative paths)
+- `frontend/src/theme.ts`: Dark theme only configuration using Material-UI
+- `frontend/src/index.css`: UI kit styles import and font configuration
+- `frontend/src/components/Header.tsx`: Navigation with consistent blog/GitHub links
+- `frontend/src/components/HeroSection.tsx`: Main hero with responsive logo positioning
 - Backend profiles configured in `pom.xml` and `application-*.properties` files
+
+## Recent Major Changes (2025-01)
+- **UI Kit Migration**: Migrated from local fonts/icons to @flamingo/ui-kit
+- **Theme Simplification**: Removed light theme support, dark theme only
+- **Component Cleanup**: Unified Header and HeroSection styling and link consistency
+- **Mobile Responsiveness**: Improved hero section mobile layout with repositioned logo
+- **Font System**: Replaced Google Fonts with ui-kit DM Sans integration

@@ -3,7 +3,7 @@ import { Box, Paper, Typography, Link, Avatar, Chip, useTheme, IconButton, Colla
 import { systemGreys } from '../styles/colors';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
-import { GitHubIcon } from '@flamingo/ui-kit/components/icons';
+import { GitHubIcon, FlamingoLogo } from '@flamingo/ui-kit/components/icons';
 import WorkIcon from '@mui/icons-material/Work';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -84,7 +84,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
             <Typography
               component="div"
               sx={{
-                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                color: 'var(--color-text-primary)',
                 fontSize: '0.875rem',
                 lineHeight: '24px',
                 display: 'flex',
@@ -92,21 +92,12 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                 gap: 0.5,
               }}
             >
-              Made with ❤️ by <span style={{ display: 'inline-flex' }}>🦩 team </span> in{' '}
-              <Link
-                href="https://www.google.com/maps/place/Miami+Beach,+FL"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  }
-                }}
-              >
-                Miami Beach
-              </Link>
+              Made with love by{' '}
+              <FlamingoLogo 
+                fill="var(--ods-flamingo-pink-base)" 
+                style={{ display: 'inline', width: '16px', height: '16px', verticalAlign: 'middle', margin: '0 4px' }}
+              />
+              <span style={{ fontFamily: '"Azeret Mono", monospace', fontWeight: 600, color: 'var(--color-text-primary)' }}>Flamingo</span>
             </Typography>
           </Box>
 
@@ -116,7 +107,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
             <Typography
               component="div"
               sx={{
-                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                color: 'var(--color-text-primary)',
                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 lineHeight: '24px',
                 display: 'flex',
@@ -124,7 +115,12 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                 gap: 0.5,
               }}
             >
-              Made with ❤️ by <span style={{ display: 'inline-flex' }}>🦩</span>
+              Made with love by{' '}
+              <FlamingoLogo 
+                fill="var(--ods-flamingo-pink-base)" 
+                style={{ display: 'inline', width: '14px', height: '14px', verticalAlign: 'middle', margin: '0 2px' }}
+              />
+              <span style={{ fontFamily: '"Azeret Mono", monospace', fontWeight: 600, fontSize: '0.75rem', color: 'var(--color-text-primary)' }}>Flamingo</span>
             </Typography>
           </Box>
 
@@ -206,34 +202,18 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
           height: 24,
         }}>
           <Box sx={{
-            display: { xs: 'block', sm: 'none' },
+            display: 'flex',
+            alignItems: 'center',
           }}>
             <Typography
               component="div"
               sx={{
-                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                color: 'var(--color-text-secondary)',
+                fontSize: { xs: '0.625rem', sm: '0.75rem' },
                 lineHeight: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
               }}
             >
-              in{' '}
-              <Link
-                href="https://www.google.com/maps/place/Miami+Beach,+FL"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  }
-                }}
-              >
-                Miami Beach
-              </Link>
+              © {new Date().getFullYear()} Flamingo AI, Inc. All rights reserved.
             </Typography>
           </Box>
 
