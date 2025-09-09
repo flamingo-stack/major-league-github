@@ -85,6 +85,19 @@ export const HeroSection: React.FC = () => {
         >
           {/* Left content */}
           <Box sx={{ flex: 1, maxWidth: { lg: '800px' } }}>
+            {/* Mobile logo - only show on mobile */}
+            <Box sx={{ 
+              display: { xs: 'flex', lg: 'none' }, 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              mb: 3
+            }}>
+              <MlgLogo 
+                size={120}
+                color={systemGreys.white}
+              />
+            </Box>
+            
             <StyledTitle>
               <span style={{ color: flamingo.pink_base }}>Major</span>
               {' '}
@@ -174,14 +187,14 @@ export const HeroSection: React.FC = () => {
             </Box>
           </Box>
           
-          {/* Right logo */}
+          {/* Right logo - only show on desktop */}
           <Box sx={{ 
-            display: 'flex', 
+            display: { xs: 'none', lg: 'flex' }, 
             alignItems: 'center', 
             justifyContent: 'center',
-            flex: { xs: 'none', lg: 1 },
+            flex: 1,
             width: '100%',
-            minHeight: { xs: '200px', lg: '400px' }
+            minHeight: '400px'
           }}>
             <MlgLogo 
               size={240}
