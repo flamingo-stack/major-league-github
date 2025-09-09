@@ -4,6 +4,7 @@ import { useMediaQuery } from '@mui/material';
 import { Box, Typography, Link, IconButton, Container } from '@mui/material';
 import { LightMode, DarkMode, GitHub } from '@mui/icons-material';
 import { Logo } from './Logo';
+import { odsColors } from '@flamingo/ui-kit/styles/ods-colors';
 
 interface HeaderProps {
     onToggleTheme: () => void;
@@ -21,7 +22,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
         <Box sx={{ 
             borderBottom: '1px solid',
             borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-            bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+            bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
             position: 'sticky',
             top: 0,
             zIndex: 1000,
@@ -29,7 +30,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
               ? '0 4px 12px rgba(0, 0, 0, 0.3)'
               : '0 4px 12px rgba(0, 0, 0, 0.1)',
         }}>
-            <Container maxWidth="lg">
+            <Container maxWidth="xl">
                 <Box sx={{ 
                     display: 'flex',
                     alignItems: 'center',
@@ -90,7 +91,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                                 border: '1px solid',
                                 borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                                 color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
+                                bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
                                 textDecoration: 'none',
                                 whiteSpace: 'nowrap',
                                 fontSize: { xs: '0.875rem', sm: '0.875rem' },
@@ -122,7 +123,7 @@ const Header = ({ onToggleTheme }: HeaderProps) => {
                                 border: '1px solid',
                                 borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                                 color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
-                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
+                                bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
                                 textDecoration: 'none',
                                 whiteSpace: 'nowrap',
                                 minWidth: { xs: 32, sm: 36 },

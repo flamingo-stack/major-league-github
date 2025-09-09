@@ -33,3 +33,4 @@ frontend/package-lock.json
 .channels_cache.json
 .users_cache.json
 /ui-kit
+/frontend/ui-kit

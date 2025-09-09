@@ -8,11 +8,13 @@
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
-    "generate-favicon": "node scripts/generate-favicon.js"
+    "generate-favicon": "node scripts/generate-favicon.js",
+    "setup:ui-kit": "cd ui-kit && npm install"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@flamingo/ui-kit": "file:./ui-kit",
     "@mui/icons-material": "^6.3.1",
     "@mui/material": "^6.3.1",
     "@react-pdf/renderer": "^4.1.6",

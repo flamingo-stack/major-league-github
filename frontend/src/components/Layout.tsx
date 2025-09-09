@@ -1,8 +1,10 @@
 import React from 'react';
-import { Box, Container, useTheme } from '@mui/material';
+import { Box, Container } from '@mui/material';
 import { HiringSection } from './HiringSection';
 import { useHiring } from '../hooks/useHiring';
 import Header from './Header';
+import { HeroSection } from './HeroSection';
+import { odsColors } from '@flamingo/ui-kit/styles/ods-colors';
 
 interface LayoutProps {
   onToggleTheme: () => void;
@@ -10,7 +12,6 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
-  const theme = useTheme();
   const { hiringManager, jobOpenings, isLoading: isLoadingHiring } = useHiring();
 
   return (
@@ -19,13 +20,14 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
         display: 'flex', 
         flexDirection: 'column', 
         minHeight: '100vh',
-        bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+        bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
         position: 'relative',
       }}
     >
       <Header onToggleTheme={onToggleTheme} />
+      <HeroSection />
       <Container 
-        maxWidth="lg" 
+        maxWidth="xl" 
         sx={{ 
           flex: 1,
           py: 4,
@@ -46,7 +48,7 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
             bottom: 0,
             left: 0,
             right: 0,
-            bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+            bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
             borderTop: '1px solid',
             borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
             boxShadow: theme => theme.palette.mode === 'dark' 
@@ -56,7 +58,7 @@ export const Layout: React.FC<LayoutProps> = ({ onToggleTheme, children }) => {
             zIndex: 2000,
           }}
         >
-          <Container maxWidth="lg">
+          <Container maxWidth="xl">
             <HiringSection
               hiringManager={hiringManager}
               jobOpenings={jobOpenings}

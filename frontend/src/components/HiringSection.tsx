@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Paper, Typography, Link, Avatar, Chip, useTheme, IconButton, Collapse, Stack, Skeleton } from '@mui/material';
+import { odsColors } from '@flamingo/ui-kit/styles/ods-colors';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -63,7 +64,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
           gap: 0,
           py: 2,
           px: { xs: 1, sm: 1.5 },
-          bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+          bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
           position: 'relative',
           zIndex: 2
         }}
@@ -278,7 +279,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               border: '1px solid',
               borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
               borderRadius: '6px',
-              bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+              bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
               mb: 2,
               position: 'relative',
               maxHeight: { xs: 'calc(100vh - 200px)', sm: 'none' },
@@ -290,7 +291,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               display: { xs: 'block', sm: 'none' },
               position: 'sticky',
               top: 0,
-              bgcolor: theme => theme.palette.mode === 'dark' ? '#0d1117' : '#ffffff',
+              bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
               borderBottom: '1px solid',
               borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
               p: 2,
@@ -451,7 +452,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                             border: '1px solid',
                             borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
                             borderRadius: '6px',
-                            bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#f6f8fa',
+                            bgcolor: theme => theme.palette.mode === 'dark' ? odsColors.background : odsColors.grey,
                             '&:hover': {
                               borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
                             },
