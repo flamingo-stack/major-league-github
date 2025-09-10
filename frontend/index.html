@@ -30,6 +30,13 @@
     <!-- Additional Meta Tags for SEO -->
     <meta name="description" content="<%= process.env.OG_DESCRIPTION %>" />
     <meta name="twitter:card" content="summary_large_image" />
+    
+    <!-- Root domain to www redirect -->
+    <script>
+      if (window.location.hostname === 'mlg.soccer') {
+        window.location.replace('https://www.mlg.soccer' + window.location.pathname + window.location.search + window.location.hash);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -395,14 +395,9 @@ jobs:
           fi
           
           
-          # Deploy redirect service if FORWARD_TO_WWW is enabled
+          # Note: Root domain redirect is handled by ingress rules when FORWARD_TO_WWW=true
           if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
-            echo "🔄 FORWARD_TO_WWW enabled - deploying redirect service"
-            DOMAIN_NAME="${{ env.DOMAIN_NAME }}" \
-            DOMAIN_SUFFIX="${{ env.DOMAIN_SUFFIX }}" \
-              envsubst < kubernetes/base/redirect-service.yaml > processed_k8s/redirect-service.yaml
-            kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/redirect-service.yaml
-            echo "✅ Redirect service deployed"
+            echo "🔄 FORWARD_TO_WWW enabled - root domain redirect handled by ingress"
           fi
           
           # Create ingress AFTER all services exist with static IP
