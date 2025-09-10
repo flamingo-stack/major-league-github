@@ -11,7 +11,18 @@ data:
         server {
             listen 8080;
             server_name _;
-            return 301 https://${REDIRECT_TARGET}$request_uri;
+            
+            # Health check endpoint for GKE load balancer
+            location /healthz {
+                access_log off;
+                return 200 "healthy\n";
+                add_header Content-Type text/plain;
+            }
+            
+            # Redirect all other traffic
+            location / {
+                return 301 https://REDIRECT_TARGET_PLACEHOLDER$request_uri;
+            }
         }
     }
 ---
@@ -31,22 +42,58 @@ spec:
       labels:
         app: redirect-service
     spec:
+      initContainers:
+      - name: config-substitution
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          sed 's|REDIRECT_TARGET_PLACEHOLDER|'"${REDIRECT_TARGET}"'|g' /original-config/nginx.conf > /config/nginx.conf
+          echo "Redirect target set to: ${REDIRECT_TARGET}"
+          cat /config/nginx.conf
+        env:
+        - name: REDIRECT_TARGET
+          value: "${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
+        volumeMounts:
+        - name: original-config
+          mountPath: /original-config
+        - name: processed-config
+          mountPath: /config
       containers:
       - name: nginx
         image: nginx:alpine
         ports:
         - containerPort: 8080
-        env:
-        - name: REDIRECT_TARGET
-          value: "${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
         volumeMounts:
-        - name: nginx-config
+        - name: processed-config
           mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
       volumes:
-      - name: nginx-config
+      - name: original-config
         configMap:
           name: redirect-nginx-config
+      - name: processed-config
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
