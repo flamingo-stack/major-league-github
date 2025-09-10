@@ -1,10 +1,14 @@
 #!/bin/sh
 set -e
 
-# Set defaults
+# Set defaults with debug
 ENABLE_REDIRECT=${ENABLE_REDIRECT:-false}
 TARGET_DOMAIN=${TARGET_DOMAIN:-localhost}
 ROOT_DOMAIN=${ROOT_DOMAIN:-}
+
+echo "Debug: ENABLE_REDIRECT='$ENABLE_REDIRECT'"
+echo "Debug: TARGET_DOMAIN='$TARGET_DOMAIN'" 
+echo "Debug: ROOT_DOMAIN='$ROOT_DOMAIN'"
 
 # Process redirect block conditionally
 if [ "$ENABLE_REDIRECT" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
