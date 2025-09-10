@@ -446,15 +446,24 @@ jobs:
           # Check if ManagedCertificate already exists and validate domain
           if kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} >/dev/null 2>&1; then
             CERT_STATUS=$(kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} -o jsonpath='{.status.certificateStatus}' 2>/dev/null || echo "Unknown")
-            CURRENT_DOMAIN=$(kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.domains[0]}' 2>/dev/null || echo "")
+            CURRENT_DOMAINS=$(kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.domains[*]}' 2>/dev/null || echo "")
             NEW_DOMAIN="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
             
             echo "🔍 Certificate status: $CERT_STATUS"
-            echo "🔍 Current certificate domain: $CURRENT_DOMAIN"
+            echo "🔍 Current certificate domains: $CURRENT_DOMAINS"
             echo "🔍 New target domain: $NEW_DOMAIN"
             
-            if [ "$CURRENT_DOMAIN" != "$NEW_DOMAIN" ]; then
-              echo "🔄 Domain changed from '$CURRENT_DOMAIN' to '$NEW_DOMAIN' - recreating certificate"
+            # Check if the new domain is already in the certificate
+            DOMAIN_EXISTS="false"
+            for domain in $CURRENT_DOMAINS; do
+              if [ "$domain" = "$NEW_DOMAIN" ]; then
+                DOMAIN_EXISTS="true"
+                break
+              fi
+            done
+            
+            if [ "$DOMAIN_EXISTS" != "true" ]; then
+              echo "🔄 Domain '$NEW_DOMAIN' not found in certificate domains [$CURRENT_DOMAINS] - recreating certificate"
               echo "🗑️ Deleting existing ManagedCertificate..."
               kubectl delete managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} --ignore-not-found=true
               
@@ -467,7 +476,7 @@ jobs:
               echo "📊 New certificate status:"
               kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} -o yaml | grep -A 10 "spec:" || echo "Certificate created, status pending..."
             else
-              echo "✅ ManagedCertificate domain matches target (status: $CERT_STATUS) - skipping recreation"
+              echo "✅ ManagedCertificate already contains target domain '$NEW_DOMAIN' (status: $CERT_STATUS) - skipping recreation"
               # Apply only the ingress part, not the ManagedCertificate
               kubectl apply -f processed_k8s/ingress.yaml --selector='!networking.gke.io/managed-certificates' -n ${{ env.NAMESPACE }} || \
               kubectl apply -f <(sed '/^apiVersion: networking.gke.io\/v1/,/^---$/d' processed_k8s/ingress.yaml) -n ${{ env.NAMESPACE }}
