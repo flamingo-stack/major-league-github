@@ -4,16 +4,19 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const FaviconGeneratorPlugin = require('./webpack-plugins/favicon-generator-plugin');
+const SeoFilesPlugin = require('./webpack-plugins/seo-files-plugin');
 
 // Read environment variables with fallbacks
 const PORT = process.env.PORT || '8450';
 const BACKEND_API_URL = process.env.BACKEND_API_URL || 'https://major-league-github.flamingo.cx';
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const BASE_URL = process.env.OG_URL || 'https://www.mlg.soccer';
 
 console.log('Webpack config:', {
   PORT,
   BACKEND_API_URL,
-  NODE_ENV
+  NODE_ENV,
+  BASE_URL
 });
 
 module.exports = (env, argv) => {
@@ -99,6 +102,9 @@ module.exports = (env, argv) => {
       modules: [path.resolve(__dirname, 'src'), path.resolve(__dirname, 'ui-kit/src'), 'node_modules']
     },
     plugins: [
+      new SeoFilesPlugin({
+        baseUrl: BASE_URL
+      }),
       new FaviconGeneratorPlugin({
         svgPath: 'public/favicon.svg',
         icoPath: 'public/favicon.ico',
@@ -113,7 +119,7 @@ module.exports = (env, argv) => {
             from: 'public',
             to: '.',
             globOptions: {
-              ignore: ['**/index.html']
+              ignore: ['**/index.html', '**/sitemap.xml', '**/robots.txt']
             }
           }
         ]
