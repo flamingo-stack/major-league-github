@@ -18,6 +18,7 @@ import CloudIcon from '@mui/icons-material/Cloud';
 import CloseIcon from '@mui/icons-material/Close';
 import { ContributorInfoProps } from '../types';
 import { ContributorTooltipContent } from './tooltips/ContributorTooltip';
+import { githubToOds, badgeColors, shadows } from '../../../styles/colorMappings';
 
 const getSocialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -80,7 +81,7 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                             position: 'absolute',
                             right: -4,
                             bottom: -2,
-                            filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))'
+                            filter: `drop-shadow(0 0 1px ${shadows.light})`
                         }}
                     >
                         {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
@@ -92,24 +93,25 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                     title={<ContributorTooltipContent contributor={contributor} />}
                     arrow
                     placement="bottom-start"
+                    disableTouchListener={false}
+                    enterTouchDelay={0}
+                    leaveTouchDelay={3000}
                     componentsProps={{
                         tooltip: {
                             sx: {
-                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                bgcolor: githubToOds.bgDark,
                                 border: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                boxShadow: theme => theme.palette.mode === 'dark' 
-                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                                    : '0 8px 24px rgba(140, 149, 159, 0.2)',
+                                borderColor: githubToOds.border,
+                                boxShadow: `0 8px 24px ${shadows.heavy}`,
                                 borderRadius: '6px',
                                 p: 0,
                                 maxWidth: 'none',
                                 '& .MuiTooltip-arrow': {
-                                    color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                    color: githubToOds.border,
                                     '&::before': {
-                                        backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                        backgroundColor: githubToOds.bgDark,
                                         border: '1px solid',
-                                        borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                        borderColor: githubToOds.border,
                                     }
                                 }
                             }
@@ -133,7 +135,7 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     sx={{ 
-                                        color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                        color: githubToOds.textPrimary,
                                         textDecoration: 'none',
                                         '&:hover': { textDecoration: 'underline' },
                                         minWidth: 0,
@@ -164,33 +166,15 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                             minWidth: 20,
                                             height: 24,
                                             borderRadius: '6px',
-                                            bgcolor: theme => {
-                                                if (theme.palette.mode === 'dark') {
-                                                    if (index === 0) return 'rgba(255, 215, 0, 0.15)'
-                                                    if (index === 1) return 'rgba(192, 192, 192, 0.15)'
-                                                    if (index === 2) return 'rgba(205, 127, 50, 0.15)'
-                                                    return 'rgba(99, 110, 123, 0.1)'
-                                                } else {
-                                                    if (index === 0) return 'rgba(255, 215, 0, 0.1)'
-                                                    if (index === 1) return 'rgba(192, 192, 192, 0.1)'
-                                                    if (index === 2) return 'rgba(205, 127, 50, 0.1)'
-                                                    return 'rgba(234, 238, 242, 0.5)'
-                                                }
-                                            },
+                                            bgcolor: index === 0 ? badgeColors.gold.bg 
+                                                : index === 1 ? badgeColors.silver.bg
+                                                : index === 2 ? badgeColors.bronze.bg
+                                                : `${githubToOds.textSecondary}1A`,
                                             border: '1px solid',
-                                            borderColor: theme => {
-                                                if (theme.palette.mode === 'dark') {
-                                                    if (index === 0) return 'rgba(255, 215, 0, 0.3)'
-                                                    if (index === 1) return 'rgba(192, 192, 192, 0.3)'
-                                                    if (index === 2) return 'rgba(205, 127, 50, 0.3)'
-                                                    return 'rgba(99, 110, 123, 0.25)'
-                                                } else {
-                                                    if (index === 0) return 'rgba(255, 215, 0, 0.4)'
-                                                    if (index === 1) return 'rgba(192, 192, 192, 0.4)'
-                                                    if (index === 2) return 'rgba(205, 127, 50, 0.4)'
-                                                    return 'rgba(31, 35, 40, 0.15)'
-                                                }
-                                            },
+                                            borderColor: index === 0 ? badgeColors.gold.border
+                                                : index === 1 ? badgeColors.silver.border
+                                                : index === 2 ? badgeColors.bronze.border
+                                                : `${githubToOds.textSecondary}4D`,
                                             px: 0.75,
                                             flexShrink: 0
                                         }}
@@ -199,19 +183,10 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                             sx={{
                                                 fontSize: '0.75rem',
                                                 fontWeight: 600,
-                                                color: theme => {
-                                                    if (theme.palette.mode === 'dark') {
-                                                        if (index === 0) return 'rgba(255, 215, 0, 0.9)'
-                                                        if (index === 1) return 'rgba(192, 192, 192, 0.9)'
-                                                        if (index === 2) return 'rgba(205, 127, 50, 0.9)'
-                                                        return '#7d8590'
-                                                    } else {
-                                                        if (index === 0) return '#856404'
-                                                        if (index === 1) return '#666666'
-                                                        if (index === 2) return '#8B4513'
-                                                        return '#57606a'
-                                                    }
-                                                },
+                                                color: index === 0 ? badgeColors.gold.text
+                                                    : index === 1 ? badgeColors.silver.text
+                                                    : index === 2 ? badgeColors.bronze.text
+                                                    : githubToOds.textSecondary,
                                                 lineHeight: 1
                                             }}
                                         >
@@ -242,10 +217,10 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                             px: 1,
                                             height: 24,
                                             border: '1px solid',
-                                            borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.5)' : 'rgba(9, 105, 218, 0.3)',
+                                            borderColor: `${githubToOds.linkAccent}80`,
                                             borderRadius: '6px',
-                                            bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.1)' : 'rgba(9, 105, 218, 0.05)',
-                                            color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0969da',
+                                            bgcolor: `${githubToOds.linkAccent}1A`,
+                                            color: githubToOds.linkAccent,
                                             cursor: 'pointer',
                                             fontSize: '0.75rem',
                                             fontWeight: 600,
@@ -254,8 +229,8 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                             whiteSpace: 'nowrap',
                                             flexShrink: 0,
                                             '&:hover': {
-                                                bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.2)' : 'rgba(9, 105, 218, 0.1)',
-                                                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(47, 129, 247, 0.7)' : 'rgba(9, 105, 218, 0.5)',
+                                                bgcolor: `${githubToOds.linkAccent}33`,
+                                                borderColor: `${githubToOds.linkAccent}B3`,
                                             }
                                         }}
                                     >
@@ -277,7 +252,7 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                     <Typography 
                                         variant="body2" 
                                         sx={{ 
-                                            color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0969da',
+                                            color: githubToOds.linkAccent,
                                             fontWeight: 600,
                                             fontSize: { xs: '0.9375rem', sm: '0.875rem' }
                                         }}
@@ -299,10 +274,10 @@ export const ContributorInfo: React.FC<Props> = ({ contributor, index, hiringMan
                                         height: 24,
                                         borderRadius: '6px',
                                         transition: 'all 0.2s',
-                                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                        color: githubToOds.textSecondary,
                                         '&:hover': {
-                                            bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(83, 155, 245, 0.1)' : 'rgba(9, 105, 218, 0.1)',
-                                            color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                            bgcolor: `${githubToOds.link}1A`,
+                                            color: githubToOds.link,
                                         }
                                     }
                                 }}>

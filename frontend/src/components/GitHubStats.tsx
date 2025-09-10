@@ -28,7 +28,7 @@ interface GitHubStatsProps {
   lastActive: string;
 }
 
-const StatItem = ({ icon, value, color }: { icon: React.ReactNode; value: string; color: (theme: Theme) => string }) => (
+const StatItem = ({ icon, value, color }: { icon: React.ReactNode; value: string; color: string }) => (
     <Box sx={{ 
       display: 'flex', 
       alignItems: 'center', 
@@ -38,17 +38,17 @@ const StatItem = ({ icon, value, color }: { icon: React.ReactNode; value: string
       px: 0.75,
       minWidth: 0,
       height: '22px',
-      bgcolor: (theme: Theme) => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
+      bgcolor: systemGreys.background,
       border: '1px solid',
-      borderColor: (theme: Theme) => theme.palette.mode === 'dark' ? `${systemGreys.soft_grey_hover}40` : `${systemGreys.grey}26`,
+      borderColor: `${systemGreys.soft_grey_hover}40`,
     }}>
       {React.cloneElement(icon as React.ReactElement, { 
-        sx: { fontSize: 14, color: (theme: Theme) => color(theme), flexShrink: 0 }
+        sx: { fontSize: 14, color: color, flexShrink: 0 }
       })}
       <Typography sx={{ 
         fontSize: '0.875rem', 
         fontWeight: 600, 
-        color: (theme: Theme) => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black, 
+        color: systemGreys.white, 
         lineHeight: 1 
       }}>
         {value}
@@ -98,32 +98,32 @@ export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) =
       <StatItem 
         icon={<EmojiEventsIcon />} 
         value={formatScore(stats?.score)}
-        color={(theme: Theme) => theme.palette.mode === 'dark' ? flamingo.cyan_base : flamingo.cyan_dark}
+        color={flamingo.cyan_base}
       />
       <StatItem 
         icon={<CodeIcon />} 
         value={(stats?.totalCommits ?? 0).toString()}
-        color={(theme: Theme) => theme.palette.mode === 'dark' ? attention.green_success : attention.green_success_action}
+        color={attention.green_success}
       />
       <StatItem 
         icon={<ListAltIcon />} 
         value={(stats?.javaRepos ?? 0).toString()}
-        color={(theme: Theme) => theme.palette.mode === 'dark' ? attention.green_success : attention.green_success_action}
+        color={attention.green_success}
       />
       <StatItem 
         icon={<StarIcon />} 
         value={(stats?.starsReceived ?? 0).toString()}
-        color={(theme: Theme) => theme.palette.mode === 'dark' ? openYellow.base : openYellow.light}
+        color={openYellow.base}
       />
       <StatItem 
         icon={<ForkRightIcon />} 
         value={(stats?.forksReceived ?? 0).toString()}
-        color={(theme: Theme) => theme.palette.mode === 'dark' ? openYellow.base : openYellow.light}
+        color={openYellow.base}
       />
       <StatItem 
         icon={<UpdateIcon />} 
         value={formatDate(lastActive)}
-        color={(theme: Theme) => theme.palette.mode === 'dark' ? flamingo.cyan_base : flamingo.cyan_dark}
+        color={flamingo.cyan_base}
       />
     </Box>
   );
@@ -138,33 +138,33 @@ export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) =
     }}>
       {/* Score */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <EmojiEventsIcon sx={{ color: theme => theme.palette.mode === 'dark' ? flamingo.cyan_base : flamingo.cyan_dark }} />
-        <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black }}>
+        <EmojiEventsIcon sx={{ color: flamingo.cyan_base }} />
+        <Typography variant="body2" sx={{ color: systemGreys.white }}>
               {formatScore(stats?.score)}
             </Typography>
       </Box>
 
       {/* Activity */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Typography variant="caption" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action }}>
+        <Typography variant="caption" sx={{ color: systemGreys.grey_hover }}>
           Activity
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <CommitIcon sx={{ fontSize: '1rem', color: theme => theme.palette.mode === 'dark' ? attention.green_success : attention.green_success_action }} />
-            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black }}>
+            <CommitIcon sx={{ fontSize: '1rem', color: attention.green_success }} />
+            <Typography variant="body2" sx={{ color: systemGreys.white }}>
               {stats?.totalCommits ?? 0}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <MergeIcon sx={{ fontSize: '1rem', color: theme => theme.palette.mode === 'dark' ? attention.green_success : attention.green_success_action }} />
-            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black }}>
+            <MergeIcon sx={{ fontSize: '1rem', color: attention.green_success }} />
+            <Typography variant="body2" sx={{ color: systemGreys.white }}>
               {stats?.totalPullRequests ?? 0}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <BugReportIcon sx={{ fontSize: '1rem', color: theme => theme.palette.mode === 'dark' ? attention.green_success : attention.green_success_action }} />
-            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black }}>
+            <BugReportIcon sx={{ fontSize: '1rem', color: attention.green_success }} />
+            <Typography variant="body2" sx={{ color: systemGreys.white }}>
               {stats?.totalIssues ?? 0}
             </Typography>
           </Box>
@@ -173,19 +173,19 @@ export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) =
 
       {/* Engagement */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Typography variant="caption" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action }}>
+        <Typography variant="caption" sx={{ color: systemGreys.grey_hover }}>
           Engagement
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <StarIcon sx={{ fontSize: '1rem', color: theme => theme.palette.mode === 'dark' ? openYellow.base : openYellow.light }} />
-            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black }}>
+            <StarIcon sx={{ fontSize: '1rem', color: openYellow.base }} />
+            <Typography variant="body2" sx={{ color: systemGreys.white }}>
               {stats?.starsReceived ?? 0}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <ForkRightIcon sx={{ fontSize: '1rem', color: theme => theme.palette.mode === 'dark' ? openYellow.base : openYellow.light }} />
-            <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black }}>
+            <ForkRightIcon sx={{ fontSize: '1rem', color: openYellow.base }} />
+            <Typography variant="body2" sx={{ color: systemGreys.white }}>
               {stats?.forksReceived ?? 0}
             </Typography>
           </Box>
@@ -194,10 +194,10 @@ export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) =
 
       {/* Last Active */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Typography variant="caption" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action }}>
+        <Typography variant="caption" sx={{ color: systemGreys.grey_hover }}>
           Last Active
         </Typography>
-        <Typography variant="body2" sx={{ color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black }}>
+        <Typography variant="body2" sx={{ color: systemGreys.white }}>
           {formatDate(lastActive)}
         </Typography>
       </Box>
@@ -208,9 +208,9 @@ export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) =
     <Box sx={{ 
       mb: 2,
       borderRadius: '6px',
-      bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
+      bgcolor: systemGreys.background,
       border: '1px solid',
-      borderColor: theme => theme.palette.mode === 'dark' ? systemGreys.soft_grey_hover : `${systemGreys.black}26`,
+      borderColor: systemGreys.soft_grey_hover,
       display: { xs: 'block', sm: 'block' },
     }}>
       <Box sx={{ display: { xs: 'block', sm: 'none' } }}>

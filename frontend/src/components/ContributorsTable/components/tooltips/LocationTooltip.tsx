@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Link, Stack } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { LocationTooltipProps } from '../../types';
+import { githubToOds } from '../../../../styles/colorMappings';
 
 export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contributor }) => {
     if (!contributor.nearestTeam) return null;
@@ -22,7 +23,7 @@ export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contrib
                     />
                     <Box>
                         <Typography variant="h6" sx={{ 
-                            color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f', 
+                            color: githubToOds.textPrimary, 
                             fontSize: '1rem', 
                             fontWeight: 600, 
                             mb: 0.5 
@@ -30,7 +31,7 @@ export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contrib
                             {contributor.nearestTeam.name}
                         </Typography>
                         <Typography variant="body2" sx={{ 
-                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                            color: githubToOds.textSecondary
                         }}>
                             {contributor.nearestTeam.city}, {contributor.nearestTeam.state}
                         </Typography>
@@ -41,7 +42,7 @@ export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contrib
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>🏟️</Typography>
                         <Typography variant="body2" sx={{ 
-                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                            color: githubToOds.textSecondary
                         }}>
                             {contributor.nearestTeam.stadium} ({contributor.nearestTeam.stadiumCapacity.toLocaleString()} capacity)
                         </Typography>
@@ -50,7 +51,7 @@ export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contrib
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>📅</Typography>
                         <Typography variant="body2" sx={{ 
-                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a' 
+                            color: githubToOds.textSecondary 
                         }}>
                             Joined MLS in {contributor.nearestTeam.joinedYear}
                         </Typography>
@@ -59,7 +60,7 @@ export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contrib
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>🏆</Typography>
                         <Typography variant="body2" sx={{ 
-                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                            color: githubToOds.textSecondary
                         }}>
                             Head Coach: {contributor.nearestTeam.headCoach}
                         </Typography>
@@ -72,7 +73,7 @@ export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contrib
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{
-                            color: '#2f81f7',
+                            color: githubToOds.linkAccent,
                             textDecoration: 'none',
                             display: 'flex',
                             alignItems: 'center',
@@ -88,7 +89,7 @@ export const LocationTooltipContent: React.FC<LocationTooltipProps> = ({ contrib
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{
-                            color: '#2f81f7',
+                            color: githubToOds.linkAccent,
                             textDecoration: 'none',
                             display: 'flex',
                             alignItems: 'center',
