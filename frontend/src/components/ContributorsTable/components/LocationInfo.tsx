@@ -9,6 +9,7 @@ import {
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { LocationInfoProps } from '../types';
 import { LocationTooltipContent } from './tooltips/LocationTooltip';
+import { githubToOds, shadows } from '../../../styles/colorMappings';
 
 export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
     if (!contributor.city) {
@@ -16,7 +17,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
             <Typography 
                 variant="body2" 
                 sx={{ 
-                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                    color: githubToOds.textSecondary,
                     fontSize: { xs: '0.9375rem', sm: '0.875rem' }
                 }}
             >
@@ -34,7 +35,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <LocationOnIcon sx={{ 
                     fontSize: { xs: 18, sm: 16 }, 
-                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                    color: githubToOds.textSecondary,
                     flexShrink: 0
                 }} />
                 <Box sx={{ 
@@ -47,7 +48,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                     <Typography 
                         variant="body2" 
                         sx={{ 
-                            color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                            color: githubToOds.textPrimary,
                             fontSize: '0.75rem',
                             fontWeight: 500
                         }}
@@ -58,7 +59,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                         <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', gap: 1 }}>
                             <Typography 
                                 sx={{ 
-                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                    color: githubToOds.textSecondary,
                                     fontSize: { xs: '0.9375rem', sm: '0.875rem' }
                                 }}
                             >
@@ -67,23 +68,24 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                             <Tooltip
                                 title={<LocationTooltipContent contributor={contributor} />}
                                 arrow
+                                disableTouchListener={false}
+                                enterTouchDelay={0}
+                                leaveTouchDelay={3000}
                                 componentsProps={{
                                     tooltip: {
                                         sx: {
-                                            bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                            bgcolor: githubToOds.bgDark,
                                             border: '1px solid',
-                                            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                            boxShadow: theme => theme.palette.mode === 'dark'
-                                                ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                                                : '0 8px 24px rgba(140, 149, 159, 0.2)',
+                                            borderColor: githubToOds.border,
+                                            boxShadow: `0 8px 24px ${shadows.heavy}`,
                                             borderRadius: '6px',
                                             p: 0,
                                             '& .MuiTooltip-arrow': {
-                                                color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                color: githubToOds.border,
                                                 '&::before': {
-                                                    backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                    backgroundColor: githubToOds.bgDark,
                                                     border: '1px solid',
-                                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                    borderColor: githubToOds.border,
                                                 }
                                             }
                                         }
@@ -101,7 +103,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                                         gap: 1,
                                         '&:hover': {
                                             '.team-name': {
-                                                color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0550ae'
+                                                color: githubToOds.linkAccent
                                             }
                                         }
                                     }}
@@ -120,7 +122,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                                         variant="body2" 
                                         className="team-name"
                                         sx={{ 
-                                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                            color: githubToOds.textSecondary,
                                             fontSize: { xs: '0.9375rem', sm: '0.875rem' }
                                         }}
                                     >
@@ -140,23 +142,24 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                     <Tooltip
                         title={<LocationTooltipContent contributor={contributor} />}
                         arrow
+                        disableTouchListener={false}
+                        enterTouchDelay={0}
+                        leaveTouchDelay={3000}
                         componentsProps={{
                             tooltip: {
                                 sx: {
-                                    bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                    bgcolor: githubToOds.bgDark,
                                     border: '1px solid',
-                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
-                                    boxShadow: theme => theme.palette.mode === 'dark'
-                                        ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                                        : '0 8px 24px rgba(140, 149, 159, 0.2)',
+                                    borderColor: githubToOds.border,
+                                    boxShadow: `0 8px 24px ${shadows.heavy}`,
                                     borderRadius: '6px',
                                     p: 0,
                                     '& .MuiTooltip-arrow': {
-                                        color: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                        color: githubToOds.border,
                                         '&::before': {
-                                            backgroundColor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                            backgroundColor: githubToOds.bgDark,
                                             border: '1px solid',
-                                            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                            borderColor: githubToOds.border,
                                         }
                                     }
                                 }
@@ -174,7 +177,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                                 gap: 1,
                                 '&:hover': {
                                     '.team-name': {
-                                        color: theme => theme.palette.mode === 'dark' ? '#2f81f7' : '#0969da'
+                                        color: githubToOds.linkAccent
                                     }
                                 }
                             }}
@@ -193,7 +196,7 @@ export const LocationInfo: React.FC<LocationInfoProps> = ({ contributor }) => {
                                 variant="body2" 
                                 className="team-name"
                                 sx={{ 
-                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                    color: githubToOds.textSecondary,
                                     fontSize: { xs: '0.9375rem', sm: '0.875rem' }
                                 }}
                             >

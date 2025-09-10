@@ -33,6 +33,7 @@ import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
 import { useHiring } from '../../../hooks/useHiring';
 import { formatDate, formatDateRelative } from '../../../utils/date';
+import { githubToOds, shadows } from '../../../styles/colorMappings';
 
 const getSocialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -94,30 +95,30 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
         { 
             id: 'score',
             label: 'Score',
-            icon: <EmojiEventsIcon sx={{ fontSize: 16, color: '#539bf5' }} />,
+            icon: <EmojiEventsIcon sx={{ fontSize: 16, color: githubToOds.link }} />,
             width: '10%',
             align: 'right' as const
         },
         { 
             id: 'activity',
             label: 'Activity',
-            icon: <CodeIcon sx={{ fontSize: 16, color: '#57ab5a' }} />,
-            secondaryIcon: <ListAltIcon sx={{ fontSize: 16, color: '#57ab5a' }} />,
+            icon: <CodeIcon sx={{ fontSize: 16, color: githubToOds.success }} />,
+            secondaryIcon: <ListAltIcon sx={{ fontSize: 16, color: githubToOds.success }} />,
             width: '15%',
             align: 'right' as const
         },
         { 
             id: 'engagement',
             label: 'Engagement',
-            icon: <StarIcon sx={{ fontSize: 16, color: '#daaa3f' }} />,
-            secondaryIcon: <ForkRightIcon sx={{ fontSize: 16, color: '#daaa3f' }} />,
+            icon: <StarIcon sx={{ fontSize: 16, color: githubToOds.warning }} />,
+            secondaryIcon: <ForkRightIcon sx={{ fontSize: 16, color: githubToOds.warning }} />,
             width: '10%',
             align: 'right' as const
         },
         { 
             id: 'lastActive',
             label: 'Last Active',
-            icon: <UpdateIcon sx={{ fontSize: 16, color: '#539bf5' }} />,
+            icon: <UpdateIcon sx={{ fontSize: 16, color: githubToOds.link }} />,
             width: '10%',
             align: 'right' as const
         }
@@ -127,9 +128,9 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
         <Box sx={{ 
             display: 'inline-flex', 
             alignItems: 'center',
-            bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(13, 17, 23, 0.6)' : '#f6f8fa',
+            bgcolor: `${githubToOds.bgDark}99`,
             border: '1px solid',
-            borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)',
+            borderColor: `${githubToOds.textSecondary}40`,
             borderRadius: '6px',
             py: 0.25,
             px: 0.75,
@@ -152,7 +153,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                     <Typography sx={{ 
                         fontSize: '0.875rem',
                         fontWeight: 600,
-                        color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                        color: githubToOds.textPrimary,
                         mb: 1 
                     }}>
                         Score Components
@@ -161,26 +162,26 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                         <Box>
                             <Typography sx={{ 
                                 fontSize: '0.75rem',
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                color: githubToOds.textSecondary,
                                 mb: 0.5 
                             }}>
                                 Activity Score
                             </Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <CodeIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37' }} />
+                                    <CodeIcon sx={{ fontSize: 14, color: githubToOds.success }} />
                                     <Typography sx={{ 
                                         fontSize: '0.75rem',
-                                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                                        color: githubToOds.textSecondary
                                     }}>
                                         {contributor.totalCommits} commits
                                     </Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <StarIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700' }} />
+                                    <StarIcon sx={{ fontSize: 14, color: githubToOds.warning }} />
                                     <Typography sx={{ 
                                         fontSize: '0.75rem',
-                                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                                        color: githubToOds.textSecondary
                                     }}>
                                         {contributor.starsReceived} stars received
                                     </Typography>
@@ -190,17 +191,17 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                         <Box>
                             <Typography sx={{ 
                                 fontSize: '0.75rem',
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                color: githubToOds.textSecondary,
                                 mb: 0.5 
                             }}>
                                 Recency Multiplier
                             </Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 1 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <UpdateIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da' }} />
+                                    <UpdateIcon sx={{ fontSize: 14, color: githubToOds.link }} />
                                     <Typography sx={{ 
                                         fontSize: '0.75rem',
-                                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                                        color: githubToOds.textSecondary
                                     }}>
                                         Last active: {formatDate(contributor.lastActive)}
                                     </Typography>
@@ -219,7 +220,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                 borderRadius: '6px',
                                 transition: 'background-color 0.2s',
                                 '&:hover': {
-                                    bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.1)' : 'rgba(234, 238, 242, 0.5)'
+                                    bgcolor: `${githubToOds.textSecondary}1A`
                                 }
                             }}
                         >
@@ -228,13 +229,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                 alignItems: 'center',
                                 transform: isExpanded ? 'rotate(90deg)' : 'none',
                                 transition: 'transform 0.2s',
-                                color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'
+                                color: githubToOds.link
                             }}>
                                 ›
                             </Box>
                             <Typography sx={{ 
                                 fontSize: '0.75rem',
-                                color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                                color: githubToOds.link,
                                 fontWeight: 500
                             }}>
                                 {isExpanded ? 'How score is calculated?' : 'How score is calculated?'}
@@ -244,23 +245,23 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                             <Box sx={{ 
                                 mt: 1,
                                 p: 1.5,
-                                bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(13, 17, 23, 0.6)' : '#f6f8fa',
+                                bgcolor: `${githubToOds.bgDark}99`,
                                 borderRadius: '6px',
                                 border: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)',
+                                borderColor: `${githubToOds.textSecondary}40`,
                                 width: '100%',
                                 boxSizing: 'border-box'
                             }}>
                                 <Typography sx={{ 
                                     fontSize: '0.75rem',
-                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                    color: githubToOds.textSecondary,
                                     lineHeight: 1.4,
                                     mb: 1.5
                                 }}>
                                     The score reflects both the volume and recency of GitHub activity. A high score indicates both substantial contributions and recent engagement.
                                 </Typography>
                                 <Box sx={{ 
-                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                    color: githubToOds.textSecondary,
                                     fontSize: '0.75rem',
                                     fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace',
                                     lineHeight: 1.4
@@ -289,26 +290,26 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
             <Typography sx={{ 
                 fontSize: '0.875rem',
                 fontWeight: 600,
-                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                color: githubToOds.textPrimary,
                 mb: 1 
             }}>
                 Activity Details
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CodeIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37' }} />
+                    <CodeIcon sx={{ fontSize: 14, color: githubToOds.success }} />
                     <Typography sx={{ 
                         fontSize: '0.75rem',
-                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                        color: githubToOds.textSecondary
                     }}>
                         {contributor.totalCommits} commits
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ListAltIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37' }} />
+                    <ListAltIcon sx={{ fontSize: 14, color: githubToOds.success }} />
                     <Typography sx={{ 
                         fontSize: '0.75rem',
-                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                        color: githubToOds.textSecondary
                     }}>
                         {contributor.javaRepos} Java repositories
                     </Typography>
@@ -322,26 +323,26 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
             <Typography sx={{ 
                 fontSize: '0.875rem',
                 fontWeight: 600,
-                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                color: githubToOds.textPrimary,
                 mb: 1 
             }}>
                 Engagement Stats
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <StarIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700' }} />
+                    <StarIcon sx={{ fontSize: 14, color: githubToOds.warning }} />
                     <Typography sx={{ 
                         fontSize: '0.75rem',
-                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                        color: githubToOds.textSecondary
                     }}>
                         {contributor.starsReceived} stars received / {contributor.starsGiven || 0} given
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ForkRightIcon sx={{ fontSize: 14, color: theme => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700' }} />
+                    <ForkRightIcon sx={{ fontSize: 14, color: githubToOds.warning }} />
                     <Typography sx={{ 
                         fontSize: '0.75rem',
-                        color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a'
+                        color: githubToOds.textSecondary
                     }}>
                         {contributor.forksReceived} forks received / {contributor.forksGiven || 0} given
                     </Typography>
@@ -365,7 +366,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
         <TableContainer 
             sx={{ 
                 border: '1px solid',
-                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                borderColor: githubToOds.border,
                 borderRadius: '6px',
                 overflow: 'hidden'
             }}
@@ -380,12 +381,12 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                 width={column.width}
                                 sx={{
                                     borderBottom: '1px solid',
-                                    borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
-                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                    borderColor: githubToOds.border,
+                                    color: githubToOds.textPrimary,
                                     py: 1.5,
                                     fontSize: '0.875rem',
                                     fontWeight: 600,
-                                    bgcolor: theme => theme.palette.mode === 'dark' ? 'transparent' : '#f6f8fa'
+                                    bgcolor: 'transparent'
                                 }}
                             >
                                 <Box sx={{ 
@@ -412,7 +413,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                             {column.icon}
                                             {column.secondaryIcon && (
                                                 <>
-                                                    <Box component="span" sx={{ color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a', mx: 0.25 }}>•</Box>
+                                                    <Box component="span" sx={{ color: githubToOds.textSecondary, mx: 0.25 }}>•</Box>
                                                     {column.secondaryIcon}
                                                 </>
                                             )}
@@ -429,9 +430,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                             key={contributor.login}
                             sx={{
                                 '&:hover': {
-                                    bgcolor: theme => theme.palette.mode === 'dark' 
-                                        ? 'rgba(177, 186, 196, 0.08)' 
-                                        : 'rgba(234, 238, 242, 0.5)'
+                                    bgcolor: `${githubToOds.textSecondary}14`
                                 }
                             }}
                         >
@@ -443,7 +442,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                     py: 2,
                                     px: 3,
                                     borderBottom: '1px solid',
-                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                    borderColor: githubToOds.border,
                                     '&:first-of-type': {
                                         pl: 3
                                     },
@@ -470,7 +469,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                     py: 2,
                                     px: 3,
                                     borderBottom: '1px solid',
-                                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                    borderColor: githubToOds.border,
                                     '&:first-of-type': {
                                         pl: 3
                                     },
@@ -485,7 +484,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                             </TableCell>
                             <TableCell align="right" sx={{ 
                                 borderBottom: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                borderColor: githubToOds.border,
                                 py: 1.5,
                                 height: '57px',
                                 verticalAlign: 'middle'
@@ -494,19 +493,20 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                     title={<ScoreTooltip contributor={contributor} />}
                                     placement="bottom"
                                     arrow
+                                    disableTouchListener={false}
+                                    enterTouchDelay={0}
+                                    leaveTouchDelay={3000}
                                     componentsProps={{
                                         tooltip: {
                                             sx: {
-                                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                bgcolor: githubToOds.bgDark,
                                                 '& .MuiTooltip-arrow': {
-                                                    color: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff'
+                                                    color: githubToOds.bgDark
                                                 },
                                                 border: '1px solid',
-                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                borderColor: githubToOds.border,
                                                 borderRadius: '6px',
-                                                boxShadow: theme => theme.palette.mode === 'dark'
-                                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)',
+                                                boxShadow: `0 8px 24px ${shadows.heavy}`,
                                                 p: 0,
                                                 maxWidth: 'none !important'
                                             }
@@ -518,13 +518,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <EmojiEventsIcon sx={{ 
                                                     fontSize: 14,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    color: githubToOds.textSecondary,
                                                     flexShrink: 0 
                                                 }} />
                                                 <Typography sx={{ 
                                                     fontSize: '0.875rem',
                                                     fontWeight: 600,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    color: githubToOds.textPrimary,
                                                     lineHeight: 1
                                                 }}>
                                                     {formatNumber(contributor.score)}
@@ -536,7 +536,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                             </TableCell>
                             <TableCell align="right" sx={{ 
                                 borderBottom: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                borderColor: githubToOds.border,
                                 py: 1.5,
                                 height: '57px',
                                 verticalAlign: 'middle'
@@ -545,19 +545,20 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                     title={<ActivityTooltip contributor={contributor} />}
                                     placement="bottom"
                                     arrow
+                                    disableTouchListener={false}
+                                    enterTouchDelay={0}
+                                    leaveTouchDelay={3000}
                                     componentsProps={{
                                         tooltip: {
                                             sx: {
-                                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                bgcolor: githubToOds.bgDark,
                                                 '& .MuiTooltip-arrow': {
-                                                    color: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff'
+                                                    color: githubToOds.bgDark
                                                 },
                                                 border: '1px solid',
-                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                borderColor: githubToOds.border,
                                                 borderRadius: '6px',
-                                                boxShadow: theme => theme.palette.mode === 'dark'
-                                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)'
+                                                boxShadow: `0 8px 24px ${shadows.heavy}`
                                             }
                                         }
                                     }}
@@ -567,13 +568,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <CodeIcon sx={{ 
                                                     fontSize: 14,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    color: githubToOds.textSecondary,
                                                     flexShrink: 0 
                                                 }} />
                                                 <Typography sx={{ 
                                                     fontSize: '0.875rem',
                                                     fontWeight: 600,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    color: githubToOds.textPrimary,
                                                     lineHeight: 1
                                                 }}>
                                                     {formatNumber(contributor.totalCommits)}
@@ -584,13 +585,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <ListAltIcon sx={{ 
                                                     fontSize: 14,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    color: githubToOds.textSecondary,
                                                     flexShrink: 0 
                                                 }} />
                                                 <Typography sx={{ 
                                                     fontSize: '0.875rem',
                                                     fontWeight: 600,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    color: githubToOds.textPrimary,
                                                     lineHeight: 1
                                                 }}>
                                                     {contributor.javaRepos}
@@ -602,7 +603,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                             </TableCell>
                             <TableCell align="right" sx={{ 
                                 borderBottom: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                borderColor: githubToOds.border,
                                 py: 1.5,
                                 height: '57px',
                                 verticalAlign: 'middle'
@@ -611,19 +612,20 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                     title={<EngagementTooltip contributor={contributor} />}
                                     placement="bottom"
                                     arrow
+                                    disableTouchListener={false}
+                                    enterTouchDelay={0}
+                                    leaveTouchDelay={3000}
                                     componentsProps={{
                                         tooltip: {
                                             sx: {
-                                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                bgcolor: githubToOds.bgDark,
                                                 '& .MuiTooltip-arrow': {
-                                                    color: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff'
+                                                    color: githubToOds.bgDark
                                                 },
                                                 border: '1px solid',
-                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                borderColor: githubToOds.border,
                                                 borderRadius: '6px',
-                                                boxShadow: theme => theme.palette.mode === 'dark'
-                                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)'
+                                                boxShadow: `0 8px 24px ${shadows.heavy}`
                                             }
                                         }
                                     }}
@@ -633,13 +635,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <StarIcon sx={{ 
                                                     fontSize: 14,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    color: githubToOds.textSecondary,
                                                     flexShrink: 0 
                                                 }} />
                                                 <Typography sx={{ 
                                                     fontSize: '0.875rem',
                                                     fontWeight: 600,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    color: githubToOds.textPrimary,
                                                     lineHeight: 1
                                                 }}>
                                                     {formatNumber(contributor.starsReceived)}
@@ -650,13 +652,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <ForkRightIcon sx={{ 
                                                     fontSize: 14,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    color: githubToOds.textSecondary,
                                                     flexShrink: 0 
                                                 }} />
                                                 <Typography sx={{ 
                                                     fontSize: '0.875rem',
                                                     fontWeight: 600,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    color: githubToOds.textPrimary,
                                                     lineHeight: 1
                                                 }}>
                                                     {formatNumber(contributor.forksReceived)}
@@ -668,7 +670,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                             </TableCell>
                             <TableCell align="right" sx={{ 
                                 borderBottom: '1px solid',
-                                borderColor: theme => theme.palette.mode === 'dark' ? '#21262d' : 'rgba(27, 31, 36, 0.15)',
+                                borderColor: githubToOds.border,
                                 py: 1.5,
                                 height: '57px',
                                 verticalAlign: 'middle'
@@ -677,19 +679,20 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                     title={<LastActivityTooltip contributor={contributor} />}
                                     placement="bottom"
                                     arrow
+                                    disableTouchListener={false}
+                                    enterTouchDelay={0}
+                                    leaveTouchDelay={3000}
                                     componentsProps={{
                                         tooltip: {
                                             sx: {
-                                                bgcolor: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff',
+                                                bgcolor: githubToOds.bgDark,
                                                 '& .MuiTooltip-arrow': {
-                                                    color: theme => theme.palette.mode === 'dark' ? '#161b22' : '#ffffff'
+                                                    color: githubToOds.bgDark
                                                 },
                                                 border: '1px solid',
-                                                borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                                                borderColor: githubToOds.border,
                                                 borderRadius: '6px',
-                                                boxShadow: theme => theme.palette.mode === 'dark'
-                                                    ? '0 8px 24px rgba(1, 4, 9, 0.75)'
-                                                    : '0 8px 24px rgba(140, 149, 159, 0.2)'
+                                                boxShadow: `0 8px 24px ${shadows.heavy}`
                                             }
                                         }
                                     }}
@@ -699,13 +702,13 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <UpdateIcon sx={{ 
                                                     fontSize: 14,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                                    color: githubToOds.textSecondary,
                                                     flexShrink: 0 
                                                 }} />
                                                 <Typography sx={{ 
                                                     fontSize: '0.875rem',
                                                     fontWeight: 600,
-                                                    color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                                    color: githubToOds.textPrimary,
                                                     lineHeight: 1,
                                                     whiteSpace: 'nowrap'
                                                 }}>

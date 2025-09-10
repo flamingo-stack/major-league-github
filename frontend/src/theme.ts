@@ -1,5 +1,6 @@
 import { createTheme } from '@mui/material';
 import { systemGreys, flamingo, attention } from './styles/colors';
+import { shadows } from './styles/colorMappings';
 
 // Using ODS colors instead of hardcoded GitHub colors
 const odsColors = {
@@ -12,7 +13,7 @@ const odsColors = {
         5: systemGreys.grey_hover, // '#7e7e7e' - light text secondary
         6: systemGreys.white, // '#fafafa' - light text primary
         7: systemGreys.white_hover, // '#f5f5f5' - lightest text
-        8: '#ffffff'  // Pure white for highest contrast
+        8: systemGreys.white  // Pure white for highest contrast
     },
     blue: {
         main: flamingo.cyan_base, // '#5efaf0' - flamingo cyan as primary
@@ -164,7 +165,7 @@ export const getTheme = () => createTheme({
                     border: '1px solid',
                     borderColor: odsColors.neutral[2],
                     borderRadius: '6px',
-                    boxShadow: `0 8px 24px ${systemGreys.black}B3` // Using ODS black with 70% opacity
+                    boxShadow: `0 8px 24px ${shadows.heavy}` // Using ODS shadow
                 }
             }
         },
@@ -212,7 +213,7 @@ export const getTheme = () => createTheme({
             styleOverrides: {
                 paper: {
                     backgroundColor: odsColors.neutral[1],
-                    boxShadow: `0 8px 24px ${systemGreys.black}B3`, // Using ODS black with 70% opacity
+                    boxShadow: `0 8px 24px ${shadows.heavy}`, // Using ODS shadow
                     border: '1px solid',
                     borderColor: odsColors.neutral[2]
                 },

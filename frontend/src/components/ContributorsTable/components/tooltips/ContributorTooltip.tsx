@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { ContributorTooltipProps } from '../../types';
+import { githubToOds } from '../../../../styles/colorMappings';
 
 export const ContributorTooltipContent: React.FC<ContributorTooltipProps> = ({ contributor }) => {
     return (
@@ -18,10 +19,10 @@ export const ContributorTooltipContent: React.FC<ContributorTooltipProps> = ({ c
                     sx={{ width: 48, height: 48 }}
                 />
                 <Box>
-                    <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
+                    <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: githubToOds.textPrimary }}>
                         {contributor.name || contributor.login}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.875rem', color: theme => theme.palette.mode === 'dark' ? 'rgba(230, 237, 243, 0.7)' : 'rgba(36, 41, 47, 0.7)' }}>
+                    <Typography sx={{ fontSize: '0.875rem', color: `${githubToOds.textPrimary}B3` }}>
                         {contributor.login}
                     </Typography>
                 </Box>
@@ -29,16 +30,16 @@ export const ContributorTooltipContent: React.FC<ContributorTooltipProps> = ({ c
             
             {contributor.city && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <LocationOnIcon sx={{ fontSize: '1rem', color: theme => theme.palette.mode === 'dark' ? '#768390' : 'rgba(36, 41, 47, 0.7)' }} />
-                    <Typography sx={{ fontSize: '0.875rem', color: theme => theme.palette.mode === 'dark' ? '#768390' : 'rgba(36, 41, 47, 0.7)' }}>
+                    <LocationOnIcon sx={{ fontSize: '1rem', color: githubToOds.textMuted }} />
+                    <Typography sx={{ fontSize: '0.875rem', color: githubToOds.textMuted }}>
                         {contributor.city.name}, {contributor.city.state?.code}
                     </Typography>
                 </Box>
             )}
 
             <Box sx={{ 
-                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-                opacity: theme => theme.palette.mode === 'dark' ? 0.8 : 1,
+                color: githubToOds.textPrimary,
+                opacity: 0.8,
                 fontSize: '0.8125rem',
                 lineHeight: 1.5
             }}>

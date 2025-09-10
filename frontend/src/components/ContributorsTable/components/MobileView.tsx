@@ -29,6 +29,7 @@ import { LoadingSpinner } from '../../LoadingSpinner';
 import { ErrorMessage } from '../../ErrorMessage';
 import { useHiring } from '../../../hooks/useHiring';
 import { formatDate, formatDateRelative } from '../../../utils/date';
+import { githubToOds } from '../../../styles/colorMappings';
 
 const getSocialIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -74,7 +75,7 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
         );
     }
 
-    const StatItem = ({ icon, value, color }: { icon: React.ReactNode; value: string; color: (theme: Theme) => string }) => (
+    const StatItem = ({ icon, value, color }: { icon: React.ReactNode; value: string; color: string }) => (
         <Box sx={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -84,17 +85,17 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
             px: 0.75,
             minWidth: 0,
             height: '22px',
-            bgcolor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(13, 17, 23, 0.6)' : '#f6f8fa',
+            bgcolor: `${githubToOds.bgDark}99`,
             border: '1px solid',
-            borderColor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(99, 110, 123, 0.25)' : 'rgba(31, 35, 40, 0.15)',
+            borderColor: `${githubToOds.textSecondary}40`,
         }}>
             {React.cloneElement(icon as React.ReactElement, { 
-                sx: { fontSize: 14, color: (theme: Theme) => color(theme), flexShrink: 0 }
+                sx: { fontSize: 14, color: color, flexShrink: 0 }
             })}
             <Typography sx={{ 
                 fontSize: '0.875rem', 
                 fontWeight: 600, 
-                color: (theme: Theme) => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f', 
+                color: githubToOds.textPrimary, 
                 lineHeight: 1 
             }}>
                 {value}
@@ -109,14 +110,12 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                     key={contributor.login}
                     sx={{
                         border: '1px solid',
-                        borderColor: (theme: Theme) => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                        borderColor: githubToOds.border,
                         borderRadius: '6px',
                         p: { xs: 2.5, sm: 2 },
-                        bgcolor: (theme: Theme) => theme.palette.mode === 'dark' ? 'transparent' : '#ffffff',
+                        bgcolor: 'transparent',
                         '&:hover': {
-                            bgcolor: (theme: Theme) => theme.palette.mode === 'dark' 
-                                ? 'rgba(177, 186, 196, 0.08)' 
-                                : 'rgba(234, 238, 242, 0.5)'
+                            bgcolor: `${githubToOds.textSecondary}14`
                         },
                         position: 'relative',
                         zIndex: 1
@@ -167,32 +166,32 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                             <StatItem 
                                 icon={<EmojiEventsIcon />} 
                                 value={formatNumber(contributor.score)}
-                                color={(theme: Theme) => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'}
+                                color={githubToOds.link}
                             />
                             <StatItem 
                                 icon={<CodeIcon />} 
                                 value={formatNumber(contributor.totalCommits)}
-                                color={(theme: Theme) => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37'}
+                                color={githubToOds.success}
                             />
                             <StatItem 
                                 icon={<ListAltIcon />} 
                                 value={contributor.javaRepos.toString()}
-                                color={(theme: Theme) => theme.palette.mode === 'dark' ? '#57ab5a' : '#1a7f37'}
+                                color={githubToOds.success}
                             />
                             <StatItem 
                                 icon={<StarIcon />} 
                                 value={formatNumber(contributor.starsReceived)}
-                                color={(theme: Theme) => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700'}
+                                color={githubToOds.warning}
                             />
                             <StatItem 
                                 icon={<ForkRightIcon />} 
                                 value={formatNumber(contributor.forksReceived)}
-                                color={(theme: Theme) => theme.palette.mode === 'dark' ? '#daaa3f' : '#9a6700'}
+                                color={githubToOds.warning}
                             />
                             <StatItem 
                                 icon={<UpdateIcon />} 
                                 value={formatDate(contributor.lastActive)}
-                                color={(theme: Theme) => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'}
+                                color={githubToOds.link}
                             />
                         </Box>
                     </Box>

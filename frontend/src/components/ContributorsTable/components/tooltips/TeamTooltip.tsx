@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Avatar, Link } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Contributor } from '../../../../services/api';
+import { githubToOds } from '../../../../styles/colorMappings';
 
 interface TeamTooltipContentProps {
     team: NonNullable<Contributor['nearestTeam']>;
@@ -23,17 +24,17 @@ export const TeamTooltipContent: React.FC<TeamTooltipContentProps> = ({ team }) 
                 }}
             />
             <Box>
-                <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f' }}>
+                <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: githubToOds.textPrimary }}>
                     {team.name}
                 </Typography>
-                <Typography sx={{ fontSize: '0.875rem', color: theme => theme.palette.mode === 'dark' ? 'rgba(230, 237, 243, 0.7)' : '#57606a' }}>
+                <Typography sx={{ fontSize: '0.875rem', color: `${githubToOds.textPrimary}B3` }}>
                     {team.city}, {team.state}
                 </Typography>
             </Box>
         </Box>
         <Box sx={{ 
-            color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
-            opacity: theme => theme.palette.mode === 'dark' ? 0.8 : 1,
+            color: githubToOds.textPrimary,
+            opacity: 0.8,
             fontSize: '0.8125rem',
             lineHeight: 1.5
         }}>
@@ -55,14 +56,14 @@ export const TeamTooltipContent: React.FC<TeamTooltipContentProps> = ({ team }) 
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{
-                        color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da',
+                        color: githubToOds.link,
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 0.5,
                         '&:hover': { 
                             textDecoration: 'underline',
-                            color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0550ae'
+                            color: githubToOds.linkDark
                         }
                     }}
                 >
@@ -74,14 +75,14 @@ export const TeamTooltipContent: React.FC<TeamTooltipContentProps> = ({ team }) 
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{
-                        color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0969da',
+                        color: githubToOds.link,
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 0.5,
                         '&:hover': { 
                             textDecoration: 'underline',
-                            color: theme => theme.palette.mode === 'dark' ? '#58a6ff' : '#0550ae'
+                            color: githubToOds.linkDark
                         }
                     }}
                 >

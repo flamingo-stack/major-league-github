@@ -8,6 +8,7 @@ import ForkRightIcon from '@mui/icons-material/ForkRight';
 import UpdateIcon from '@mui/icons-material/Update';
 import { StatsDisplayProps } from '../types';
 import { formatNumber } from '../utils';
+import { githubToOds } from '../../../styles/colorMappings';
 
 export const StatsDisplay: React.FC<StatsDisplayProps> = ({ contributor }) => {
     const stats = [
@@ -65,7 +66,7 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({ contributor }) => {
                     display: 'flex', 
                     alignItems: 'center',
                     gap: 1.5,
-                    bgcolor: '#161b22',
+                    bgcolor: githubToOds.bgDark,
                     borderRadius: '2rem',
                     py: 0.75,
                     px: 1.5,
@@ -73,7 +74,7 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({ contributor }) => {
                     <Box sx={{ 
                         display: 'flex',
                         alignItems: 'center',
-                        color: '#7d8590'
+                        color: githubToOds.textSecondary
                     }}>
                         {stat.icon}
                     </Box>
@@ -82,7 +83,7 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({ contributor }) => {
                         sx={{ 
                             fontWeight: 600,
                             fontSize: '0.875rem',
-                            color: '#e6edf3'
+                            color: githubToOds.textPrimary
                         }}
                     >
                         {stat.value}

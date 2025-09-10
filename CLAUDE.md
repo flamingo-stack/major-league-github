@@ -9,7 +9,7 @@ Major League GitHub is a full-stack application that creates leaderboards for Gi
 - **Backend**: Java 21 + Spring Boot 3.4 with two microservices:
   - Backend Service: Handles API requests and data serving (port 8450)
   - Cache Updater: Background service for maintaining GitHub data freshness (port 8451)
-- **Frontend**: React 18 + TypeScript + Material-UI with Webpack 5 bundling using @flamingo/ui-kit components
+- **Frontend**: React 19 + TypeScript + Material-UI with Webpack 5 bundling using @flamingo/ui-kit components
 - **Infrastructure**: Redis for distributed caching, Docker + Kubernetes for deployment on GKE
 - **Deployment**: GitHub Actions CI/CD with automated builds and deployment to Google Cloud Platform
 
@@ -124,6 +124,21 @@ The deployment is fully automated via GitHub Actions:
 - Backend profiles configured in `pom.xml` and `application-*.properties` files
 
 ## Recent Major Changes (2025-01)
+
+### Latest Updates (2025-01-10)
+- **React 19 Upgrade**: Complete upgrade from React 18 to React 19 for improved performance and compatibility
+- **Full Rebuild**: Complete rebuild from scratch with clean dependency installation
+  - Deleted all node_modules and package-lock.json files for both frontend and ui-kit
+  - Fresh installation of all dependencies with React 19 compatibility
+  - Resolved all TypeScript compilation errors and version conflicts
+- **Enhanced Stability**: 
+  - Fixed TypeScript configuration to prevent babel/traverse errors
+  - Improved webpack aliases for consistent React version resolution
+  - Verified deployment workflow compatibility with React 19
+  - Application fully functional with React 19 at localhost:3000
+- **UI Kit Compatibility**: Updated @flamingo/ui-kit to maintain React 18/19 peer dependency compatibility for other projects
+
+### Previous Updates (2025-01)
 - **UI Kit Migration**: Migrated from local fonts/icons to @flamingo/ui-kit
 - **Theme Simplification**: Removed light theme support, dark theme only
 - **Component Cleanup**: Unified Header and HeroSection styling and link consistency

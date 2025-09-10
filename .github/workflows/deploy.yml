@@ -27,6 +27,7 @@ env:
 
   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
   DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
+  FORWARD_TO_WWW: ${{ secrets.FORWARD_TO_WWW || 'false' }}
   STATIC_IP_NAME: "main-ingress-ip"
   STATIC_IP_ADDRESS: ${{ secrets.STATIC_IP_ADDRESS }}
 
@@ -119,6 +120,8 @@ jobs:
             missing_secrets+=("DOMAIN_SUFFIX")
           fi
           
+          # FORWARD_TO_WWW is optional (defaults to false)
+          
           # Application secrets
           if [ -z "${{ secrets.GH_API_TOKENS }}" ]; then
             missing_secrets+=("GH_API_TOKENS")
@@ -196,10 +199,6 @@ jobs:
           echo "OG_IMAGE_URL=/og-image.png" >> $GITHUB_ENV
           echo "OG_SITE_NAME=Major League GitHub" >> $GITHUB_ENV
           
-          # Set Extra Button environment variables
-          echo "WEBAPP_EXTRA_BUTTON_LINK=https://medium.com/@michaelassraf/major-league-github-the-open-source-talent-leaderboard-ca2c6d7dcbeb" >> $GITHUB_ENV
-          echo "WEBAPP_EXTRA_BUTTON_TEXT=Why MLG?" >> $GITHUB_ENV
-
       - name: Build and push backend service image 🏗️
         if: steps.changes.outputs.backend == 'true'
         run: |
@@ -402,13 +401,35 @@ jobs:
           DOMAIN_SUFFIX="${{ env.DOMAIN_SUFFIX }}" \
             envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
           
-          # Check if ManagedCertificate already exists (never recreate if it exists)
+          # Check if ManagedCertificate already exists and validate domain
           if kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} >/dev/null 2>&1; then
             CERT_STATUS=$(kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} -o jsonpath='{.status.certificateStatus}' 2>/dev/null || echo "Unknown")
-            echo "✅ ManagedCertificate already exists (status: $CERT_STATUS) - skipping recreation"
-            # Apply only the ingress part, not the ManagedCertificate
-            kubectl apply -f processed_k8s/ingress.yaml --selector='!networking.gke.io/managed-certificates' -n ${{ env.NAMESPACE }} || \
-            kubectl apply -f <(sed '/^apiVersion: networking.gke.io\/v1/,/^---$/d' processed_k8s/ingress.yaml) -n ${{ env.NAMESPACE }}
+            CURRENT_DOMAIN=$(kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} -o jsonpath='{.spec.domains[0]}' 2>/dev/null || echo "")
+            NEW_DOMAIN="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+            
+            echo "🔍 Certificate status: $CERT_STATUS"
+            echo "🔍 Current certificate domain: $CURRENT_DOMAIN"
+            echo "🔍 New target domain: $NEW_DOMAIN"
+            
+            if [ "$CURRENT_DOMAIN" != "$NEW_DOMAIN" ]; then
+              echo "🔄 Domain changed from '$CURRENT_DOMAIN' to '$NEW_DOMAIN' - recreating certificate"
+              echo "🗑️ Deleting existing ManagedCertificate..."
+              kubectl delete managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} --ignore-not-found=true
+              
+              echo "⏳ Waiting for certificate cleanup..."
+              sleep 10
+              
+              echo "🆕 Creating new ManagedCertificate for domain: $NEW_DOMAIN"
+              kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
+              
+              echo "📊 New certificate status:"
+              kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} -o yaml | grep -A 10 "spec:" || echo "Certificate created, status pending..."
+            else
+              echo "✅ ManagedCertificate domain matches target (status: $CERT_STATUS) - skipping recreation"
+              # Apply only the ingress part, not the ManagedCertificate
+              kubectl apply -f processed_k8s/ingress.yaml --selector='!networking.gke.io/managed-certificates' -n ${{ env.NAMESPACE }} || \
+              kubectl apply -f <(sed '/^apiVersion: networking.gke.io\/v1/,/^---$/d' processed_k8s/ingress.yaml) -n ${{ env.NAMESPACE }}
+            fi
           else
             echo "🆕 ManagedCertificate doesn't exist - creating new one"
             kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/ingress.yaml
@@ -432,6 +453,9 @@ jobs:
           echo "LoadBalancer Status:"
           kubectl -n ${{ env.NAMESPACE }} get ingress main-ingress -o wide
           
+          echo "SSL Certificate Status:"
+          kubectl -n ${{ env.NAMESPACE }} get managedcertificate main-ingress-ssl-cert -o wide || echo "No managed certificate found"
+          
           # Use static IP instead of waiting for dynamic assignment
           LB_IP="${{ env.STATIC_IP_ADDRESS }}"
           echo "✅ Using static IP: ${LB_IP}"
@@ -447,7 +471,12 @@ jobs:
           echo "   - frontend-service:80 (internal)"
           echo "   - backend-service-service:8080 (internal)"
           echo ""
-          echo "🌍 Domain: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+          if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
+            echo "🌍 Primary Domain: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+            echo "🔄 Root Domain Redirect: https://${{ env.DOMAIN_SUFFIX }} → https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+          else
+            echo "🌍 Domain: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+          fi
 
       - name: Update DNS Record (Cross-Project) 🌍
         run: |
@@ -530,6 +559,69 @@ jobs:
           fi
           
           echo "✅ DNS record updated successfully"
+          
+          # Handle root domain to www redirect if FORWARD_TO_WWW is true
+          if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
+            echo "🔄 FORWARD_TO_WWW is enabled - setting up root domain CNAME redirect"
+            ROOT_DOMAIN="${{ env.DOMAIN_SUFFIX }}"
+            WWW_DOMAIN="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+            
+            echo "🌍 Creating CNAME record: $ROOT_DOMAIN → $WWW_DOMAIN"
+            
+            # Check if root domain CNAME already exists
+            EXISTING_CNAME=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${ROOT_DOMAIN}." --type=CNAME --format="value(rrdatas[0])" 2>/dev/null | head -1 || echo "")
+            
+            if [ ! -z "$EXISTING_CNAME" ] && [ "$EXISTING_CNAME" != "null" ] && [ "$EXISTING_CNAME" != "$WWW_DOMAIN." ]; then
+              echo "🔄 Updating existing CNAME record from $EXISTING_CNAME to $WWW_DOMAIN."
+              
+              # Get existing TTL
+              EXISTING_CNAME_TTL=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${ROOT_DOMAIN}." --type=CNAME --format="value(ttl)" 2>/dev/null | head -1)
+              
+              if [ ! -z "$EXISTING_CNAME_TTL" ] && [ "$EXISTING_CNAME_TTL" != "null" ]; then
+                # Update existing CNAME
+                gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                gcloud dns record-sets transaction remove "$EXISTING_CNAME" \
+                  --name="${ROOT_DOMAIN}." \
+                  --ttl=$EXISTING_CNAME_TTL \
+                  --type=CNAME \
+                  --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                gcloud dns record-sets transaction add "$WWW_DOMAIN." \
+                  --name="${ROOT_DOMAIN}." \
+                  --ttl=300 \
+                  --type=CNAME \
+                  --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              else
+                echo "Could not find existing CNAME TTL, creating new record"
+                gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                gcloud dns record-sets transaction add "$WWW_DOMAIN." \
+                  --name="${ROOT_DOMAIN}." \
+                  --ttl=300 \
+                  --type=CNAME \
+                  --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              fi
+              
+            elif [ -z "$EXISTING_CNAME" ] || [ "$EXISTING_CNAME" = "null" ]; then
+              echo "🆕 Creating new CNAME record: $ROOT_DOMAIN → $WWW_DOMAIN"
+              
+              gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              gcloud dns record-sets transaction add "$WWW_DOMAIN." \
+                --name="${ROOT_DOMAIN}." \
+                --ttl=300 \
+                --type=CNAME \
+                --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+              
+            else
+              echo "✅ CNAME record already points to correct target: $EXISTING_CNAME"
+            fi
+            
+            echo "✅ Root domain redirect configured: $ROOT_DOMAIN → $WWW_DOMAIN"
+          else
+            echo "ℹ️  FORWARD_TO_WWW is disabled - skipping root domain CNAME redirect"
+          fi
+          
           echo "🌍 Domain will be accessible at: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
           echo "⏳ DNS propagation may take 5-15 minutes"
           
