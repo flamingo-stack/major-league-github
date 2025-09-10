@@ -99,7 +99,7 @@ Frontend supports optional environment variables for Google Tag Manager and Open
 - Redis: localhost:6379
 
 ## Production Deployment
-- **Live Site**: https://major-league-github.flamingo.cx
+- **Live Site**: https://www.mlg.soccer
 - **Platform**: Google Kubernetes Engine (GKE)
 - **SSL**: Google-managed certificates with automatic HTTP→HTTPS redirect
 - **Build Optimization**: Uses dorny/paths-filter for intelligent build skipping

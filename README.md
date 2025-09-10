@@ -9,7 +9,7 @@
 ## Overview
 Major League GitHub brings the excitement of soccer to the open-source world by showcasing top GitHub contributors based on programming language, location, and engagement. With soccer-themed filters, this project bridges communities and highlights local open-source talent.
 
-🌐 **Live Demo**: [major-league-github.flamingo.cx](https://major-league-github.flamingo.cx/)
+🌐 **Live Demo**: [www.mlg.soccer](https://www.mlg.soccer/)
 
 [![Deploy Status](https://img.shields.io/github/actions/workflow/status/flamingo-stack/major-league-github/deploy.yml?branch=main&label=deployment&style=flat-square)](https://github.com/flamingo-stack/major-league-github/actions/workflows/deploy.yml)
 
@@ -176,7 +176,7 @@ kubectl apply -k .
 - Redis should be running on `localhost:6379`
 
 ### Production Environment
-- **Live Application**: https://major-league-github.flamingo.cx
+- **Live Application**: https://www.mlg.soccer
 - **Automatic HTTPS**: All HTTP traffic redirected to HTTPS
 - **High Availability**: Multi-replica deployment with load balancing
 - **Monitoring**: Real-time health checks and deployment status
