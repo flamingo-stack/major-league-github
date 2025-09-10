@@ -42,6 +42,12 @@ spec:
               value: "${WEBAPP_EXTRA_BUTTON_TEXT}"
             - name: GTM_ID
               value: "${GTM_ID}"
+            - name: ENABLE_REDIRECT
+              value: "${ENABLE_REDIRECT}"
+            - name: TARGET_DOMAIN
+              value: "${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
+            - name: ROOT_DOMAIN
+              value: "${ROOT_DOMAIN}"
           envFrom:
             - configMapRef:
                 name: app-config

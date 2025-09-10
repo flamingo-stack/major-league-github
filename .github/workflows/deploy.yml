@@ -380,7 +380,26 @@ jobs:
           
           # Process and apply frontend (creates frontend-service as ClusterIP with NEG)
           echo "🚀 Processing frontend..."
+          
+          # Determine redirect configuration for runtime
+          ENABLE_REDIRECT="false"
+          ROOT_DOMAIN=""
+          
+          if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
+            # Check if DOMAIN_NAME is a subdomain (doesn't contain dots)
+            if [[ "${{ env.DOMAIN_NAME }}" != *"."* ]]; then
+              # This is a simple subdomain like "www", so enable redirect
+              ENABLE_REDIRECT="true"
+              ROOT_DOMAIN="${{ env.DOMAIN_SUFFIX }}"
+              echo "📍 Frontend nginx redirect: $ROOT_DOMAIN → ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+            else
+              echo "⚠️ DOMAIN_NAME contains dots, assuming complex subdomain - no redirect"
+            fi
+          fi
+          
           VERSION=$FRONTEND_VERSION \
+          ENABLE_REDIRECT="$ENABLE_REDIRECT" \
+          ROOT_DOMAIN="$ROOT_DOMAIN" \
             envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
           kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           echo "✅ Frontend applied successfully"
