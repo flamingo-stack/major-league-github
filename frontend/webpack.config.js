@@ -92,6 +92,9 @@ module.exports = (env, argv) => {
       alias: {
         '@': path.resolve(__dirname, 'src'),
         '@flamingo/ui-kit': path.resolve(__dirname, 'ui-kit/src'),
+        // Force React to be resolved from main node_modules to prevent version conflicts
+        'react': path.resolve(__dirname, 'node_modules/react'),
+        'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
       },
       modules: [path.resolve(__dirname, 'src'), path.resolve(__dirname, 'ui-kit/src'), 'node_modules']
     },
@@ -157,9 +160,11 @@ module.exports = (env, argv) => {
         directory: path.join(__dirname, 'dist'),
         publicPath: '/'
       },
+      host: 'localhost',
       port: parseInt(PORT, 10),
       historyApiFallback: true,
       hot: true,
+      open: true,
       proxy: [{
         context: ['/api'],
         target: BACKEND_API_URL,

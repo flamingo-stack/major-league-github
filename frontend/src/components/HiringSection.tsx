@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Paper, Typography, Link, Avatar, Chip, useTheme, IconButton, Collapse, Stack, Skeleton } from '@mui/material';
-import { systemGreys } from '../styles/colors';
+import { systemGreys, flamingo as flamingoColors } from '../styles/colors';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import { GitHubIcon, FlamingoLogo } from '@flamingo/ui-kit/components/icons';
@@ -132,7 +132,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               cursor: 'pointer',
               '&:hover': {
                 '& .MuiTypography-root': {
-                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                  color: theme => theme.palette.mode === 'dark' ? flamingoColors.cyan_base : flamingoColors.cyan_dark,
                 }
               }
             }}
@@ -150,7 +150,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                   width: 24,
                   height: 24,
                   border: '2px solid',
-                  borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                  borderColor: theme => theme.palette.mode === 'dark' ? systemGreys.soft_grey_hover : `${systemGreys.black}26`,
                 }}
               />
             ) : (
@@ -159,26 +159,26 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                   width: 24,
                   height: 24,
                   border: '2px solid',
-                  borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                  borderColor: theme => theme.palette.mode === 'dark' ? systemGreys.soft_grey_hover : `${systemGreys.black}26`,
                 }}
               />
             )}
             <Typography
               component="div"
               sx={{
-                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black,
                 fontWeight: 500,
                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 lineHeight: '24px',
                 transition: 'color 0.2s',
               }}
             >
-              Come work with me
+              Come work with us
             </Typography>
             <IconButton 
               size="small"
               sx={{ 
-                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action,
                 p: 0,
                 width: 24,
                 height: 24,
@@ -225,7 +225,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               cursor: 'pointer',
               '&:hover': {
                 '& .MuiTypography-root': {
-                  color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                  color: theme => theme.palette.mode === 'dark' ? flamingoColors.cyan_base : flamingoColors.cyan_dark,
                 }
               }
             }}
@@ -237,7 +237,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               <Typography
                 component="div"
                 sx={{
-                  color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                  color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action,
                   fontSize: { xs: '0.75rem', sm: '0.875rem' },
                   lineHeight: '24px',
                   transition: 'color 0.2s',
@@ -257,7 +257,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
             elevation={0}
             sx={{
               border: '1px solid',
-              borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+              borderColor: theme => theme.palette.mode === 'dark' ? systemGreys.soft_grey_hover : `${systemGreys.black}26`,
               borderRadius: '6px',
               bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
               mb: 2,
@@ -273,7 +273,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
               top: 0,
               bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
               borderBottom: '1px solid',
-              borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+              borderColor: theme => theme.palette.mode === 'dark' ? systemGreys.soft_grey_hover : `${systemGreys.black}26`,
               p: 2,
               textAlign: 'right',
               zIndex: 1
@@ -282,9 +282,9 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                 onClick={() => setIsExpanded(false)}
                 size="small"
                 sx={{
-                  color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                  color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action,
                   '&:hover': {
-                    bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(177, 186, 196, 0.12)' : 'rgba(234, 238, 242, 0.5)'
+                    bgcolor: theme => theme.palette.mode === 'dark' ? `${systemGreys.grey}1F` : `${systemGreys.white_action}80`
                   }
                 }}
               >
@@ -318,14 +318,14 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                           width: 64, 
                           height: 64,
                           border: '2px solid',
-                          borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                          borderColor: theme => theme.palette.mode === 'dark' ? systemGreys.soft_grey_hover : `${systemGreys.black}26`,
                         }}
                       />
                       <Box>
                         <Typography
                           variant="h6"
                           sx={{
-                            color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                            color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black,
                             fontWeight: 600,
                           }}
                         >
@@ -334,7 +334,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                            color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action,
                           }}
                         >
                           {hiringManager.role}
@@ -344,7 +344,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                     <Typography
                       variant="body1"
                       sx={{
-                        color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                        color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black,
                         mb: 2,
                       }}
                     >
@@ -372,7 +372,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                         borderRadius: '6px',
                         transition: 'all 0.2s',
                         '&:hover': {
-                          bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(83, 155, 245, 0.1)' : 'rgba(9, 105, 218, 0.1)',
+                          bgcolor: theme => theme.palette.mode === 'dark' ? `${flamingoColors.cyan_base}1A` : `${flamingoColors.cyan_dark}1A`,
                         }
                       }
                     }}>
@@ -388,9 +388,9 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                           rel="noopener noreferrer"
                           title={link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}
                           sx={{
-                            color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                            color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action,
                             '&:hover': {
-                              color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                              color: theme => theme.palette.mode === 'dark' ? flamingoColors.cyan_base : flamingoColors.cyan_dark,
                             },
                           }}
                         >
@@ -405,14 +405,14 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                     flex: 1,
                     borderLeft: { xs: 'none', md: '1px solid' },
                     borderTop: { xs: '1px solid', md: 'none' },
-                    borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                    borderColor: theme => theme.palette.mode === 'dark' ? systemGreys.soft_grey_hover : `${systemGreys.black}26`,
                     pl: { xs: 0, md: 3 },
                     pt: { xs: 3, md: 0 }
                   }}>
                     <Typography
                       variant="h6"
                       sx={{
-                        color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                        color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black,
                         fontWeight: 600,
                         mb: 2,
                         display: 'flex',
@@ -430,11 +430,11 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                           sx={{
                             p: 2,
                             border: '1px solid',
-                            borderColor: theme => theme.palette.mode === 'dark' ? '#30363d' : 'rgba(27, 31, 36, 0.15)',
+                            borderColor: theme => theme.palette.mode === 'dark' ? systemGreys.soft_grey_hover : `${systemGreys.black}26`,
                             borderRadius: '6px',
                             bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.background : systemGreys.grey,
                             '&:hover': {
-                              borderColor: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da',
+                              borderColor: theme => theme.palette.mode === 'dark' ? flamingoColors.cyan_base : flamingoColors.cyan_dark,
                             },
                           }}
                         >
@@ -444,7 +444,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                             rel="noopener noreferrer"
                             sx={{ 
                                 textDecoration: 'none',
-                                color: theme => theme.palette.mode === 'dark' ? '#e6edf3' : '#24292f',
+                                color: theme => theme.palette.mode === 'dark' ? systemGreys.white : systemGreys.black,
                                 '&:hover': {
                                     textDecoration: 'none'
                                 }
@@ -464,8 +464,8 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                               label={job.location}
                               size="small"
                               sx={{
-                                bgcolor: theme => theme.palette.mode === 'dark' ? '#30363d' : '#eaeef2',
-                                color: theme => theme.palette.mode === 'dark' ? '#7d8590' : '#57606a',
+                                bgcolor: theme => theme.palette.mode === 'dark' ? systemGreys.soft_grey_hover : systemGreys.white_action,
+                                color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action,
                               }}
                             />
                           </Link>

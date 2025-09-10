@@ -1,4 +1,5 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
+import { flamingo, systemGreys } from '../styles/colors';
 
 interface LoadingSpinnerProps {
   message?: string;
@@ -21,13 +22,13 @@ export const LoadingSpinner = ({ message = 'Loading...' }: LoadingSpinnerProps) 
         size={40}
         thickness={4}
         sx={{
-          color: '#58a6ff'
+          color: flamingo.cyan_light // Using ODS flamingo cyan light instead of hardcoded blue
         }}
       />
       <Typography
         variant="body2"
         sx={{
-          color: 'rgba(255, 255, 255, 0.7)',
+          color: systemGreys.grey_hover, // Using ODS grey hover instead of hardcoded rgba
           fontWeight: 500
         }}
       >

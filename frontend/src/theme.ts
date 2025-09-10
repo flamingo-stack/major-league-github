@@ -1,27 +1,28 @@
 import { createTheme } from '@mui/material';
+import { systemGreys, flamingo, attention } from './styles/colors';
 
-// GitHub color scales - dark theme only
-const githubColors = {
+// Using ODS colors instead of hardcoded GitHub colors
+const odsColors = {
     neutral: {
-        0: '#0d1117', // Darkest - main dark background
-        1: '#010409', // Even darker for contrast
-        2: '#21262d', // Dark borders
-        3: '#30363d', // Dark dividers
-        4: '#6e7681', // Dark text secondary
-        5: '#7d8590', // Light text secondary
-        6: '#e6edf3', // Light text primary - increased contrast
-        7: '#f6f8fa', // Lightest - main light text
-        8: '#ffffff'  // White
+        0: systemGreys.background, // '#161616' - main dark background
+        1: systemGreys.black, // '#212121' - slightly lighter for contrast
+        2: systemGreys.soft_grey, // '#3a3a3a' - borders
+        3: systemGreys.soft_grey_hover, // '#444444' - dividers
+        4: systemGreys.grey, // '#888888' - text secondary
+        5: systemGreys.grey_hover, // '#7e7e7e' - light text secondary
+        6: systemGreys.white, // '#fafafa' - light text primary
+        7: systemGreys.white_hover, // '#f5f5f5' - lightest text
+        8: '#ffffff'  // Pure white for highest contrast
     },
     blue: {
-        main: '#0969da',
-        light: '#58a6ff',
-        dark: '#0550ae'
+        main: flamingo.cyan_base, // '#5efaf0' - flamingo cyan as primary
+        light: flamingo.cyan_light, // '#a1fbf5' - lighter cyan
+        dark: flamingo.cyan_dark // '#058c83' - darker cyan
     },
     green: {
-        main: '#1a7f37',
-        light: '#2ea043',
-        dark: '#116329'
+        main: attention.green_success, // '#5ea62e' - success green
+        light: attention.green_success_hover, // '#549c24' - hover green
+        dark: attention.green_success_action // '#4a921a' - action green
     }
 };
 
@@ -29,24 +30,24 @@ export const getTheme = () => createTheme({
     palette: {
         mode: 'dark',
         primary: {
-            main: githubColors.blue.main,
-            light: githubColors.blue.light,
-            dark: githubColors.blue.dark
+            main: odsColors.blue.main,
+            light: odsColors.blue.light,
+            dark: odsColors.blue.dark
         },
         success: {
-            main: githubColors.green.main,
-            light: githubColors.green.light,
-            dark: githubColors.green.dark
+            main: odsColors.green.main,
+            light: odsColors.green.light,
+            dark: odsColors.green.dark
         },
         background: {
-            default: githubColors.neutral[1],
-            paper: githubColors.neutral[1]
+            default: odsColors.neutral[1],
+            paper: odsColors.neutral[1]
         },
         text: {
-            primary: githubColors.neutral[6],
-            secondary: githubColors.neutral[4]
+            primary: odsColors.neutral[6],
+            secondary: odsColors.neutral[4]
         },
-        divider: githubColors.neutral[2]
+        divider: odsColors.neutral[2]
     },
     typography: {
         fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
@@ -59,38 +60,38 @@ export const getTheme = () => createTheme({
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: githubColors.neutral[8]
+            color: odsColors.neutral[8]
         },
         h2: {
             fontSize: '1.5rem',
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: githubColors.neutral[8]
+            color: odsColors.neutral[8]
         },
         h3: {
             fontSize: '1.25rem',
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: githubColors.neutral[8]
+            color: odsColors.neutral[8]
         },
         h4: {
             fontSize: '1rem',
             fontWeight: 600,
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
-            color: githubColors.neutral[8]
+            color: odsColors.neutral[8]
         },
         body1: {
             fontSize: '1rem',
             lineHeight: 1.5,
-            color: githubColors.neutral[6]
+            color: odsColors.neutral[6]
         },
         body2: {
             fontSize: '0.875rem',
             lineHeight: 1.5,
-            color: githubColors.neutral[5]
+            color: odsColors.neutral[5]
         },
         button: {
             textTransform: 'none',
@@ -102,8 +103,8 @@ export const getTheme = () => createTheme({
         MuiCssBaseline: {
             styleOverrides: {
                 body: {
-                    backgroundColor: githubColors.neutral[1],
-                    color: githubColors.neutral[6]
+                    backgroundColor: odsColors.neutral[1],
+                    color: odsColors.neutral[6]
                 }
             }
         },
@@ -113,28 +114,28 @@ export const getTheme = () => createTheme({
                     borderRadius: '6px',
                     padding: '5px 16px',
                     border: '1px solid',
-                    borderColor: githubColors.neutral[2],
+                    borderColor: odsColors.neutral[2],
                     fontWeight: 600,
                     '&:hover': {
-                        borderColor: githubColors.neutral[3],
-                        backgroundColor: githubColors.neutral[2]
+                        borderColor: odsColors.neutral[3],
+                        backgroundColor: odsColors.neutral[2]
                     }
                 },
                 contained: {
-                    backgroundColor: githubColors.neutral[2],
-                    color: githubColors.neutral[6],
+                    backgroundColor: odsColors.neutral[2],
+                    color: odsColors.neutral[6],
                     boxShadow: 'none',
                     '&:hover': {
-                        backgroundColor: githubColors.neutral[3],
+                        backgroundColor: odsColors.neutral[3],
                         boxShadow: 'none'
                     }
                 },
                 containedPrimary: {
-                    backgroundColor: githubColors.blue.main,
-                    color: githubColors.neutral[8],
+                    backgroundColor: odsColors.blue.main,
+                    color: odsColors.neutral[8],
                     border: 'none',
                     '&:hover': {
-                        backgroundColor: githubColors.blue.light
+                        backgroundColor: odsColors.blue.light
                     }
                 }
             }
@@ -143,15 +144,15 @@ export const getTheme = () => createTheme({
             styleOverrides: {
                 root: {
                     borderBottom: '1px solid',
-                    borderColor: githubColors.neutral[2],
+                    borderColor: odsColors.neutral[2],
                     padding: '16px',
                     fontSize: '0.875rem',
-                    color: githubColors.neutral[6]
+                    color: odsColors.neutral[6]
                 },
                 head: {
                     fontWeight: 600,
-                    backgroundColor: githubColors.neutral[1],
-                    color: githubColors.neutral[6]
+                    backgroundColor: odsColors.neutral[1],
+                    color: odsColors.neutral[6]
                 }
             }
         },
@@ -159,21 +160,21 @@ export const getTheme = () => createTheme({
             styleOverrides: {
                 root: {
                     backgroundImage: 'none',
-                    backgroundColor: githubColors.neutral[1],
+                    backgroundColor: odsColors.neutral[1],
                     border: '1px solid',
-                    borderColor: githubColors.neutral[2],
+                    borderColor: odsColors.neutral[2],
                     borderRadius: '6px',
-                    boxShadow: '0 8px 24px rgba(1, 4, 9, 0.75)'
+                    boxShadow: `0 8px 24px ${systemGreys.black}B3` // Using ODS black with 70% opacity
                 }
             }
         },
         MuiAppBar: {
             styleOverrides: {
                 root: {
-                    backgroundColor: githubColors.neutral[1],
+                    backgroundColor: odsColors.neutral[1],
                     borderBottom: '1px solid',
-                    borderColor: githubColors.neutral[2],
-                    color: githubColors.neutral[6],
+                    borderColor: odsColors.neutral[2],
+                    color: odsColors.neutral[6],
                     boxShadow: 'none'
                 }
             }
@@ -182,19 +183,19 @@ export const getTheme = () => createTheme({
             styleOverrides: {
                 root: {
                     '& .MuiOutlinedInput-root': {
-                        backgroundColor: githubColors.neutral[1],
+                        backgroundColor: odsColors.neutral[1],
                         borderRadius: '6px',
                         border: '1px solid',
-                        borderColor: githubColors.neutral[2],
+                        borderColor: odsColors.neutral[2],
                         '& fieldset': {
                             border: 'none'
                         },
                         '&:hover': {
-                            borderColor: githubColors.neutral[3]
+                            borderColor: odsColors.neutral[3]
                         },
                         '&.Mui-focused': {
-                            borderColor: githubColors.blue.main,
-                            boxShadow: '0 0 0 3px rgba(33, 136, 255, 0.15)'
+                            borderColor: odsColors.blue.main,
+                            boxShadow: `0 0 0 3px ${flamingo.cyan_base}26` // Using ODS cyan with 15% opacity
                         },
                         '& .MuiInputAdornment-root': {
                             marginTop: '0 !important',
@@ -210,17 +211,17 @@ export const getTheme = () => createTheme({
         MuiAutocomplete: {
             styleOverrides: {
                 paper: {
-                    backgroundColor: githubColors.neutral[1],
-                    boxShadow: '0 8px 24px rgba(1, 4, 9, 0.75)',
+                    backgroundColor: odsColors.neutral[1],
+                    boxShadow: `0 8px 24px ${systemGreys.black}B3`, // Using ODS black with 70% opacity
                     border: '1px solid',
-                    borderColor: githubColors.neutral[2]
+                    borderColor: odsColors.neutral[2]
                 },
                 option: {
                     '&:hover': {
-                        backgroundColor: githubColors.neutral[2]
+                        backgroundColor: odsColors.neutral[2]
                     },
                     '&[aria-selected="true"]': {
-                        backgroundColor: githubColors.neutral[3]
+                        backgroundColor: odsColors.neutral[3]
                     }
                 }
             }
@@ -228,10 +229,10 @@ export const getTheme = () => createTheme({
         MuiLink: {
             styleOverrides: {
                 root: {
-                    color: githubColors.blue.light,
+                    color: odsColors.blue.light,
                     textDecoration: 'none',
                     '&:hover': {
-                        color: githubColors.blue.light,
+                        color: odsColors.blue.light,
                         textDecoration: 'underline'
                     }
                 }

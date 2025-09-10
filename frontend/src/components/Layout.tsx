@@ -49,8 +49,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             right: 0,
             bgcolor: systemGreys.background,
             borderTop: '1px solid',
-            borderColor: '#30363d',
-            boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.3)',
+            borderColor: systemGreys.soft_grey_hover,
+            boxShadow: `0 -4px 12px ${systemGreys.black}4D`,
             transition: 'transform 0.3s ease-in-out',
             zIndex: 2000,
           }}

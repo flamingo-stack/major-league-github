@@ -1,5 +1,6 @@
 import { Box, Paper, Typography } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import { attention } from '../styles/colors';
 
 interface ErrorMessageProps {
   message: string;
@@ -16,22 +17,22 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 2,
-        backgroundColor: 'rgba(248, 81, 73, 0.15)',
+        backgroundColor: `${attention.red_error}26`, // Using ODS red error with 15% opacity
         border: '1px solid',
-        borderColor: 'rgba(248, 81, 73, 0.4)',
+        borderColor: `${attention.red_error}66`, // Using ODS red error with 40% opacity
         borderRadius: '6px',
         width: '100%',
       }}
     >
       <ErrorOutlineIcon 
         sx={{ 
-          color: 'rgb(248, 81, 73)'
+          color: attention.red_error // Using ODS red error
         }} 
       />
       <Typography
         variant="body1"
         sx={{
-          color: 'rgb(255, 123, 114)',
+          color: attention.red_error_hover, // Using ODS red error hover for text
           fontWeight: 500
         }}
       >

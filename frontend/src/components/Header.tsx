@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Typography, Link, Container } from '@mui/material';
-import { GitHubIcon } from '@flamingo/ui-kit/components/icons';
 import { Logo } from './Logo';
-import { systemGreys } from '../styles/colors';
+import { systemGreys, flamingo } from '../styles/colors';
+import { GitHubIcon } from '@flamingo/ui-kit/components/icons';
 
 const BLOG_LINK = process.env.WEBAPP_EXTRA_BUTTON_LINK || 'https://www.flamingo.run/blog/major-league-github-the-open-source-talent-leaderboard';
 const BLOG_TEXT = process.env.WEBAPP_EXTRA_BUTTON_TEXT || 'Why MLG?';
@@ -12,12 +12,12 @@ const Header = () => {
     return (
         <Box sx={{ 
             borderBottom: '1px solid',
-            borderColor: '#30363d',
+            borderColor: systemGreys.soft_grey_hover,
             bgcolor: systemGreys.background,
             position: 'sticky',
             top: 0,
             zIndex: 1000,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            boxShadow: `0 4px 12px ${systemGreys.black}4D`,
         }}>
             <Container maxWidth="xl">
                 <Box sx={{ 
@@ -38,7 +38,7 @@ const Header = () => {
                         <Logo 
                             sx={{ 
                                 fontSize: { xs: 24, sm: 28 },
-                                color: '#e6edf3',
+                                color: systemGreys.white,
                                 flexShrink: 0
                             }}
                         />
@@ -48,7 +48,7 @@ const Header = () => {
                                 fontWeight: 600,
                                 fontSize: { xs: '1.1rem', sm: '1.1rem' },
                                 letterSpacing: '-0.025em',
-                                color: '#e6edf3',
+                                color: systemGreys.white,
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis'
@@ -78,8 +78,8 @@ const Header = () => {
                                 py: { xs: 0.75, sm: 1 },
                                 borderRadius: '6px',
                                 border: '1px solid',
-                                borderColor: '#30363d',
-                                color: '#7d8590',
+                                borderColor: systemGreys.soft_grey_hover,
+                                color: systemGreys.grey_hover,
                                 bgcolor: systemGreys.background,
                                 textDecoration: 'none',
                                 whiteSpace: 'nowrap',
@@ -87,8 +87,8 @@ const Header = () => {
                                 height: { xs: 32, sm: 36 },
                                 transition: 'all 0.2s',
                                 '&:hover': {
-                                    borderColor: '#539bf5',
-                                    color: '#539bf5',
+                                    borderColor: flamingo.cyan_base,
+                                    color: flamingo.cyan_base,
                                 }
                             }}
                         >
@@ -110,8 +110,8 @@ const Header = () => {
                                 py: { xs: 0.75, sm: 1 },
                                 borderRadius: '6px',
                                 border: '1px solid',
-                                borderColor: '#30363d',
-                                color: '#7d8590',
+                                borderColor: systemGreys.soft_grey_hover,
+                                color: systemGreys.grey_hover,
                                 bgcolor: systemGreys.background,
                                 textDecoration: 'none',
                                 whiteSpace: 'nowrap',
@@ -119,12 +119,12 @@ const Header = () => {
                                 height: { xs: 32, sm: 36 },
                                 transition: 'all 0.2s',
                                 '&:hover': {
-                                    borderColor: '#539bf5',
-                                    color: '#539bf5',
+                                    borderColor: flamingo.cyan_base,
+                                    color: flamingo.cyan_base,
                                 }
                             }}
                         >
-                            <GitHubIcon width={20} height={19} />
+<GitHubIcon width={20} height={19} />
                         </Link>
                     </Box>
                 </Box>

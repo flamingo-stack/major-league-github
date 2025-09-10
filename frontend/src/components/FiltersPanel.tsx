@@ -1,4 +1,5 @@
 import { Box, Typography, useTheme, useMediaQuery, IconButton, Collapse, Button, Link, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemButton, ListItemText } from '@mui/material';
+import { systemGreys, flamingo } from '../styles/colors';
 import { useQueryClient } from '@tanstack/react-query';
 import { City, Region, State, SoccerTeam, Language } from '../types/api';
 import { useUrlState } from '../hooks/useUrlState';
@@ -337,11 +338,11 @@ export const FiltersPanel = () => {
                 sx={{
                   fontSize: '0.875rem',
                   fontWeight: 600,
-                  color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(36, 41, 47, 0.8)',
+                  color: theme => theme.palette.mode === 'dark' ? systemGreys.grey_hover : systemGreys.grey_action,
                   textDecoration: 'none',
                   '&:hover': {
                     textDecoration: 'underline',
-                    color: theme => theme.palette.mode === 'dark' ? '#539bf5' : '#0969da'
+                    color: theme => theme.palette.mode === 'dark' ? flamingo.cyan_base : flamingo.cyan_dark
                   }
                 }}
               >

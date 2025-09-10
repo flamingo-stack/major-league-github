@@ -92,7 +92,7 @@ export const HeroSection: React.FC = () => {
               justifyContent: 'center',
               mb: 3
             }}>
-              <MlgLogo 
+<MlgLogo 
                 size={120}
                 color={systemGreys.white}
               />
@@ -181,7 +181,7 @@ export const HeroSection: React.FC = () => {
                   }
                 }}
               >
-                <GitHubIcon width={24} height={24} className="text-current" />
+<GitHubIcon width={24} height={24} className="text-current" />
                 Github Repo
               </Link>
             </Box>
@@ -196,7 +196,7 @@ export const HeroSection: React.FC = () => {
             width: '100%',
             minHeight: '400px'
           }}>
-            <MlgLogo 
+<MlgLogo 
               size={240}
               color={systemGreys.white}
             />
