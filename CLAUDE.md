@@ -125,7 +125,22 @@ The deployment is fully automated via GitHub Actions:
 
 ## Recent Major Changes (2025-01)
 
-### Latest Updates (2025-01-10)
+### Latest Updates (2025-09-10)
+- **Nginx-Based Domain Redirects**: Complete overhaul of domain redirect system
+  - Replaced fragile JavaScript client-side redirects with server-side nginx 301 redirects
+  - Implemented dynamic nginx configuration using environment variable substitution
+  - Added dual-domain SSL certificate support (mlg.soccer + www.mlg.soccer)
+  - Created conditional redirect server blocks that activate when FORWARD_TO_WWW=true
+  - Eliminated ~100 lines of complex sed operations in CI/CD pipeline
+  - SEO-friendly permanent redirects with proper HTTP status codes
+  - No more visible redirect flicker for users
+- **Infrastructure Improvements**:
+  - Enhanced Kubernetes ingress configuration with root domain support
+  - Streamlined deployment pipeline with cleaner template substitution
+  - Added comprehensive nginx configuration validation and debug logging
+  - Improved SSL certificate provisioning workflow
+
+### Previous Updates (2025-01-10)
 - **React 19 Upgrade**: Complete upgrade from React 18 to React 19 for improved performance and compatibility
 - **Full Rebuild**: Complete rebuild from scratch with clean dependency installation
   - Deleted all node_modules and package-lock.json files for both frontend and ui-kit
@@ -138,7 +153,7 @@ The deployment is fully automated via GitHub Actions:
   - Application fully functional with React 19 at localhost:3000
 - **UI Kit Compatibility**: Updated @flamingo/ui-kit to maintain React 18/19 peer dependency compatibility for other projects
 
-### Previous Updates (2025-01)
+### Earlier Updates (2025-01)
 - **UI Kit Migration**: Migrated from local fonts/icons to @flamingo/ui-kit
 - **Theme Simplification**: Removed light theme support, dark theme only
 - **Component Cleanup**: Unified Header and HeroSection styling and link consistency
