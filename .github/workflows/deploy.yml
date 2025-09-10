@@ -451,19 +451,8 @@ jobs:
           if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
             if [[ "${{ env.DOMAIN_NAME }}" != *"."* ]]; then
               # Add root domain to certificate and ingress rules
-              ROOT_DOMAIN_CERT="
-    - ${{ env.DOMAIN_SUFFIX }}"
-              ROOT_DOMAIN_RULE="
-  - host: ${{ env.DOMAIN_SUFFIX }}
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-service
-            port:
-              number: 80"
+              ROOT_DOMAIN_CERT=$'\n    - ${{ env.DOMAIN_SUFFIX }}'
+              ROOT_DOMAIN_RULE=$'\n  - host: ${{ env.DOMAIN_SUFFIX }}\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: frontend-service\n            port:\n              number: 80'
               echo "📍 Adding root domain ${{ env.DOMAIN_SUFFIX }} to ingress and SSL certificate"
             fi
           fi
