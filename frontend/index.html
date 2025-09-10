@@ -33,8 +33,15 @@
     
     <!-- Root domain to www redirect -->
     <script>
-      if (window.location.hostname === 'mlg.soccer') {
-        window.location.replace('https://www.mlg.soccer' + window.location.pathname + window.location.search + window.location.hash);
+      // Extract domain parts from current hostname
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      
+      // Check if this is a root domain (no subdomain) and redirect to www
+      if (parts.length === 2) {
+        const rootDomain = hostname;
+        const wwwDomain = 'www.' + rootDomain;
+        window.location.replace('https://' + wwwDomain + window.location.pathname + window.location.search + window.location.hash);
       }
     </script>
   </head>
