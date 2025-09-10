@@ -419,7 +419,7 @@ jobs:
               # Add root domain to certificate domains
               sed -i '/domains:/a\    - '"$ROOT_DOMAIN"'' processed_k8s/ingress.yaml
               
-              # Add root domain ingress rule
+              # Add root domain ingress rule (points to frontend, redirect handled by JS)
               {
                 echo "  - host: $ROOT_DOMAIN"
                 echo "    http:"
@@ -428,9 +428,9 @@ jobs:
                 echo "        pathType: Prefix"
                 echo "        backend:"
                 echo "          service:"
-                echo "            name: redirect-service"
+                echo "            name: frontend-service"
                 echo "            port:"
-                echo "              number: 8080"
+                echo "              number: 80"
               } >> processed_k8s/ingress.yaml
               echo "✅ Root domain ingress rule added"
             else

@@ -31,7 +31,8 @@
     <meta name="description" content="<%= process.env.OG_DESCRIPTION %>" />
     <meta name="twitter:card" content="summary_large_image" />
     
-    <!-- Root domain to www redirect -->
+    <!-- Root domain to www redirect (only if FORWARD_TO_WWW is enabled) -->
+    <% if (process.env.FORWARD_TO_WWW === 'true') { %>
     <script>
       // Extract domain parts from current hostname
       const hostname = window.location.hostname;
@@ -44,6 +45,7 @@
         window.location.replace('https://' + wwwDomain + window.location.pathname + window.location.search + window.location.hash);
       }
     </script>
+    <% } %>
   </head>
   <body>
     <div id="root"></div>
