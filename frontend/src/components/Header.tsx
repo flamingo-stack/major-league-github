@@ -28,13 +28,22 @@ const Header = () => {
                     minHeight: { xs: 64, sm: 72 },
                     px: { xs: 1, sm: 1.5 }
                 }}>
-                    <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        gap: { xs: 1, sm: 1.5 },
-                        minWidth: 0,
-                        flex: 1
-                    }}>
+                    <Link
+                        href="/"
+                        sx={{
+                            display: 'flex', 
+                            alignItems: 'center',
+                            gap: { xs: 1, sm: 1.5 },
+                            minWidth: 0,
+                            flex: 1,
+                            textDecoration: 'none',
+                            color: 'inherit',
+                            '&:hover': {
+                                textDecoration: 'none',
+                                color: 'inherit'
+                            }
+                        }}
+                    >
                         <Logo 
                             sx={{ 
                                 fontSize: { xs: 24, sm: 28 },
@@ -56,7 +65,7 @@ const Header = () => {
                         >
                             Major League Github
                         </Typography>
-                    </Box>
+                    </Link>
                     <Box sx={{ 
                         display: 'flex', 
                         alignItems: 'center', 

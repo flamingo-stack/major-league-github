@@ -4,7 +4,7 @@
         {
             "label": "Start Frontend Dev Server (Production)",
             "type": "shell",
-            "command": "cd frontend && BACKEND_API_URL=https://major-league-github.flamingo.cx PORT=8450 npm run dev",
+            "command": "cd frontend && BACKEND_API_URL=https://www.mlg.soccer PORT=8450 npm run dev",
             "isBackground": true,
             "problemMatcher": {
                 "owner": "webpack",

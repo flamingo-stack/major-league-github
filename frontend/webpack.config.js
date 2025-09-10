@@ -8,7 +8,7 @@ const SeoFilesPlugin = require('./webpack-plugins/seo-files-plugin');
 
 // Read environment variables with fallbacks
 const PORT = process.env.PORT || '8450';
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'https://major-league-github.flamingo.cx';
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'https://www.mlg.soccer';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const BASE_URL = process.env.OG_URL || 'https://www.mlg.soccer';
 

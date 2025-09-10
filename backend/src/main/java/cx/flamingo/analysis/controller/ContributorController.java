@@ -39,7 +39,7 @@ public class ContributorController {
     private final CacheServiceAbs cacheService;
     private final LanguageService languageService;
 
-    private static final String MLG_BASE_URL = "https://major-league-github.flamingo.cx";
+    private static final String MLG_BASE_URL = "https://www.mlg.soccer";
 
     @GetMapping("/search")
     public ApiResponse<List<Contributor>> getContributors(

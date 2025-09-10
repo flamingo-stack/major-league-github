@@ -19,9 +19,9 @@ public class WebConfig implements WebMvcConfigurer {
                 "http://localhost:8450",
                 "http://localhost:3000",
                 // Production origins
-                "https://major-league-github.flamingo.cx",
+                "https://www.mlg.soccer",
                 // Allow the ingress controller origin
-                "http://major-league-github.flamingo.cx"
+                "http://www.mlg.soccer"
             )
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
