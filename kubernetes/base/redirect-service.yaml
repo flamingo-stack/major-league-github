@@ -42,25 +42,6 @@ spec:
       labels:
         app: redirect-service
     spec:
-      initContainers:
-      - name: envsubst
-        image: alpine:latest
-        command: ['sh', '-c']
-        args:
-        - |
-          apk add --no-cache gettext
-          envsubst < /config-template/nginx.conf > /config/nginx.conf
-          cat /config/nginx.conf
-        env:
-        - name: DOMAIN_NAME
-          value: "${DOMAIN_NAME}"
-        - name: DOMAIN_SUFFIX  
-          value: "${DOMAIN_SUFFIX}"
-        volumeMounts:
-        - name: nginx-config-template
-          mountPath: /config-template
-        - name: nginx-config
-          mountPath: /config
       containers:
       - name: nginx
         image: nginx:alpine
@@ -90,11 +71,9 @@ spec:
             memory: "64Mi"
             cpu: "50m"
       volumes:
-      - name: nginx-config-template
+      - name: nginx-config
         configMap:
           name: redirect-nginx-config
-      - name: nginx-config
-        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
