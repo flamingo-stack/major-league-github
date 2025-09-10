@@ -22,6 +22,11 @@ ARG WEBAPP_EXTRA_BUTTON_LINK
 ARG WEBAPP_EXTRA_BUTTON_TEXT
 ARG NODE_ENV=production
 
+# NEW: Domain redirect configuration
+ARG ENABLE_REDIRECT=false
+ARG ROOT_DOMAIN=""
+ARG TARGET_DOMAIN=""
+
 # Set environment variables for the build
 ENV BACKEND_API_URL=${BACKEND_API_URL}
 ENV GTM_ID=${GTM_ID}
@@ -46,8 +51,22 @@ RUN npm run build
 
 # Production image
 FROM nginx:alpine
+
+# Install envsubst (part of gettext package)
+RUN apk add --no-cache gettext
+
+# Copy built application
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy nginx templates
+COPY nginx.conf.template /etc/nginx/templates/nginx.conf.template
+COPY nginx-redirect.conf.template /etc/nginx/templates/nginx-redirect.conf.template
+
+# Add entrypoint script for template processing
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 80 81
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"] 

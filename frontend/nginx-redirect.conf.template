@@ -1,0 +1,9 @@
+# Root domain to subdomain redirect (301 permanent)
+server {
+    listen 80;
+    server_name ${ROOT_DOMAIN};
+    
+    location / {
+        return 301 https://${TARGET_DOMAIN}$request_uri;
+    }
+}
