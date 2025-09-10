@@ -51,11 +51,9 @@ spec:
           apk add --no-cache gettext
           envsubst < /config-template/nginx.conf > /config/nginx.conf
           cat /config/nginx.conf
-        env:
-        - name: DOMAIN_NAME
-          value: "www"
-        - name: DOMAIN_SUFFIX
-          value: "mlg.soccer"
+        envFrom:
+        - secretRef:
+            name: webapp-secrets
         volumeMounts:
         - name: nginx-config-template
           mountPath: /config-template
