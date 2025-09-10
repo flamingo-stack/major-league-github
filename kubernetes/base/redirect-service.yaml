@@ -42,6 +42,25 @@ spec:
       labels:
         app: redirect-service
     spec:
+      initContainers:
+      - name: envsubst
+        image: alpine:latest
+        command: ['sh', '-c']
+        args:
+        - |
+          apk add --no-cache gettext
+          envsubst < /config-template/nginx.conf > /config/nginx.conf
+          cat /config/nginx.conf
+        env:
+        - name: DOMAIN_NAME
+          value: "www"
+        - name: DOMAIN_SUFFIX
+          value: "mlg.soccer"
+        volumeMounts:
+        - name: nginx-config-template
+          mountPath: /config-template
+        - name: nginx-config
+          mountPath: /config
       containers:
       - name: nginx
         image: nginx:alpine
@@ -71,9 +90,11 @@ spec:
             memory: "64Mi"
             cpu: "50m"
       volumes:
-      - name: nginx-config
+      - name: nginx-config-template
         configMap:
           name: redirect-nginx-config
+      - name: nginx-config
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
