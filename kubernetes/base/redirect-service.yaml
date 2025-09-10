@@ -21,7 +21,7 @@ data:
             
             # Redirect all other traffic
             location / {
-                return 301 https://www.mlg.soccer$request_uri;
+                return 301 https://${DOMAIN_NAME}.${DOMAIN_SUFFIX}$$request_uri;
             }
         }
     }
