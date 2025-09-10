@@ -33,7 +33,7 @@ Major League GitHub brings the excitement of soccer to the open-source world by 
 - Redis for distributed caching
 
 ### Frontend
-- React 18
+- React 19
 - TypeScript
 - Material-UI (MUI) with @flamingo/ui-kit components
 - React Query for data fetching
@@ -78,6 +78,7 @@ graph TD
 ### For Local Development
 - Java Development Kit (JDK) 21
 - Node.js 18+ and npm
+- React 19 (automatically installed via package.json)
 - Docker and Docker Compose
 - GitHub API tokens
 - Redis instance
@@ -202,6 +203,26 @@ We welcome contributions from the community! To contribute:
 
 ## License
 This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International Public License](LICENSE).
+
+## Recent Improvements 🚀
+
+### Latest Updates (January 2025)
+- **React 19 Upgrade**: Upgraded from React 18 to React 19 for improved performance and future compatibility
+- **Complete Rebuild**: Full rebuild from scratch with clean dependency installation
+  - Eliminated all legacy dependencies and version conflicts
+  - Fresh installation ensuring optimal compatibility across all packages
+  - Resolved TypeScript compilation errors and babel/traverse issues
+- **Enhanced Stability**: 
+  - Improved webpack configuration for consistent React version resolution
+  - Fixed TypeScript configuration for reliable compilation
+  - Verified deployment workflow compatibility with latest React version
+  - All systems fully operational with React 19
+
+### Previous Improvements
+- **UI Kit Integration**: Migrated to @flamingo/ui-kit for consistent design system
+- **Build Optimization**: Intelligent build skipping for faster deployments
+- **Dark Theme**: Streamlined to dark theme only for better user experience
+- **Mobile Responsiveness**: Enhanced mobile layout and responsive design
 
 ## Connect with Us 🌍
 - Website: [flamingo.cx](https://flamingo.cx)
