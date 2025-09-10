@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redirect-nginx-config
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    http {
+        server {
+            listen 8080;
+            server_name _;
+            return 301 https://${REDIRECT_TARGET}$request_uri;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redirect-service
+  labels:
+    app: redirect-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redirect-service
+  template:
+    metadata:
+      labels:
+        app: redirect-service
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        env:
+        - name: REDIRECT_TARGET
+          value: "${DOMAIN_NAME}.${DOMAIN_SUFFIX}"
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: redirect-nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redirect-service
+  labels:
+    app: redirect-service
+spec:
+  selector:
+    app: redirect-service
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP

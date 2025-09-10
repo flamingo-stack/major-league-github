@@ -395,11 +395,53 @@ jobs:
           fi
           
           
+          # Deploy redirect service if FORWARD_TO_WWW is enabled
+          if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
+            echo "🔄 FORWARD_TO_WWW enabled - deploying redirect service"
+            DOMAIN_NAME="${{ env.DOMAIN_NAME }}" \
+            DOMAIN_SUFFIX="${{ env.DOMAIN_SUFFIX }}" \
+              envsubst < kubernetes/base/redirect-service.yaml > processed_k8s/redirect-service.yaml
+            kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/redirect-service.yaml
+            echo "✅ Redirect service deployed"
+          fi
+          
           # Create ingress AFTER all services exist with static IP
           echo "🚀 Processing ingress after services are ready..."
+          
+          # Process ingress configuration
           DOMAIN_NAME="${{ env.DOMAIN_NAME }}" \
           DOMAIN_SUFFIX="${{ env.DOMAIN_SUFFIX }}" \
+          FORWARD_TO_WWW_ROOT_DOMAIN="" \
             envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
+          
+          # Add root domain ingress rule if FORWARD_TO_WWW is enabled
+          if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
+            # Check if this is a root domain setup (DOMAIN_NAME doesn't contain dots)
+            if [[ "${{ env.DOMAIN_NAME }}" != *"."* ]]; then
+              ROOT_DOMAIN="${{ env.DOMAIN_SUFFIX }}"
+              echo "📍 Adding ingress rule for root domain: $ROOT_DOMAIN"
+              
+              # Add root domain to certificate domains
+              sed -i '/domains:/a\    - '"$ROOT_DOMAIN"'' processed_k8s/ingress.yaml
+              
+              # Add root domain ingress rule
+              {
+                echo "  - host: $ROOT_DOMAIN"
+                echo "    http:"
+                echo "      paths:"
+                echo "      - path: /"
+                echo "        pathType: Prefix"
+                echo "        backend:"
+                echo "          service:"
+                echo "            name: redirect-service"
+                echo "            port:"
+                echo "              number: 8080"
+              } >> processed_k8s/ingress.yaml
+              echo "✅ Root domain ingress rule added"
+            else
+              echo "⚠️ FORWARD_TO_WWW enabled but DOMAIN_NAME contains subdomain - skipping ingress rule"
+            fi
+          fi
           
           # Check if ManagedCertificate already exists and validate domain
           if kubectl get managedcertificate main-ingress-ssl-cert -n ${{ env.NAMESPACE }} >/dev/null 2>&1; then
@@ -562,64 +604,69 @@ jobs:
           
           # Handle root domain to www redirect if FORWARD_TO_WWW is true
           if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
-            echo "🔄 FORWARD_TO_WWW is enabled - setting up root domain CNAME redirect"
+            echo "🔄 FORWARD_TO_WWW is enabled - setting up root domain redirect"
             ROOT_DOMAIN="${{ env.DOMAIN_SUFFIX }}"
             WWW_DOMAIN="${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
             
-            echo "🌍 Creating CNAME record: $ROOT_DOMAIN → $WWW_DOMAIN"
-            
-            # Check if root domain CNAME already exists
-            EXISTING_CNAME=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${ROOT_DOMAIN}." --type=CNAME --format="value(rrdatas[0])" 2>/dev/null | head -1 || echo "")
-            
-            if [ ! -z "$EXISTING_CNAME" ] && [ "$EXISTING_CNAME" != "null" ] && [ "$EXISTING_CNAME" != "$WWW_DOMAIN." ]; then
-              echo "🔄 Updating existing CNAME record from $EXISTING_CNAME to $WWW_DOMAIN."
+            # Check if this is a root domain (no subdomain in DOMAIN_NAME)
+            if [[ "${{ env.DOMAIN_NAME }}" != *"."* ]]; then
+              echo "🌍 Setting up A record for root domain: $ROOT_DOMAIN → $LB_IP (handled by ingress redirect)"
               
-              # Get existing TTL
-              EXISTING_CNAME_TTL=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${ROOT_DOMAIN}." --type=CNAME --format="value(ttl)" 2>/dev/null | head -1)
+              # Check if root domain A record already exists
+              EXISTING_ROOT_IP=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${ROOT_DOMAIN}." --type=A --format="value(rrdatas[0])" 2>/dev/null | head -1 || echo "")
               
-              if [ ! -z "$EXISTING_CNAME_TTL" ] && [ "$EXISTING_CNAME_TTL" != "null" ]; then
-                # Update existing CNAME
+              if [ ! -z "$EXISTING_ROOT_IP" ] && [ "$EXISTING_ROOT_IP" != "null" ] && [ "$EXISTING_ROOT_IP" != "$LB_IP" ]; then
+                echo "🔄 Updating existing root domain A record from $EXISTING_ROOT_IP to $LB_IP"
+                
+                # Get existing TTL
+                EXISTING_ROOT_TTL=$(gcloud dns record-sets list --zone=$DNS_ZONE --project=$DNS_PROJECT_ID --name="${ROOT_DOMAIN}." --type=A --format="value(ttl)" 2>/dev/null | head -1)
+                
+                if [ ! -z "$EXISTING_ROOT_TTL" ] && [ "$EXISTING_ROOT_TTL" != "null" ]; then
+                  # Update existing A record
+                  gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                  gcloud dns record-sets transaction remove "$EXISTING_ROOT_IP" \
+                    --name="${ROOT_DOMAIN}." \
+                    --ttl=$EXISTING_ROOT_TTL \
+                    --type=A \
+                    --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                  gcloud dns record-sets transaction add "$LB_IP" \
+                    --name="${ROOT_DOMAIN}." \
+                    --ttl=300 \
+                    --type=A \
+                    --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                  gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                else
+                  echo "Could not find existing A record TTL, creating new record"
+                  gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                  gcloud dns record-sets transaction add "$LB_IP" \
+                    --name="${ROOT_DOMAIN}." \
+                    --ttl=300 \
+                    --type=A \
+                    --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                  gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                fi
+                
+              elif [ -z "$EXISTING_ROOT_IP" ] || [ "$EXISTING_ROOT_IP" = "null" ]; then
+                echo "🆕 Creating new A record for root domain: $ROOT_DOMAIN → $LB_IP"
+                
                 gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-                gcloud dns record-sets transaction remove "$EXISTING_CNAME" \
-                  --name="${ROOT_DOMAIN}." \
-                  --ttl=$EXISTING_CNAME_TTL \
-                  --type=CNAME \
-                  --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-                gcloud dns record-sets transaction add "$WWW_DOMAIN." \
+                gcloud dns record-sets transaction add "$LB_IP" \
                   --name="${ROOT_DOMAIN}." \
                   --ttl=300 \
-                  --type=CNAME \
+                  --type=A \
                   --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
                 gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                
               else
-                echo "Could not find existing CNAME TTL, creating new record"
-                gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-                gcloud dns record-sets transaction add "$WWW_DOMAIN." \
-                  --name="${ROOT_DOMAIN}." \
-                  --ttl=300 \
-                  --type=CNAME \
-                  --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-                gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
+                echo "✅ Root domain A record already points to correct IP: $EXISTING_ROOT_IP"
               fi
               
-            elif [ -z "$EXISTING_CNAME" ] || [ "$EXISTING_CNAME" = "null" ]; then
-              echo "🆕 Creating new CNAME record: $ROOT_DOMAIN → $WWW_DOMAIN"
-              
-              gcloud dns record-sets transaction start --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-              gcloud dns record-sets transaction add "$WWW_DOMAIN." \
-                --name="${ROOT_DOMAIN}." \
-                --ttl=300 \
-                --type=CNAME \
-                --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-              gcloud dns record-sets transaction execute --zone=$DNS_ZONE --project=$DNS_PROJECT_ID
-              
+              echo "✅ Root domain redirect configured: $ROOT_DOMAIN → $WWW_DOMAIN (via ingress)"
             else
-              echo "✅ CNAME record already points to correct target: $EXISTING_CNAME"
+              echo "⚠️ FORWARD_TO_WWW enabled but DOMAIN_NAME contains subdomain - skipping root domain setup"
             fi
-            
-            echo "✅ Root domain redirect configured: $ROOT_DOMAIN → $WWW_DOMAIN"
           else
-            echo "ℹ️  FORWARD_TO_WWW is disabled - skipping root domain CNAME redirect"
+            echo "ℹ️  FORWARD_TO_WWW is disabled - skipping root domain redirect"
           fi
           
           echo "🌍 Domain will be accessible at: https://${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
