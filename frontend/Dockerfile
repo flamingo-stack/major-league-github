@@ -40,9 +40,6 @@ COPY . .
 # Install dependencies fresh in container
 RUN npm install
 
-# Ensure webpack and webpack-cli are available
-RUN npx webpack-cli --version
-
 # Build the application
 RUN npm run build
 
