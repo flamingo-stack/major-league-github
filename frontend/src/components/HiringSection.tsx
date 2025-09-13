@@ -3,7 +3,7 @@ import { Box, Paper, Typography, Link, Avatar, Chip, useTheme, IconButton, Colla
 import { systemGreys, flamingo as flamingoColors } from '../styles/colors';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
-import { GitHubIcon, FlamingoLogo } from '@flamingo/ui-kit/components/icons';
+import { GitHubIcon, MadeWithLove } from '@flamingo/ui-kit/components';
 import WorkIcon from '@mui/icons-material/Work';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -81,47 +81,21 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
             alignItems: 'center',
             gap: 1,
           }}>
-            <Typography
-              component="div"
-              sx={{
-                color: 'var(--color-text-primary)',
-                fontSize: '0.875rem',
-                lineHeight: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
-              Made with love by{' '}
-              <FlamingoLogo 
-                fill="var(--ods-flamingo-pink-base)" 
-                style={{ display: 'inline', width: '16px', height: '16px', verticalAlign: 'middle', margin: '0 4px' }}
-              />
-              <span style={{ fontFamily: '"Azeret Mono", monospace', fontWeight: 600, color: 'var(--color-text-primary)' }}>Flamingo</span>
-            </Typography>
+            <MadeWithLove
+              size="md"
+              showOnMobile={false}
+              className="text-[var(--color-text-primary)]"
+            />
           </Box>
 
           <Box sx={{
             display: { xs: 'block', sm: 'none' },
           }}>
-            <Typography
-              component="div"
-              sx={{
-                color: 'var(--color-text-primary)',
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                lineHeight: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
-              Made with love by{' '}
-              <FlamingoLogo 
-                fill="var(--ods-flamingo-pink-base)" 
-                style={{ display: 'inline', width: '14px', height: '14px', verticalAlign: 'middle', margin: '0 2px' }}
-              />
-              <span style={{ fontFamily: '"Azeret Mono", monospace', fontWeight: 600, fontSize: '0.75rem', color: 'var(--color-text-primary)' }}>Flamingo</span>
-            </Typography>
+            <MadeWithLove
+              size="sm"
+              showOnMobile={true}
+              className="text-[var(--color-text-primary)]"
+            />
           </Box>
 
           <Box 
