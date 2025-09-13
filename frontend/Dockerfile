@@ -34,7 +34,10 @@ ENV WEBAPP_EXTRA_BUTTON_TEXT=${WEBAPP_EXTRA_BUTTON_TEXT}
 ENV NODE_ENV=${NODE_ENV}
 ENV GENERATE_SOURCEMAP=false
 
-# Copy and build
+# Copy app files and install dependencies
+COPY package*.json ./
+RUN npm install
+
 COPY . .
 RUN npm run build
 
