@@ -37,8 +37,8 @@ ENV GENERATE_SOURCEMAP=false
 # Copy app files (ui-kit excluded by .dockerignore)
 COPY . .
 
-# Install dependencies fresh in container
-RUN npm install
+# Install dependencies including devDependencies for build
+RUN npm install --include=dev
 
 # Build the application
 RUN npm run build
