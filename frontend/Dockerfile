@@ -36,7 +36,7 @@ ENV GENERATE_SOURCEMAP=false
 
 # Copy app files and remove any host node_modules
 COPY . .
-RUN rm -rf node_modules ui-kit/node_modules
+RUN rm -rf node_modules ui-kit
 
 # Install dependencies fresh in container
 RUN npm install
