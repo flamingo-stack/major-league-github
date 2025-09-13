@@ -2,6 +2,9 @@ FROM node:20-alpine as build
 
 WORKDIR /app
 
+# Install git for ui-kit setup
+RUN apk add --no-cache git
+
 # Copy package files first for better caching
 COPY package*.json ./
 RUN npm install
