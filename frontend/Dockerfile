@@ -34,9 +34,8 @@ ENV WEBAPP_EXTRA_BUTTON_TEXT=${WEBAPP_EXTRA_BUTTON_TEXT}
 ENV NODE_ENV=${NODE_ENV}
 ENV GENERATE_SOURCEMAP=false
 
-# Copy app files and remove any host node_modules
+# Copy app files (ui-kit excluded by .dockerignore)
 COPY . .
-RUN rm -rf node_modules ui-kit
 
 # Install dependencies fresh in container
 RUN npm install
