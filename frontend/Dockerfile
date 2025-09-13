@@ -34,11 +34,14 @@ ENV WEBAPP_EXTRA_BUTTON_TEXT=${WEBAPP_EXTRA_BUTTON_TEXT}
 ENV NODE_ENV=${NODE_ENV}
 ENV GENERATE_SOURCEMAP=false
 
-# Copy app files and install dependencies
-COPY package*.json ./
+# Copy app files and remove any host node_modules
+COPY . .
+RUN rm -rf node_modules ui-kit/node_modules
+
+# Install dependencies fresh in container
 RUN npm install
 
-COPY . .
+# Build the application
 RUN npm run build
 
 # Production
