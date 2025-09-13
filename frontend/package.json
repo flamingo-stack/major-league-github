@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "npx webpack serve --mode development",
     "prebuild": "npm run setup:ui-kit",
-    "build": "./node_modules/.bin/webpack --mode production",
+    "build": "npx --yes webpack-cli --mode production",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
