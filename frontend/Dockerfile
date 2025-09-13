@@ -37,6 +37,9 @@ ENV GENERATE_SOURCEMAP=false
 # Copy app files (ui-kit excluded by .dockerignore)
 COPY . .
 
+# Setup ui-kit BEFORE npm install (required for file: dependency)
+RUN if [ ! -d "ui-kit" ]; then echo 'Cloning ui-kit...' && git clone https://github.com/flamingo-stack/ui-kit.git ui-kit && cd ui-kit && npm install; elif [ ! -d "ui-kit/node_modules" ]; then echo 'ui-kit exists but no node_modules, installing...' && cd ui-kit && npm install; else echo 'ui-kit already set up'; fi
+
 # Install dependencies including devDependencies for build
 RUN npm install --include=dev
 
