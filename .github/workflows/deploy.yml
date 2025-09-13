@@ -235,17 +235,6 @@ jobs:
         if: steps.changes.outputs.cache_updater == 'false'
         run: echo "⏩ Skipping cache updater build - no changes detected"
 
-      - name: Clone and setup UI-Kit 📦
-        if: steps.changes.outputs.frontend == 'true'
-        run: |
-          echo "🚀 Cloning UI-Kit repository..."
-          cd frontend
-          rm -rf ui-kit
-          git clone https://github.com/${{ github.repository_owner }}/ui-kit.git ui-kit
-          cd ui-kit
-          npm install
-          echo "✅ UI-Kit setup completed"
-
       - name: Build and push frontend image 🎨
         if: steps.changes.outputs.frontend == 'true'
         env:
