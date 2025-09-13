@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "generate-favicon": "node scripts/generate-favicon.js",
-    "setup:ui-kit": "if [ ! -d \"ui-kit\" ]; then git clone https://github.com/flamingo-stack/ui-kit.git ui-kit; fi && cd ui-kit && npm install",
+    "setup:ui-kit": "set -e && if [ ! -d \"ui-kit\" ]; then echo 'Cloning ui-kit repository...' && git clone https://github.com/flamingo-stack/ui-kit.git ui-kit && echo 'Clone completed'; fi && echo 'Checking ui-kit directory...' && ls -la ui-kit/ && if [ -f \"ui-kit/package.json\" ]; then cd ui-kit && echo 'Installing ui-kit dependencies...' && npm install; else echo 'ERROR: ui-kit/package.json not found!' && exit 1; fi",
     "copy:colors": "node scripts/extract-ui-kit-colors.js"
   },
   "dependencies": {
