@@ -40,6 +40,9 @@ COPY . .
 # Install dependencies fresh in container
 RUN npm install
 
+# Ensure webpack-cli is available globally to avoid interactive prompts
+RUN npm install -g webpack-cli
+
 # Build the application
 RUN npm run build
 
