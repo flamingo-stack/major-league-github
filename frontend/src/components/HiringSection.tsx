@@ -76,8 +76,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
             gap: 1,
           }}>
             <MadeWithLove
-              size="sm"
-              // className="text-[var(--color-text-primary)]"
+              size="md"
             />
           </Box>
 
