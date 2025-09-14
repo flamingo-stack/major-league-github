@@ -1,21 +1,15 @@
-import React, { useState } from 'react';
-import { Box, Paper, Typography, Link, Avatar, Chip, useTheme, IconButton, Collapse, Stack, Skeleton } from '@mui/material';
-import { systemGreys, flamingo as flamingoColors } from '../styles/colors';
-import LinkedInIcon from '@mui/icons-material/LinkedIn';
-import TwitterIcon from '@mui/icons-material/Twitter';
 import { GitHubIcon, MadeWithLove } from '@flamingo/ui-kit/components';
-import WorkIcon from '@mui/icons-material/Work';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import EmailIcon from '@mui/icons-material/Email';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
-import EmailIcon from '@mui/icons-material/Email';
-import StarIcon from '@mui/icons-material/Star';
-import ForkRightIcon from '@mui/icons-material/ForkRight';
-import CommitIcon from '@mui/icons-material/Commit';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import MergeIcon from '@mui/icons-material/Merge';
-import BugReportIcon from '@mui/icons-material/BugReport';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import WorkIcon from '@mui/icons-material/Work';
+import { Avatar, Box, Chip, Collapse, IconButton, Link, Paper, Skeleton, Typography, useTheme } from '@mui/material';
+import React, { useState } from 'react';
+import { flamingo as flamingoColors, systemGreys } from '../styles/colors';
 import { HiringManagerProfile, JobOpening } from '../types/hiring';
 import { GitHubStats } from './GitHubStats';
 
@@ -82,9 +76,8 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
             gap: 1,
           }}>
             <MadeWithLove
-              size="md"
-              showOnMobile={false}
-              className="text-[var(--color-text-primary)]"
+              size="sm"
+              // className="text-[var(--color-text-primary)]"
             />
           </Box>
 
