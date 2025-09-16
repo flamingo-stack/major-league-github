@@ -9,7 +9,7 @@ interface TeamAutocompleteProps {
   value: SoccerTeam | null;
   onChange: (team: SoccerTeam | null) => void;
   inputValue: string;
-  onInputChange: (value: string) => void;
+  onInputChange: (value: string) => void; 
   sx?: SxProps<Theme>;
 }
 
