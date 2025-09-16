@@ -137,6 +137,7 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 lineHeight: '24px',
                 transition: 'color 0.2s',
+                display: { xs: 'none', sm: 'block' },
               }}
             >
               Come work with us
