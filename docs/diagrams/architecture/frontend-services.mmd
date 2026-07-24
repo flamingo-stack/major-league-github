@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph UI["Frontend UI Layer"]
+        Components["React Components"]
+        Hooks["Custom Hooks"]
+    end
+
+    subgraph Services["Frontend Services"]
+        ApiModule["api.ts"]
+        AxiosConfig["Axios Configuration"]
+    end
+
+    subgraph Backend["Backend Service"]
+        Controllers["REST Controllers"]
+    end
+
+    Components -->|"calls"| Hooks
+    Hooks -->|"invokes"| ApiModule
+    ApiModule -->|"uses"| AxiosConfig
+    ApiModule -->|"HTTP GET /api/..."| Controllers

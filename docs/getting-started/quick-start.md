@@ -1,43 +1,44 @@
 # Quick Start
 
-This guide gets Major League GitHub running locally in about 10 minutes. It assumes you have already reviewed and satisfied the [Prerequisites](prerequisites.md).
+Get Major League GitHub running locally in about 5 minutes.
 
 ---
 
-## TL;DR — The Minimum Steps
+## TL;DR
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/flamingo-stack/major-league-github.git
 cd major-league-github
 
-# 2. Start Redis (must be running before the backend)
+# 2. Start Redis (Docker)
 docker run -d -p 6379:6379 --name mlg-redis redis:7
 
-# 3. Start the Backend Service (port 8450)
+# 3. Start the Backend Service
 cd backend
-export GITHUB_TOKEN_1=ghp_your_token_here
-./mvnw spring-boot:run -Dspring-boot.run.profiles=backend-service
+GITHUB_TOKENS=your_github_pat \
+SPRING_REDIS_HOST=localhost \
+SPRING_REDIS_PORT=6379 \
+mvn spring-boot:run -Pbackend-service
 
-# 4. In a new terminal — start the Cache Updater (port 8451)
+# 4. (New terminal) Start the Cache Updater
 cd backend
-export GITHUB_TOKEN_1=ghp_your_token_here
-./mvnw spring-boot:run \
-  -Dspring-boot.run.profiles=cache-updater \
-  -Dspring-boot.run.arguments=--server.port=8451
+GITHUB_TOKENS=your_github_pat \
+SPRING_REDIS_HOST=localhost \
+SPRING_REDIS_PORT=6379 \
+mvn spring-boot:run -Pcache-updater
 
-# 5. In a new terminal — start the Frontend
+# 5. (New terminal) Start the Frontend
 cd frontend
 npm install
-BACKEND_API_URL=http://localhost:8450 npm start
-
-# 6. Open the app
-open http://localhost:8450
+BACKEND_API_URL=http://localhost:8450 npx webpack serve
 ```
+
+Open your browser at [http://localhost:8450](http://localhost:8450).
 
 ---
 
-## Step-by-Step Walkthrough
+## Step-by-Step
 
 ### Step 1 — Clone the Repository
 
@@ -48,135 +49,118 @@ cd major-league-github
 
 ### Step 2 — Start Redis
 
-The backend services require Redis to be running before they start. The quickest approach is Docker:
+The backend requires Redis for distributed caching. The quickest way is Docker:
 
 ```bash
-docker run -d -p 6379:6379 --name mlg-redis redis:7
+docker run -d \
+  -p 6379:6379 \
+  --name mlg-redis \
+  redis:7
 ```
 
-Verify it is running:
+Verify Redis is running:
 
 ```bash
-redis-cli ping
-# Expected: PONG
+docker logs mlg-redis
+# Expected: Ready to accept connections
 ```
 
-If you prefer a local Redis installation, see the [Prerequisites](prerequisites.md) guide.
+### Step 3 — Configure GitHub Tokens
 
-### Step 3 — Configure GitHub Token(s)
-
-Export at least one GitHub Personal Access Token. Multiple tokens enable rate-limit rotation for higher throughput:
+Export your GitHub Personal Access Token as an environment variable:
 
 ```bash
-export GITHUB_TOKEN_1=ghp_your_first_token_here
-export GITHUB_TOKEN_2=ghp_your_second_token_here   # optional
+export GITHUB_TOKENS="ghp_yourTokenHere"
 ```
 
-> Generate tokens at: https://github.com/settings/tokens
-> Required scopes: `read:user`, `public_repo`
+> For higher throughput, supply multiple tokens separated by commas:
+> `export GITHUB_TOKENS="ghp_token1,ghp_token2,ghp_token3"`
 
 ### Step 4 — Start the Backend Service
 
-The Backend Service (port 8450) serves the REST API consumed by the frontend.
+The Backend Service serves the REST API on port 8450:
 
 ```bash
 cd backend
-./mvnw spring-boot:run -Dspring-boot.run.profiles=backend-service
+GITHUB_TOKENS=$GITHUB_TOKENS \
+SPRING_REDIS_HOST=localhost \
+SPRING_REDIS_PORT=6379 \
+mvn spring-boot:run -Pbackend-service
 ```
 
-Expected output includes:
+Wait for this log line before proceeding:
 
 ```text
 Started MajorLeagueGithubApplication in X.XXX seconds
 ```
 
-The backend will be available at http://localhost:8450.
-
 ### Step 5 — Start the Cache Updater (Optional but Recommended)
 
-The Cache Updater (port 8451) runs scheduled jobs that pre-warm the Redis cache with fresh contributor data. Without it, the first API call for each combination of filters will go live to GitHub.
+The Cache Updater populates Redis with fresh GitHub data in the background:
 
 ```bash
 # In a new terminal
 cd backend
-./mvnw spring-boot:run \
-  -Dspring-boot.run.profiles=cache-updater \
-  -Dspring-boot.run.arguments=--server.port=8451
+GITHUB_TOKENS=$GITHUB_TOKENS \
+SPRING_REDIS_HOST=localhost \
+SPRING_REDIS_PORT=6379 \
+mvn spring-boot:run -Pcache-updater
 ```
 
-### Step 6 — Install Frontend Dependencies
+> **Note:** The Cache Updater runs scheduled refresh jobs. On first startup the `PreCacheService` iterates all configured languages and pre-warms the Redis cache. The frontend will show an empty leaderboard until the cache is ready.
+
+### Step 6 — Start the Frontend Dev Server
 
 ```bash
+# In a new terminal
 cd frontend
 npm install
+BACKEND_API_URL=http://localhost:8450 npx webpack serve
 ```
 
-### Step 7 — Start the Frontend Dev Server
+The dev server proxies all `/api` requests to the backend.
+
+---
+
+## Expected Result
+
+Open [http://localhost:8450](http://localhost:8450) in your browser.
+
+You should see:
+- The Major League GitHub leaderboard loading
+- Filter controls for language, city, state, region, and MLS team
+- Contributor cards rendering as the cache warms up
+
+If the leaderboard shows "Cache is still being populated", wait 30–60 seconds for the `PreCacheService` to finish its first pass.
+
+---
+
+## API Quick Test
+
+Confirm the backend is responding:
 
 ```bash
-BACKEND_API_URL=http://localhost:8450 npm start
+curl http://localhost:8450/api/contributors/search?languageId=java&maxResults=5
 ```
 
-The Webpack dev server will compile the TypeScript + React application and serve it.
+Expected response shape:
 
-### Step 8 — Open the App
-
-```text
-http://localhost:8450
-```
-
-You should see the Major League GitHub leaderboard with filter controls for language, city, state, region, and MLS team.
-
----
-
-## Verifying the API Directly
-
-You can test the backend REST API directly before the frontend is running:
-
-```bash
-# Check that the backend is healthy
-curl http://localhost:8450/actuator/health
-
-# Fetch top contributors (defaults to Java language, all regions)
-curl "http://localhost:8450/api/contributors/search" | head -c 500
-
-# Autocomplete cities
-curl "http://localhost:8450/api/autocomplete/cities?query=San"
+```json
+{
+  "status": "success",
+  "message": "Found 5 contributors matching the criteria",
+  "data": [...]
+}
 ```
 
 ---
 
-## Expected Results
+## What Happens Next
 
-Once the application is running:
+After the cache is warm, the leaderboard becomes fully responsive. Try:
 
-1. The leaderboard displays top GitHub contributors ranked by the MLG scoring formula
-2. The filter panel shows dropdowns for language, region, state, city, and MLS team
-3. Selecting any filter updates the URL query string and re-fetches the leaderboard
-4. The URL can be shared and will restore the exact same filtered view on reload
+- Selecting a different programming language from the filter panel
+- Filtering by a U.S. state or MLS team
+- Copying the URL — all filters are encoded as query parameters for sharing
 
----
-
-## Building for Production
-
-To build optimized production artifacts:
-
-```bash
-# Backend: build a single executable JAR
-cd backend
-./mvnw clean package -DskipTests
-
-# Frontend: build minified static assets
-cd frontend
-NODE_ENV=production npm run build
-```
-
-The backend JAR is output to `backend/target/`. The frontend dist is output to `frontend/dist/`.
-
----
-
-## Next Steps
-
-Now that the application is running, explore what it can do:
-
-- [First Steps Guide](first-steps.md) — Tour the key features and configuration options
+For a guided tour of features, see the [First Steps](first-steps.md) guide.

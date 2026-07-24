@@ -1,0 +1,10 @@
+flowchart TD
+    User["User Interaction"] --> Page["Page Component"]
+    Page --> DomainComponent["Domain Component<br/>LanguageAutocomplete"]
+    DomainComponent --> BaseComponent["BaseAutocomplete<T>"]
+    Page --> TableTypes["ContributorsTable Types"]
+    Page --> PaginationComp["Pagination"]
+
+    DomainComponent --> ReactQuery["React Query"]
+    ReactQuery --> ApiService["Frontend Services"]
+    ApiService --> Backend["Backend API"]

@@ -1,0 +1,10 @@
+flowchart TD
+    Controller["Controllers"] --> ServiceLayer["Service Layer"]
+    ServiceLayer --> CacheService["CacheServiceAbs"]
+
+    CacheService --> DiskCache["Disk Cache Service"]
+    CacheService --> RedisCache["Redis Cache Service"]
+    RedisCache --> ReadOnlyCache["Read Only Cache Service"]
+
+    DiskCache --> FileSystem[("File System")]
+    RedisCache --> Redis[("Redis")]

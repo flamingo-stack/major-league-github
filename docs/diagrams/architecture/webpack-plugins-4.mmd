@@ -1,0 +1,8 @@
+flowchart TD
+    EmitStart["emit Hook Triggered"] --> DateGen["Generate Current Date"]
+    DateGen --> Sitemap["Build sitemap.xml Content"]
+    DateGen --> Robots["Build robots.txt Content"]
+    Sitemap --> Inject1["Add sitemap.xml to compilation.assets"]
+    Robots --> Inject2["Add robots.txt to compilation.assets"]
+    Inject1 --> Done["Assets Ready for Output"]
+    Inject2 --> Done

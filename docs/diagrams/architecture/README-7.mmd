@@ -1,0 +1,7 @@
+flowchart LR
+    Dev --> GitHubActions["GitHub Actions CI/CD"]
+    GitHubActions --> DockerImage["Docker Image"]
+    DockerImage --> Kubernetes["GKE Cluster"]
+    Kubernetes --> BackendPod
+    Kubernetes --> CacheUpdaterPod
+    BackendPod --> Redis

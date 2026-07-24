@@ -1,0 +1,5 @@
+flowchart LR
+    HiringPage["Hiring Page"] --> HiringService["Frontend Services"]
+    HiringService --> BackendHiring["/api/hiring/* Endpoints"]
+    BackendHiring --> HiringService
+    HiringService --> HiringPage

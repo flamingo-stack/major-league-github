@@ -1,0 +1,9 @@
+flowchart LR
+    Request["Incoming Request"] --> KeyGen["Key Generation"]
+    KeyGen --> CacheLookup["Cache Lookup"]
+    CacheLookup -->|"Hit"| ReturnCached["Return Cached Data"]
+    CacheLookup -->|"Miss"| Supplier["Execute Supplier"]
+    Supplier --> Store["Store in Cache"]
+    Store --> ReturnFresh["Return Fresh Data"]
+
+    CacheLookup -->|"Stale"| AsyncRefresh["Async Refresh"]

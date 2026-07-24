@@ -1,0 +1,8 @@
+flowchart TD
+    Backend["Backend Services"] --> ApiResponse["ApiResponse<T>"]
+    ApiResponse --> ApiModels["API Domain Models"]
+    ApiModels --> Transform["Transformation Layer"]
+    Transform --> UiModels["UI Contributor Type"]
+    ApiModels --> EnhancedModels["Enhanced Geographic Types"]
+    UiModels --> Components["Leaderboard UI"]
+    EnhancedModels --> Hooks["Geolocation Hooks"]

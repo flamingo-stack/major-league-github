@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Render Pagination"] --> CheckPages{"totalPages <= 1?"}
+    CheckPages -->|Yes| Hide["Return null"]
+    CheckPages -->|No| ShowControls["Render Previous / Next"]
+    ShowControls --> PrevClick["onPageChange(currentPage - 1)"]
+    ShowControls --> NextClick["onPageChange(currentPage + 1)"]

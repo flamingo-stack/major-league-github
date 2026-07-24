@@ -1,0 +1,10 @@
+flowchart TD
+    Dev["Developer Runs Build"] --> Webpack["Webpack Compiler"]
+    Webpack -->|"beforeRun / watchRun"| FaviconPlugin["FaviconGeneratorPlugin"]
+    Webpack -->|"emit"| SeoPlugin["SeoFilesPlugin"]
+
+    FaviconPlugin --> FileSystem["File System"]
+    SeoPlugin --> Assets["Compilation Assets"]
+
+    Assets --> Output["Build Output Directory"]
+    FileSystem --> Output

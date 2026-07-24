@@ -1,0 +1,7 @@
+flowchart TD
+    Controller["Controllers"] --> ServiceLayer["Service Layer"]
+    ServiceLayer --> Cache["Cache Services"]
+    ServiceLayer --> Rate["Rate Management"]
+    ServiceLayer --> GraphQL["GraphQL Components"]
+    ServiceLayer --> Models["Model Entities"]
+    ServiceLayer --> External["External APIs<br/>GitHub & LinkedIn"]

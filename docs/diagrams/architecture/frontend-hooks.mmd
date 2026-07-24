@@ -1,0 +1,11 @@
+flowchart TD
+    Browser["Browser Environment"] -->|"query params"| Router["React Router"]
+    Browser -->|"Geolocation API"| NearestRegionHook["useNearestRegion Hook"]
+
+    Router --> UrlStateHook["useUrlState Hook"]
+
+    UrlStateHook --> Components["Frontend Components"]
+    NearestRegionHook --> Components
+
+    Components --> Services["Frontend Services"]
+    Services --> Backend["Backend Service API"]

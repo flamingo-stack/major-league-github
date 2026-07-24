@@ -1,65 +1,76 @@
 # Local Development Guide
 
-This guide covers how to clone the repository, run the application locally, use watch/hot-reload mode, and configure debugging.
+This guide explains how to run the full Major League GitHub stack locally, including hot reload, debugging, and working with the two backend profiles.
 
 ---
 
-## Clone and Initial Setup
+## 1. Clone and Set Up
 
 ```bash
-# Clone the repository
 git clone https://github.com/flamingo-stack/major-league-github.git
 cd major-league-github
-
-# Install frontend dependencies
-cd frontend
-npm install
-cd ..
 ```
 
-No additional build steps are required for the backend — the Maven wrapper (`./mvnw`) handles dependency resolution on first run.
+The project structure contains two main directories:
+
+```text
+major-league-github/
+├── backend/     # Java 21 + Spring Boot 3.4
+└── frontend/    # React 19 + TypeScript (Webpack)
+```
 
 ---
 
-## Starting All Services
+## 2. Start Redis
 
-The full local stack consists of three processes (plus Redis):
-
-```mermaid
-flowchart LR
-    Redis["Redis :6379"] --> Backend["Backend Service :8450"]
-    Redis --> CacheUpdater["Cache Updater :8451"]
-    Backend --> Frontend["Frontend Dev Server :8450"]
-```
-
-### 1. Start Redis
+Both backend services require Redis. Start it with Docker:
 
 ```bash
-# With Docker (recommended)
-docker run -d -p 6379:6379 --name mlg-redis redis:7
-
-# Or use a local installation
-redis-server
-
-# Verify it is reachable
-redis-cli ping   # Expected: PONG
+docker run -d \
+  --name mlg-redis \
+  -p 6379:6379 \
+  redis:7
 ```
 
-### 2. Start the Backend Service
+Verify it is accepting connections:
 
-The Backend Service runs with the `backend-service` Spring profile, which activates REST controllers and the API layer on port 8450.
+```bash
+redis-cli -h localhost -p 6379 ping
+# Expected: PONG
+```
+
+---
+
+## 3. Running the Backend Service
+
+The Backend Service exposes the REST API on port 8450. It is activated by the `backend-service` Maven profile (which is the default profile in the `pom.xml`).
 
 ```bash
 cd backend
-
-# Export your GitHub token (required)
-export GITHUB_TOKEN_1=ghp_your_token_here
-
-# Start the backend
-./mvnw spring-boot:run -Dspring-boot.run.profiles=backend-service
+mvn spring-boot:run \
+  -Pbackend-service \
+  -Dspring-boot.run.jvmArguments="\
+    -DGITHUB_TOKENS=ghp_yourTokenHere \
+    -DSPRING_REDIS_HOST=localhost \
+    -DSPRING_REDIS_PORT=6379"
 ```
 
-The backend will be accessible at http://localhost:8450.
+Or with exported environment variables:
+
+```bash
+export GITHUB_TOKENS="ghp_yourTokenHere"
+export SPRING_REDIS_HOST="localhost"
+export SPRING_REDIS_PORT="6379"
+
+cd backend
+mvn spring-boot:run -Pbackend-service
+```
+
+**Startup indicator:**
+
+```text
+Started MajorLeagueGithubApplication in X.XXX seconds (JVM running for Y.YYY)
+```
 
 **Health check:**
 
@@ -68,153 +79,162 @@ curl http://localhost:8450/actuator/health
 # Expected: {"status":"UP"}
 ```
 
-### 3. Start the Cache Updater (Optional)
+---
 
-The Cache Updater periodically refreshes the Redis cache with fresh GitHub data in the background. Without it, the first request for each filter combination will fetch data directly from GitHub (which is slower).
+## 4. Running the Cache Updater
+
+The Cache Updater runs scheduled jobs that pre-warm Redis with GitHub contributor data. It is activated by the `cache-updater` Maven profile.
 
 ```bash
-cd backend
-
 # In a new terminal
-export GITHUB_TOKEN_1=ghp_your_token_here
-
-./mvnw spring-boot:run \
-  -Dspring-boot.run.profiles=cache-updater \
-  -Dspring-boot.run.arguments=--server.port=8451
+cd backend
+GITHUB_TOKENS="ghp_yourTokenHere" \
+SPRING_REDIS_HOST="localhost" \
+SPRING_REDIS_PORT="6379" \
+mvn spring-boot:run -Pcache-updater
 ```
 
-### 4. Start the Frontend
+> **Note:** The Cache Updater runs the `PreCacheService` on startup, which iterates all configured languages and triggers GitHub API calls to fill the cache. The Backend Service will return cached data once this completes (typically 30–90 seconds on first run, depending on rate limit availability).
+
+---
+
+## 5. Running the Frontend Dev Server
+
+The Webpack dev server proxies `/api` requests to the backend:
 
 ```bash
 cd frontend
+npm install
 
-# Start with the dev server pointing at the local backend
-BACKEND_API_URL=http://localhost:8450 npm start
+# Start dev server with backend proxy
+BACKEND_API_URL=http://localhost:8450 npx webpack serve
 ```
 
-The Webpack dev server starts on a port configured by the `PORT` environment variable (default behavior from webpack config). The app proxies API requests to the backend.
+**Default dev server URL:** [http://localhost:8450](http://localhost:8450)
 
-Open http://localhost:8450 (or the port shown in the terminal) in your browser.
+The dev server enables:
+- Source maps for debugging
+- Automatic chunk splitting
+- Hot module replacement (HMR) for fast iteration
+- Proxy of `/api/*` requests to the backend service
+
+> **Port note:** The Webpack dev server runs on port `8450` by default (matching the backend port so the browser points at one address). You can change the `PORT` environment variable if needed.
 
 ---
 
-## Hot Reload / Watch Mode
+## 6. Building for Production
 
-### Frontend Hot Reload
+### Backend
 
-The frontend uses **Webpack's watch mode** with HMR (Hot Module Replacement). While `npm start` is running, changes to any `.tsx`, `.ts`, `.css`, or asset file are automatically recompiled and the browser refreshes without a full page reload.
+```bash
+cd backend
+mvn clean package -DskipTests
+# Output: backend/target/major-league-github-0.0.1-SNAPSHOT.jar
+```
+
+Run the packaged JAR:
+
+```bash
+java -jar backend/target/major-league-github-0.0.1-SNAPSHOT.jar \
+  --spring.profiles.active=backend-service
+```
+
+### Frontend
 
 ```bash
 cd frontend
-BACKEND_API_URL=http://localhost:8450 npm start
-# Changes in src/ take effect immediately in the browser
+NODE_ENV=production \
+BACKEND_API_URL=https://www.mlg.soccer \
+OG_URL=https://www.mlg.soccer \
+BASE_URL=https://www.mlg.soccer \
+npx webpack --mode production
+# Output: frontend/dist/
 ```
 
-### Backend Restart on Change
-
-Spring Boot does not automatically restart on code changes in the default Maven run. For rapid backend iteration, you have two options:
-
-**Option A — Spring Boot DevTools (if added as a dependency):**
-
-If `spring-boot-devtools` is on the classpath, the server restarts automatically when class files change. You would need to trigger a rebuild in your IDE (e.g., `Build → Build Project` in IntelliJ) while `./mvnw spring-boot:run` is running.
-
-**Option B — Manual restart:**
-
-Stop the backend process (`Ctrl+C`) and re-run `./mvnw spring-boot:run` after making changes.
-
-**Option C — IDE run configuration:**
-
-Run the `MajorLeagueGithubApplication` main class directly from IntelliJ with the `backend-service` profile. IntelliJ supports incremental compilation and hot-swap of method bodies without a full restart.
+The production build runs two custom Webpack plugins automatically:
+- **FaviconGeneratorPlugin** — converts `public/favicon.svg` to `favicon.ico`
+- **SeoFilesPlugin** — generates `sitemap.xml` and `robots.txt` with the configured base URL
 
 ---
 
-## Running in Disk-Cache Mode (No Redis)
+## 7. Hot Reload
 
-For faster local development without Redis, switch to the disk-based cache. This stores cached GitHub responses as JSON files on disk.
+### Frontend
+
+The Webpack dev server provides hot module replacement. Any change to `.tsx` or `.ts` files is reflected immediately in the browser without a full page reload.
+
+### Backend
+
+Spring Boot DevTools is not explicitly listed as a dependency. For backend changes during development, restart the Spring Boot process manually with:
+
+```bash
+mvn spring-boot:run -Pbackend-service
+```
+
+IntelliJ IDEA supports **Build → Recompile** (`Cmd+Shift+F9` on macOS) when the Spring Boot run configuration is active, which triggers a faster incremental rebuild.
+
+---
+
+## 8. Debug Configuration
+
+### Backend (IntelliJ IDEA)
+
+Create a Run Configuration in IntelliJ:
+
+- **Type:** Spring Boot
+- **Main class:** `cx.flamingo.analysis.MajorLeagueGithubApplication`
+- **Active profiles:** `backend-service`
+- **Environment variables:** `GITHUB_TOKENS=...;SPRING_REDIS_HOST=localhost;SPRING_REDIS_PORT=6379`
+
+Set breakpoints anywhere in the Spring Boot code and use **Debug** mode to step through requests.
+
+### Backend (Remote Debug via Maven)
 
 ```bash
 cd backend
-export CACHE_IMPLEMENTATION=disk
-./mvnw spring-boot:run -Dspring-boot.run.profiles=backend-service
+mvnDebug spring-boot:run -Pbackend-service
+# Listens on port 8000 for a remote debugger
 ```
 
-> **Note:** Disk cache is not recommended for production. It is single-node and does not scale horizontally.
+Then attach from IntelliJ at `localhost:8000`.
+
+### Frontend (Browser DevTools)
+
+Source maps are enabled in development mode. Open Chrome DevTools → **Sources** → navigate to `webpack://./src/` to set breakpoints in TypeScript.
 
 ---
 
-## Debug Configuration
+## 9. Redis Inspection
 
-### Debugging the Backend (IntelliJ)
-
-1. In IntelliJ, open the `backend/` directory as a Maven project
-2. Navigate to `MajorLeagueGithubApplication.java`
-3. Click the green bug icon next to the `main` method, or create a **Run Configuration**:
-   - Type: Spring Boot
-   - Main class: `cx.flamingo.analysis.MajorLeagueGithubApplication`
-   - Active profiles: `backend-service`
-   - Environment variables: Add `GITHUB_TOKEN_1`, `SPRING_REDIS_HOST`, etc.
-4. Set breakpoints anywhere in the code — execution will pause as expected
-
-### Debugging the Backend via Maven (Remote Debug)
+Inspect cached data in Redis:
 
 ```bash
-cd backend
-./mvnw spring-boot:run \
-  -Dspring-boot.run.profiles=backend-service \
-  -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
-```
+# Connect to Redis CLI
+redis-cli -h localhost -p 6379
 
-Then attach a remote debugger in IntelliJ at `localhost:5005`.
+# List all cache keys
+KEYS *
 
-### Debugging the Frontend (Browser DevTools)
+# Get a specific cached entry
+GET "contributors:java:los-angeles:page-0"
 
-The Webpack dev server generates **source maps** automatically in development mode. In Chrome or Firefox DevTools:
-
-1. Open the **Sources** tab
-2. Navigate to `webpack://./src/` to see the original TypeScript source files
-3. Set breakpoints directly in `.tsx` files
-
-### Inspecting React Query Cache
-
-Install the React Query DevTools for a GUI view of query states and cache contents:
-
-```typescript
-// This is already included in development builds if @tanstack/react-query-devtools
-// is installed. The DevTools floating button appears in the bottom-right corner.
+# Check if cache is populated
+DBSIZE
 ```
 
 ---
 
-## Useful API Testing
+## 10. Multi-Service Local Architecture
 
-Test the backend API using `curl` or any REST client:
-
-```bash
-# List all cached keys in Redis
-redis-cli keys "*"
-
-# Search contributors by language and state
-curl "http://localhost:8450/api/contributors/search?languageId=java&stateId=CA"
-
-# Autocomplete cities matching "San"
-curl "http://localhost:8450/api/autocomplete/cities?query=San"
-
-# Get regions
-curl "http://localhost:8450/api/autocomplete/regions?query="
-
-# Download contributors as CSV
-curl "http://localhost:8450/api/contributors/export?languageId=java" -o contributors.csv
+```mermaid
+flowchart LR
+    Browser["Browser :8450"] --> Webpack["Webpack Dev Server"]
+    Webpack --> Frontend["React App"]
+    Webpack -->|"/api/* proxy"| Backend["Backend Service :8450"]
+    Backend --> Redis["Redis :6379"]
+    CacheUpdater["Cache Updater :8451"] --> Redis
+    CacheUpdater --> GitHub["GitHub GraphQL API"]
+    Backend --> GitHub
 ```
 
----
-
-## Common Issues
-
-| Problem | Cause | Fix |
-|---------|-------|-----|
-| Backend fails to start | Redis not running | Start Redis: `docker run -d -p 6379:6379 redis:7` |
-| `GITHUB_TOKEN_1` not found | Token not exported | `export GITHUB_TOKEN_1=ghp_...` |
-| Frontend shows blank page | Backend not running | Start backend service first |
-| Slow first response | Cache miss on first request | Start the Cache Updater to pre-warm Redis |
-| Lombok annotations not resolving in IDE | Annotation processing disabled | Enable in IDE settings (see environment guide) |
-| Port already in use | Another process on 8450 | `lsof -i :8450` then `kill -9 <PID>` |
+All four processes run concurrently during full-stack local development.

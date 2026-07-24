@@ -1,0 +1,9 @@
+flowchart LR
+    Contributor["Contributor"] -->|"located in"| City["City"]
+    City -->|"belongs to"| State["State"]
+    State -->|"part of"| Region["Region"]
+    City -->|"nearest"| SoccerTeam["SoccerTeam"]
+    Contributor -->|"links"| SocialLink["SocialLink"]
+    Contributor -->|"stats"| Stats["GitHub Stats"]
+    HiringProfile["HiringManagerProfile"] -->|"links"| SocialLink
+    HiringProfile -->|"stats"| Stats

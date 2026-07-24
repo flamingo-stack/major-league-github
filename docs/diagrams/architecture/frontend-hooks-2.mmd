@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Component Mount"] --> ReadParams["Read searchParams"]
+    ReadParams --> Parse["parseUrlValue()"]
+    Parse --> Validate["validateValue()"]
+    Validate --> BuildState["Construct UrlState"]
+    BuildState --> Memoize["useMemo"]
+    Memoize --> ReturnState["Return Hook API"]

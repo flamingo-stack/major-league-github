@@ -1,0 +1,8 @@
+flowchart LR
+    Compiler["Webpack Compiler"] --> BeforeRun["beforeRun Hook"]
+    Compiler --> WatchRun["watchRun Hook"]
+    Compiler --> Emit["emit Hook"]
+
+    BeforeRun --> FaviconPlugin["FaviconGeneratorPlugin"]
+    WatchRun --> FaviconPlugin
+    Emit --> SeoPlugin["SeoFilesPlugin"]

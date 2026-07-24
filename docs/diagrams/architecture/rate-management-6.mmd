@@ -1,0 +1,6 @@
+flowchart TD
+    Response["GitHub Response"] --> Headers["Extract Headers"]
+    Headers --> UpdatePrimary["Update primary fields"]
+    Headers --> UpdateSecondary["Update Retry-After"]
+    UpdatePrimary --> Store["Mutate GithubToken"]
+    UpdateSecondary --> Store

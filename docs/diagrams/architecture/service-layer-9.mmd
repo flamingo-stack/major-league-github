@@ -1,0 +1,20 @@
+flowchart LR
+    GithubService --> CityService
+    GithubService --> LanguageService
+    GithubService --> SoccerTeamService
+    GithubService --> CacheService
+    GithubService --> RateManager
+
+    CityService --> StateService
+    CityService --> SoccerTeamService
+
+    RegionService --> StateService
+    RegionService --> CityService
+
+    ReferencePopulationService --> RegionService
+    ReferencePopulationService --> StateService
+    ReferencePopulationService --> CityService
+
+    HiringService --> GithubService
+    HiringService --> LinkedInService
+    HiringService --> CacheService

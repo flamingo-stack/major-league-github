@@ -1,0 +1,7 @@
+flowchart TD
+    Request["Contributor Request"] --> TargetCities["Resolve Target Cities"]
+    TargetCities --> Batch["Batch by Concurrency"]
+    Batch --> AsyncCalls["Async GitHub Calls"]
+    AsyncCalls --> ProcessUsers["Process & Score Users"]
+    ProcessUsers --> Merge["Merge & Deduplicate"]
+    Merge --> Sorted["Sort by Score"]
