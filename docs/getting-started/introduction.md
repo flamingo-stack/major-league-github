@@ -1,16 +1,26 @@
 # Introduction to Major League GitHub
 
-**Major League GitHub** (https://www.mlg.soccer) is an open-source, sports-styled leaderboard that ranks GitHub contributors like professional soccer players. Rather than simply listing developers by commit count, MLG gamifies open-source contribution by filtering and ranking developers based on programming language, geographic location, and proximity to MLS stadiums.
+**Major League GitHub** ([mlg.soccer](https://www.mlg.soccer)) is an open-source, sports-themed leaderboard that ranks GitHub contributors like professional soccer players. It maps open-source developers across the United States using programming language preferences, geographic location, and proximity to MLS stadiums — combining GitHub analytics with geospatial modeling to create a uniquely gamified developer leaderboard.
 
-> **This is a standalone, independent open-source project.** It is not affiliated with any commercial platform.
+> **Repository:** [https://github.com/flamingo-stack/major-league-github](https://github.com/flamingo-stack/major-league-github)
 
 ---
 
-## What Is Major League GitHub?
+## What Is It?
 
-Imagine a sports leaderboard — but instead of athletes, it features software developers. Contributions are analyzed via the GitHub GraphQL API, scored using a weighted formula that rewards both volume and recency, and then mapped to soccer regions corresponding to real MLS teams. The result is a searchable, filterable, shareable developer leaderboard with a regional sports-team theme.
+Major League GitHub turns GitHub contributor statistics into a leaderboard experience inspired by Major League Soccer (MLS). Just as soccer rankings reward goals, assists, and appearances, MLG ranks developers using:
 
-The live site is at **https://www.mlg.soccer**.
+- **Commits** — total contributions made
+- **Stars received** — community impact of their repositories
+- **Recency multiplier** — how recently they have been active
+
+The formula is intentionally transparent:
+
+```text
+Score = commits × max(starsReceived, 1) × recencyMultiplier
+```
+
+Where `recencyMultiplier` ranges from 1.0 to 2.0 based on activity within the past year.
 
 ---
 
@@ -18,23 +28,25 @@ The live site is at **https://www.mlg.soccer**.
 
 | Feature | Description |
 |---------|-------------|
-| **Language Filtering** | Filter the leaderboard by programming language (Java, TypeScript, Python, etc.) |
-| **Geographic Filtering** | Narrow results by U.S. city, state, or geographic region |
-| **MLS Stadium Proximity** | Rank contributors near professional soccer stadiums |
-| **Weighted Scoring** | `Score = commits × max(stars, 1) × recencyMultiplier` rewards active, impactful contributors |
-| **Shareable URLs** | All filter state is encoded in the URL for easy sharing and deep linking |
-| **Hiring Section** | Surfaces hiring manager profiles and job openings alongside the leaderboard |
-| **CSV Export** | Download the full contributor list as a spreadsheet |
-| **Auto-detected Region** | Browser geolocation auto-selects the nearest soccer region on first load |
+| **Language Filtering** | Filter contributors by any programming language (Java, Python, TypeScript, etc.) |
+| **Geographic Filtering** | Narrow results by city, state, or region |
+| **MLS Stadium Proximity** | Rank contributors by their distance to the nearest MLS stadium |
+| **Real-Time Leaderboard** | GitHub GraphQL data refreshed on a schedule via the Cache Updater service |
+| **Shareable URLs** | All filters are reflected in the URL — bookmark or share any leaderboard view |
+| **CSV Export** | Download any filtered leaderboard result as a CSV file |
+| **Hiring Section** | Highlights top developers and associated job openings |
+| **Responsive UI** | Works across desktop and mobile with Material-UI components |
 
 ---
 
 ## Target Audience
 
-- **Developers** who want to discover top open-source contributors in their city or region
-- **Engineering managers and recruiters** looking to identify and hire talented developers
-- **Open-source enthusiasts** curious about contribution rankings and trends by geography or language
-- **Contributors** to this project who want to understand the architecture
+Major League GitHub is designed for:
+
+- **Developers** who want to see how they rank among regional peers for a given language
+- **Hiring managers** looking to discover talented open-source contributors near their offices
+- **Open-source enthusiasts** who enjoy gamified community analytics
+- **Engineers** interested in how to build a full-stack, production-grade application with Spring Boot, React, Redis, and Kubernetes
 
 ---
 
@@ -42,100 +54,40 @@ The live site is at **https://www.mlg.soccer**.
 
 ```mermaid
 flowchart TD
-    User["User Browser"] --> Frontend["React 19 + TypeScript Frontend"]
-    Frontend --> Backend["Backend Service\n(Spring Boot 3.4 · Port 8450)"]
-    Frontend --> Cache["Cache Updater\n(Spring Boot 3.4 · Port 8451)"]
-    Backend --> Redis["Redis\nDistributed Cache"]
-    Cache --> Redis
-    Backend --> GitHub["GitHub GraphQL API"]
-    Backend --> LinkedIn["LinkedIn API\n(Hiring Data)"]
-    Backend --> GKE["Google Kubernetes Engine\n(Production Deployment)"]
+    User["User Browser"] --> Frontend["React + TypeScript Frontend"]
+    Frontend --> BackendAPI["Backend Service (Port 8450)"]
+    BackendAPI --> Redis["Redis Cache"]
+    BackendAPI --> GitHub["GitHub GraphQL API"]
+    CacheUpdater["Cache Updater (Port 8451)"] --> Redis
+    CacheUpdater --> GitHub
+    BackendAPI --> LinkedIn["LinkedIn API (Hiring)"]
 ```
 
-The system has two Java microservices backed by Redis, served through a React frontend, and deployed on Kubernetes via GitHub Actions CI/CD.
+The system is split into two backend microservices:
+
+- **Backend Service (port 8450)** — serves the public REST API consumed by the React frontend
+- **Cache Updater (port 8451)** — runs scheduled jobs that keep GitHub contributor data fresh in Redis
+
+Both services are built from the same Spring Boot codebase, activated via Maven profiles.
 
 ---
 
-## Architecture at a Glance
-
-```mermaid
-flowchart LR
-    subgraph Frontend["Frontend (React 19)"]
-        App["App.tsx"]
-        Filters["FiltersPanel"]
-        Table["ContributorsTable"]
-        Hooks["useUrlState · useNearestRegion"]
-    end
-
-    subgraph Backend["Backend Service (Port 8450)"]
-        Controllers["REST Controllers\n/api/contributors\n/api/autocomplete\n/api/hiring"]
-        Services["GithubService\nCityService\nHiringService"]
-        Cache["CacheServiceAbs\n(Redis / Disk)"]
-        GraphQL["GitHubQueryBuilder"]
-    end
-
-    subgraph CacheUpdater["Cache Updater (Port 8451)"]
-        PreCache["PreCacheService\n(Scheduled Refresh)"]
-    end
-
-    App --> Controllers
-    Controllers --> Services
-    Services --> Cache
-    Services --> GraphQL
-    GraphQL --> GitHub["GitHub API"]
-    PreCache --> Cache
-```
-
----
-
-## Technology Stack
+## Tech Stack at a Glance
 
 | Layer | Technology |
 |-------|-----------|
-| **Backend** | Java 21 + Spring Boot 3.4 |
-| **HTTP Client** | Spring WebFlux (WebClient) |
-| **Caching** | Redis (production) / Disk (local) |
-| **Frontend** | React 19 + TypeScript |
-| **UI Library** | Material-UI (MUI) |
-| **Data Fetching** | React Query (@tanstack/react-query) |
-| **Routing** | React Router |
-| **Build Tool** | Webpack (with custom plugins) |
-| **Deployment** | Docker + Google Kubernetes Engine |
-| **CI/CD** | GitHub Actions |
+| Backend | Java 21 + Spring Boot 3.4 |
+| Frontend | React 19 + TypeScript + Material-UI |
+| Caching | Redis (distributed) |
+| External Data | GitHub GraphQL API |
+| Build | Webpack (custom plugins for SEO + favicon) |
+| Deployment | Docker + Kubernetes (GKE) |
+| CI/CD | GitHub Actions |
 
 ---
 
-## Contributor Scoring Formula
+## How to Get Started
 
-```text
-Score = commits × max(starsReceived, 1) × recencyMultiplier
-
-Where:
-  commits          = total GitHub contributions
-  starsReceived    = stars on repositories in the selected language
-  recencyMultiplier ∈ [1.0, 2.0] based on how recent the activity is
-```
-
-This formula rewards developers who make frequent, high-impact commits and have stayed active recently.
-
----
-
-## Repository
-
-The project is hosted at:
-
-https://github.com/flamingo-stack/major-league-github
-
-- **Issues:** https://github.com/flamingo-stack/major-league-github/issues
-- **Releases:** https://github.com/flamingo-stack/major-league-github/releases
-- **Pull Requests:** https://github.com/flamingo-stack/major-league-github/pulls
-
----
-
-## Getting Started
-
-To set up and run Major League GitHub locally, continue with the following guides:
-
-- [Prerequisites](prerequisites.md) — Required tools and accounts
-- [Quick Start](quick-start.md) — Get up and running in minutes
-- [First Steps](first-steps.md) — Explore the application after setup
+- **Install prerequisites** — see the [Prerequisites](prerequisites.md) guide
+- **Run it in 5 minutes** — see the [Quick Start](quick-start.md) guide
+- **First things to do** — see the [First Steps](first-steps.md) guide

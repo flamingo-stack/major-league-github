@@ -1,153 +1,129 @@
 # First Steps
 
-After getting Major League GitHub running locally, here are the first things to explore and configure.
+After starting Major League GitHub locally, here are the five things to do first to orient yourself and explore the platform.
 
 ---
 
-## 1. Explore the Leaderboard
+## 1. Explore the Leaderboard Filters
 
-Open the app at http://localhost:8450 and observe the default leaderboard view:
-
-- The leaderboard ranks GitHub contributors using the **MLG scoring formula** — a weighted combination of commits, repository stars, and activity recency
-- Each contributor card shows their GitHub username, avatar, contribution count, stars earned, and the MLS team closest to their city
-- The default filter shows all regions and languages (Java is the default language)
-
-```text
-Score = commits × max(starsReceived, 1) × recencyMultiplier
-         ↑               ↑                    ↑
-    volume         impact            freshness [1.0–2.0]
-```
-
----
-
-## 2. Try the Filters
-
-The **Filters Panel** at the top of the page has five independent filter dropdowns:
+The filter panel at the top of the page lets you slice the leaderboard across several dimensions simultaneously:
 
 | Filter | Description |
 |--------|-------------|
-| **Language** | Filter by programming language (Java, TypeScript, Python, etc.) |
-| **Region** | Filter by MLS geographic region (Pacific, Mountain, Midwest, etc.) |
+| **Language** | Programming language (Java, Python, TypeScript, Go, etc.) |
+| **City** | Filter contributors near a specific U.S. city |
 | **State** | Filter by U.S. state |
-| **City** | Filter by specific city |
-| **MLS Team** | Filter by the soccer team nearest to the contributor's city |
+| **Region** | Filter by geographic region (e.g., Pacific Northwest) |
+| **MLS Team** | Filter contributors nearest to an MLS stadium |
 
-**Try this:** Select "TypeScript" as the language, then pick a region. Notice that the URL updates automatically — the full filter state is always in the URL, making it easy to share or bookmark.
+Try combining a language (e.g., `Python`) with a state (e.g., `California`) to see how the leaderboard responds. Notice that the URL updates as you apply filters — the full filter state is encoded in the query parameters.
 
-### Shareable URLs
+---
 
-Every filter combination produces a unique, shareable URL. For example:
+## 2. Share a Leaderboard View
+
+Every leaderboard configuration is fully shareable via URL. For example:
 
 ```text
-http://localhost:8450?languageId=typescript&regionId=pacific
+https://www.mlg.soccer/?languageId=python&stateId=california
 ```
 
-Paste that URL in a new browser tab and the same filtered leaderboard appears instantly.
+All filter parameters are managed by the `useUrlState` hook in the frontend, which keeps the browser URL in sync with the current view. This means:
+
+- Bookmarking a URL preserves your filters
+- Sharing a link with a colleague shows them the exact same leaderboard
+- Refreshing the page maintains your current filter selections
 
 ---
 
-## 3. Use the Auto-Locate Feature
+## 3. Understand Contributor Scoring
 
-The application automatically detects your browser's geographic location on first load (with your permission) and selects the nearest MLS region. This is powered by the `useNearestRegion` hook, which calculates Haversine distance from your coordinates to each region's centroid.
-
-- Click **"Allow"** when the browser asks for location permission
-- The region dropdown will auto-populate with the nearest MLS region
-- You can still manually change it at any time
-
----
-
-## 4. Export Contributors to CSV
-
-You can download the current leaderboard view as a CSV spreadsheet. Use the export button in the UI, or call the API directly:
-
-```bash
-# Export current top contributors as CSV (adjust query params as needed)
-curl "http://localhost:8450/api/contributors/export?languageId=java" \
-  --output contributors.csv
-```
-
-The exported file contains all leaderboard fields including scores, city, and MLS team assignment.
-
----
-
-## 5. Explore the Hiring Section
-
-The Hiring Section surfaces a configurable hiring manager profile (fetched from GitHub) alongside job openings pulled from LinkedIn (or fallback defaults if LinkedIn is not configured).
-
-To enable the LinkedIn hiring integration, set these environment variables:
-
-```bash
-export LINKEDIN_CLIENT_ID=your_client_id
-export LINKEDIN_CLIENT_SECRET=your_client_secret
-export LINKEDIN_ORGANIZATION_ID=your_org_id
-```
-
-Without these, the app shows a set of predefined default job listings — the leaderboard and all other features still work normally.
-
----
-
-## 6. Inspect the REST API
-
-The backend exposes a full REST API. These are the primary endpoints:
+Each contributor card displays a score. The scoring formula is:
 
 ```text
-GET /api/contributors/search   — Search and rank contributors (filtered leaderboard)
-GET /api/contributors/export   — Download contributors as CSV
-GET /api/autocomplete/cities   — City autocomplete
-GET /api/autocomplete/states   — State autocomplete
-GET /api/autocomplete/regions  — Region autocomplete
-GET /api/autocomplete/languages — Language autocomplete
-GET /api/autocomplete/teams    — MLS team autocomplete
-GET /api/entities/...          — Lookup by entity ID
-GET /api/hiring/...            — Hiring manager + job openings
-GET /actuator/health           — Health check endpoint
+Score = commits × max(starsReceived, 1) × recencyMultiplier
 ```
 
-All responses use a standardized envelope:
+Where:
+- **commits** = total contributions to repositories in the selected language
+- **starsReceived** = total stars on repositories in that language
+- **recencyMultiplier** = 1.0–2.0 based on activity within the past year
+
+Higher scores indicate developers who are prolific, have impactful projects, and have been recently active. This formula deliberately rewards both volume and impact.
+
+---
+
+## 4. Export Results to CSV
+
+Any filtered leaderboard view can be exported as a CSV file. The export button triggers a browser download of a file named `contributors.csv` containing:
+
+- GitHub username, display name, and profile URL
+- Location (city, state, region)
+- Nearest MLS team
+- Score breakdown (commits, stars, recency)
+- Social links (GitHub, Twitter, Mastodon, Bluesky, website, email)
+
+To export, click the **Export CSV** button in the UI, or make a direct request:
+
+```bash
+curl "http://localhost:8450/api/contributors/export?languageId=java&maxResults=15" \
+  -o contributors.csv
+```
+
+---
+
+## 5. Check the REST API Directly
+
+The backend exposes a clean REST API you can explore directly. Key endpoints:
+
+```bash
+# Get top Java contributors in California
+curl "http://localhost:8450/api/contributors/search?languageId=java&stateId=california"
+
+# Autocomplete cities starting with "San"
+curl "http://localhost:8450/api/autocomplete/cities?query=San"
+
+# Autocomplete available programming languages
+curl "http://localhost:8450/api/autocomplete/languages?query=py"
+
+# Look up a specific MLS team by ID
+curl "http://localhost:8450/api/entities/teams/la-galaxy"
+
+# Look up a specific region by ID
+curl "http://localhost:8450/api/entities/regions/west-coast"
+```
+
+All responses follow the standardized `ApiResponse<T>` wrapper:
 
 ```json
 {
   "status": "success",
-  "message": "OK",
-  "data": [ ... ]
+  "message": "...",
+  "data": ...
 }
 ```
 
 ---
 
-## 7. Understand the Cache Behavior
-
-Major League GitHub uses a **cache-first architecture**:
-
-- The first request for a given filter combination fetches live data from GitHub and stores it in Redis
-- Subsequent requests for the same combination are served from Redis (very fast)
-- The Cache Updater service (port 8451) runs on a schedule to refresh cached entries in the background, so users never wait for a stale entry to expire
-
-You can inspect the Redis cache directly:
-
-```bash
-redis-cli keys "*"          # List all cached keys
-redis-cli get "some-key"    # Inspect a specific cached entry
-```
-
----
-
-## 8. Understand the Two Spring Profiles
-
-The backend codebase runs as two distinct microservices controlled by Spring Boot profiles:
-
-| Profile | Port | Purpose |
-|---------|------|---------|
-| `backend-service` | 8450 | Serves the public REST API |
-| `cache-updater` | 8451 | Runs scheduled cache refresh jobs |
-
-To switch profiles, pass `-Dspring-boot.run.profiles=<profile>` to the Maven Spring Boot plugin, or set the `SPRING_PROFILES_ACTIVE` environment variable.
-
----
-
 ## Where to Get Help
 
-- **GitHub Issues:** https://github.com/flamingo-stack/major-league-github/issues
-- **Source Code:** https://github.com/flamingo-stack/major-league-github
-- **Live Site:** https://www.mlg.soccer
-- **Architecture Docs:** See the `docs/reference/architecture/` directory in the repository for in-depth module documentation
+- **Open an issue:** [https://github.com/flamingo-stack/major-league-github/issues](https://github.com/flamingo-stack/major-league-github/issues)
+- **Browse open PRs:** [https://github.com/flamingo-stack/major-league-github/pulls](https://github.com/flamingo-stack/major-league-github/pulls)
+- **Read the architecture docs** in the `docs/reference/architecture/` folder of this repository for deep-dives into each module
+- **Spring Boot Actuator** — the backend exposes `/actuator/health` for service health checks at [http://localhost:8450/actuator/health](http://localhost:8450/actuator/health)
+
+---
+
+## Common Early Questions
+
+**Q: The leaderboard is empty after starting. What's wrong?**
+A: The `PreCacheService` warms the Redis cache on startup by iterating all languages. Wait 30–90 seconds and refresh. The `/actuator/health` endpoint confirms the backend is running.
+
+**Q: Can I add more GitHub tokens?**
+A: Yes. Set `GITHUB_TOKENS` to a comma-separated list. The `GithubTokenRateManager` automatically distributes requests across tokens and selects the one with the most remaining quota.
+
+**Q: Where is geographic data stored?**
+A: Cities, states, regions, and teams are loaded from CSV files in `backend/src/main/resources/data/` at startup. No database migrations are needed.
+
+**Q: How do I change the default language?**
+A: The default language is Java (configured in `LanguageService`). Change `languageId` in the URL to switch — or modify the `LanguageService` default for your own deployment.

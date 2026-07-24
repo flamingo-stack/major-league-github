@@ -1,6 +1,6 @@
 # Prerequisites
 
-Before running Major League GitHub locally, make sure you have the following tools, accounts, and environment variables set up.
+Before running Major League GitHub locally, make sure you have the following tools and accounts in place.
 
 ---
 
@@ -8,152 +8,126 @@ Before running Major League GitHub locally, make sure you have the following too
 
 | Tool | Minimum Version | Purpose |
 |------|----------------|---------|
-| **Java JDK** | 21 | Backend runtime (Spring Boot 3.4) |
-| **Apache Maven** | 3.9+ | Backend build and dependency management |
-| **Node.js** | 18+ | Frontend build tooling (Webpack) |
-| **npm** | 9+ | Frontend package management |
-| **Redis** | 6+ | Distributed caching layer |
-| **Docker** | 24+ | Containerized local execution (optional but recommended) |
-| **Git** | 2.40+ | Source control |
-
-> **Note:** The Maven Wrapper (`./mvnw`) is included in the repository, so a system-wide Maven installation is not strictly required for the backend.
-
----
-
-## System Requirements
-
-| Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| **RAM** | 4 GB | 8 GB |
-| **CPU** | 2 cores | 4 cores |
-| **Disk** | 2 GB free | 5 GB free |
-| **OS** | macOS, Linux, or Windows (WSL2) | macOS or Linux |
-
----
-
-## Account Requirements
-
-You need access to the following external services to run the full application:
-
-### GitHub API (Required)
-
-The backend fetches contributor data exclusively through the **GitHub GraphQL API**. Without a token, no leaderboard data can be fetched.
-
-- Create a **Personal Access Token (PAT)** at: https://github.com/settings/tokens
-- The token needs the `read:user` and `public_repo` scopes (read-only public data is sufficient)
-- For higher throughput, supply **multiple tokens** — the backend round-robins across them
-
-### LinkedIn API (Optional)
-
-Used only for the hiring section. If not configured, the backend will use fallback default job listings.
-
-- Requires a LinkedIn developer application with `r_organization_social` access
-- Configure via `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, and `LINKEDIN_ORGANIZATION_ID`
-
----
-
-## Required Environment Variables
-
-The backend is configured via standard Spring Boot application properties or environment variables.
-
-### Backend Service (Port 8450)
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `GITHUB_TOKEN_1` | Primary GitHub PAT | `ghp_xxxxxxxxxxxx` |
-| `GITHUB_TOKEN_2` | Optional second token for rate-limit rotation | `ghp_yyyyyyyyyyyy` |
-| `SPRING_REDIS_HOST` | Redis hostname | `localhost` |
-| `SPRING_REDIS_PORT` | Redis port | `6379` |
-| `GITHUB_API_CONCURRENCY` | Thread pool size for GitHub API calls | `10` |
-| `CACHE_IMPLEMENTATION` | `redis` (production) or `disk` (local dev) | `redis` |
-| `CACHE_MODE` | `read-write`, `read-only`, or `force-update` | `read-write` |
-
-### Cache Updater Service (Port 8451)
-
-The Cache Updater uses the same Redis and GitHub token configuration as the Backend Service, but is activated with the `cache-updater` Spring profile.
-
-### Frontend
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BACKEND_API_URL` | URL where the backend is reachable | `/` |
-| `PORT` | Port for the webpack dev server | `8450` |
-| `NODE_ENV` | Build mode | `development` |
-
----
-
-## CORS Allowed Origins
-
-The backend's CORS policy allows requests from:
-
-```text
-http://localhost:8450
-http://localhost:3000
-https://www.mlg.soccer
-http://www.mlg.soccer
-```
-
-If you run the frontend on a different port, you will need to update the `WebConfig.java` CORS configuration.
+| Java (JDK) | 21 | Backend runtime (Spring Boot 3.4 requires Java 17+; project targets Java 21) |
+| Maven | 3.9+ | Backend build tool |
+| Node.js | 18+ | Frontend build toolchain (Webpack, npm) |
+| npm | 9+ | Frontend package manager |
+| Redis | 7+ | Distributed cache (required for production mode) |
+| Docker | 24+ | Containerized local Redis or full deployment |
+| Git | 2.40+ | Source control |
 
 ---
 
 ## Verification Commands
 
-Run these commands to confirm your environment is ready before proceeding:
+Run these commands to confirm your environment is ready:
 
 ```bash
-# Check Java version (must be 21+)
+# Java 21
 java -version
+# Expected: openjdk 21.x.x ...
 
-# Check Maven (or use ./mvnw in the repo)
+# Maven
 mvn -version
+# Expected: Apache Maven 3.9.x ...
 
-# Check Node.js version (must be 18+)
-node -version
+# Node.js
+node --version
+# Expected: v18.x.x or higher
 
-# Check npm version
-npm -version
+# npm
+npm --version
+# Expected: 9.x.x or higher
 
-# Check Redis is running
+# Redis (if running locally)
 redis-cli ping
-# Expected output: PONG
+# Expected: PONG
 
-# Check Docker (optional)
+# Docker
 docker --version
+# Expected: Docker version 24.x.x ...
 
-# Check Git version
+# Git
 git --version
+# Expected: git version 2.x.x
 ```
 
 ---
 
-## Redis Setup
+## GitHub API Access
 
-Redis must be running before starting either backend service. The simplest local setup:
+The backend calls the GitHub GraphQL API. You will need one or more **GitHub Personal Access Tokens (PATs)** with at minimum `read:user` scope.
 
-```bash
-# macOS (Homebrew)
-brew install redis
-brew services start redis
+### Creating a GitHub PAT
 
-# Ubuntu / Debian
-sudo apt-get install redis-server
-sudo systemctl start redis
+1. Go to [https://github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **Generate new token (classic)**
+3. Select the scopes:
+   - `read:user`
+   - `repo` (if you want repository star counts)
+4. Copy the generated token
 
-# Using Docker
-docker run -d -p 6379:6379 --name mlg-redis redis:7
-
-# Verify Redis is reachable
-redis-cli ping
-```
+> **Multi-token support:** The backend supports multiple tokens for increased throughput. Configure them as a comma-separated list in the `GITHUB_TOKENS` environment variable. The `GithubTokenRateManager` automatically selects the optimal token per request.
 
 ---
 
-## Cloning the Repository
+## Environment Variables
+
+The following environment variables are required to run the backend. Set them in your shell, a `.env` file, or Kubernetes secrets depending on your deployment method.
+
+### Backend Service
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GITHUB_TOKENS` | Yes | Comma-separated GitHub Personal Access Tokens |
+| `SPRING_REDIS_HOST` | Yes | Redis host (e.g., `localhost`) |
+| `SPRING_REDIS_PORT` | Yes | Redis port (default: `6379`) |
+| `SPRING_PROFILES_ACTIVE` | Yes | Profile to activate: `backend-service` or `cache-updater` |
+
+### Frontend Development
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BACKEND_API_URL` | `https://www.mlg.soccer` | Backend API base URL for Webpack dev server proxy |
+| `PORT` | `8450` | Webpack dev server port |
+| `NODE_ENV` | `development` | Build mode |
+
+---
+
+## System Requirements
+
+| Resource | Recommended |
+|----------|-------------|
+| RAM | 4 GB+ (8 GB for running all services concurrently) |
+| CPU | 2+ cores |
+| Disk | 2 GB free (Maven + npm dependency caches) |
+| OS | macOS, Linux, or Windows (WSL2 recommended on Windows) |
+
+---
+
+## macOS Note
+
+The backend's `pom.xml` includes a Netty DNS resolver for macOS (`netty-resolver-dns-native-macos` for `osx-aarch_64`). If you are on an Apple Silicon Mac, this dependency is already bundled and no additional configuration is required.
+
+---
+
+## Optional: LinkedIn API
+
+The hiring section fetches job postings via the LinkedIn API. This is entirely optional. If LinkedIn credentials are not configured, the system falls back to static default job entries.
+
+| Variable | Description |
+|----------|-------------|
+| `LINKEDIN_CLIENT_ID` | LinkedIn OAuth2 Client ID |
+| `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth2 Client Secret |
+| `LINKEDIN_ORGANIZATION_ID` | LinkedIn Organization ID for job postings |
+
+---
+
+## Repository
+
+Clone the repository to get started:
 
 ```bash
 git clone https://github.com/flamingo-stack/major-league-github.git
 cd major-league-github
 ```
-
-Once you have all prerequisites verified, continue to the [Quick Start guide](quick-start.md).
