@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Incoming Request"] --> CacheCheck["CacheServiceAbs.get()"]
+    CacheCheck --> Exists{"Entry Exists?"}
+    Exists -->|"No"| Fetch["Fetch From GitHub"]
+    Exists -->|"Yes"| Stale{"Is Stale?"}
+    Stale -->|"No"| Return["Return Cached Data"]
+    Stale -->|"Yes"| AsyncRefresh["Async Background Refresh"]
+    Fetch --> Store["Store In Cache"]
+    Store --> Return

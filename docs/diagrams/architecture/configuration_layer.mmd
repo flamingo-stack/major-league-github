@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph ConfigLayer["Configuration Layer"]
+        AsyncConfig["AsyncConfig"]
+        CacheConfig["CacheConfig"]
+        BackendServiceConfig["BackendServiceConfig"]
+    end
+
+    subgraph CacheLayer["Cache Layer"]
+        RedisCacheService["RedisCacheService"]
+        DiskCacheService["DiskCacheService"]
+        ReadOnlyCacheService["ReadOnlyCacheService"]
+        CacheServiceAbs["CacheServiceAbs"]
+    end
+
+    subgraph Services["Service Layer"]
+        GithubService["GithubService"]
+        ContributorServices["Contributor Services"]
+    end
+
+    AsyncConfig -->|"ThreadPoolExecutor Beans"| Services
+    CacheConfig -->|"@Primary CacheServiceAbs"| Services
+    CacheConfig --> CacheLayer
+    BackendServiceConfig --> Services

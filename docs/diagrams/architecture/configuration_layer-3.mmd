@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Application Startup"] --> ReadProps["Read cache.implementation & cache.mode"]
+    ReadProps --> ParseMode["Parse CacheMode Enum"]
+    ReadProps --> ParseImpl["Parse CacheImplementation Enum"]
+
+    ParseMode --> ApplyMode["Set Mode on All Cache Services"]
+    ParseImpl --> Decision{"READ_ONLY?"}
+
+    Decision -->|"Yes"| ReturnRO["Return ReadOnlyCacheService"]
+    Decision -->|"No"| ImplChoice{"Implementation = REDIS?"}
+
+    ImplChoice -->|"Yes"| ReturnRedis["Return RedisCacheService"]
+    ImplChoice -->|"No"| ReturnDisk["Return DiskCacheService"]

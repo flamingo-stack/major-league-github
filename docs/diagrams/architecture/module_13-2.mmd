@@ -1,0 +1,6 @@
+flowchart LR
+    UI["Filter Components"] --> Update["updateUrlState()"]
+    Update --> Router["React Router Search Params"]
+    Router --> Parse["URL Parsing & Validation"]
+    Parse --> State["UrlState Object"]
+    State --> DataFetch["API Request Layer"]

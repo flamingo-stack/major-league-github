@@ -1,0 +1,4 @@
+flowchart LR
+    RegionList["Region Array"] --> Filter["Skip Missing Coordinates"]
+    Filter --> Distance["Calculate Distance"]
+    Distance --> Select["Select Minimum"]

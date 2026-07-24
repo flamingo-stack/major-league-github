@@ -1,0 +1,6 @@
+flowchart LR
+    Controller["REST Controllers (Module 4)"] --> ServiceLayer["Service Layer (Module 8 & 9)"]
+    ServiceLayer --> QueryBuilder["Module 5 - GraphQL Query Builder"]
+    QueryBuilder --> GitHubAPI["GitHub GraphQL API"]
+    GitHubAPI --> ServiceLayer
+    ServiceLayer --> CacheLayer["Cache Layer (Module 1 & 2)"]

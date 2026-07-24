@@ -1,0 +1,7 @@
+flowchart TD
+    Start["User Coordinates"] --> Iterate["Iterate Regions"]
+    Iterate --> Validate["Validate Geo Coordinates"]
+    Validate --> Calc["Compute Haversine Distance"]
+    Calc --> Compare["Compare With Minimum Distance"]
+    Compare --> Update["Update Nearest Region"]
+    Update --> EndNode["Return Nearest Region"]

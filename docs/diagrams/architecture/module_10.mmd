@@ -1,0 +1,35 @@
+flowchart TD
+    subgraph backend_layer["Backend Services"]
+        RegionService["Region Service"]
+        StateService["State Service"]
+        SoccerTeamService["Soccer Team Service"]
+        CityService["City Service"]
+    end
+
+    subgraph data_sources["CSV Data Sources"]
+        RegionsCSV["regions.csv"]
+        StatesCSV["states.csv"]
+        TeamsCSV["teams.csv"]
+    end
+
+    subgraph frontend_layer["Frontend Components"]
+        BaseAutocomplete["Base Autocomplete"]
+        RegionUI["Region Autocomplete UI"]
+        StateUI["State Autocomplete UI"]
+        TeamUI["Team Autocomplete UI"]
+    end
+
+    RegionsCSV --> RegionService
+    StatesCSV --> StateService
+    TeamsCSV --> SoccerTeamService
+
+    CityService --> RegionService
+    CityService --> StateService
+
+    RegionService --> RegionUI
+    StateService --> StateUI
+    SoccerTeamService --> TeamUI
+
+    BaseAutocomplete --> RegionUI
+    BaseAutocomplete --> StateUI
+    BaseAutocomplete --> TeamUI

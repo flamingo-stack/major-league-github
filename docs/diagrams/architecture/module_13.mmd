@@ -1,0 +1,13 @@
+flowchart TD
+    User["User"] --> Browser["Browser Environment"]
+    Browser --> GeoAPI["Geolocation API"]
+    Browser --> Router["React Router"]
+
+    GeoAPI --> UseNearestRegion["useNearestRegion Hook"]
+    Router --> UseUrlState["useUrlState Hook"]
+
+    UseNearestRegion --> RegionModel["Region Type"]
+    UseUrlState --> UrlStateModel["UrlState Model"]
+
+    UrlStateModel --> UI["Filter Components"]
+    RegionModel --> UI

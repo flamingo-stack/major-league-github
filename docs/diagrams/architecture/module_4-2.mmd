@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Client
+    participant Controller as "Contributor Controller"
+    participant Cache as "CacheServiceAbs"
+    participant Service as "GithubService"
+
+    Client->>Controller: GET /api/contributors/search
+    Controller->>Cache: isCacheReady()
+    Cache-->>Controller: true
+    Controller->>Cache: getHttpResponse(...)
+    Cache->>Service: getTopContributorsIn(...)
+    Service-->>Cache: List<Contributor>
+    Cache-->>Controller: Cached result
+    Controller-->>Client: ApiResponse<List<Contributor>>

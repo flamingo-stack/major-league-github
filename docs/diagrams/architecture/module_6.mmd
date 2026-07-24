@@ -1,0 +1,6 @@
+flowchart TD
+    Controller["REST Controllers<br/>Module 4"] -->|"returns"| ApiResponse["ApiResponse<T>"]
+    ApiResponse -->|"wraps"| DomainModels["Domain Models<br/>Module 6"]
+    Services["Service Layer<br/>Module 8-10"] -->|"builds"| DomainModels
+    DomainModels -->|"serialized by"| Jackson["Jackson Serializer"]
+    Jackson -->|"JSON"| Client["Frontend Client<br/>Module 14-17"]

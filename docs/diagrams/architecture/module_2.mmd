@@ -1,0 +1,13 @@
+flowchart TD
+    ControllerLayer["Controllers (Module 4)"] --> ServiceLayer["Service Layer (Modules 8-10)"]
+    ServiceLayer --> CacheAbstraction["CacheServiceAbs (Module 1)"]
+    CacheAbstraction --> RedisCache["RedisCacheService"]
+    CacheAbstraction --> DiskCache["DiskCacheService (Module 1)"]
+    CacheAbstraction --> ReadOnlyCache["ReadOnlyCacheService (Module 1)"]
+
+    RedisCache --> Redis[("Redis Server")]
+
+    AsyncConfigNode["AsyncConfig"] --> ThreadPools["ThreadPoolExecutors"]
+    ServiceLayer --> ThreadPools
+
+    CacheConfigNode["CacheConfig"] --> CacheAbstraction
