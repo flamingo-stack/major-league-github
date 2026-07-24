@@ -1,0 +1,8 @@
+flowchart TD
+    Search["search"] --> UserCount["userCount"]
+    Search --> PageInfo["pageInfo"]
+    Search --> Nodes["nodes"]
+    Nodes --> User["... on User"]
+    User --> Contributions["contributionsCollection"]
+    User --> Repositories["allRepos (alias)"]
+    User --> Social["socialAccounts"]

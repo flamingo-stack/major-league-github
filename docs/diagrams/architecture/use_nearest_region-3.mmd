@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Component
+    participant Hook as UseNearestRegion
+    participant Geo as BrowserGeolocation
+
+    Component->>Hook: Call useNearestRegion(regions)
+    Hook->>Geo: getCurrentPosition()
+    Geo-->>Hook: Position or Error
+    Hook->>Hook: Compute distances
+    Hook-->>Component: nearestRegion and error

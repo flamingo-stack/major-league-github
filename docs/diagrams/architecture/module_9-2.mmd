@@ -1,0 +1,15 @@
+flowchart TD
+    Request["Get Hiring Data"] --> HiringServiceNode["Hiring Service"]
+
+    HiringServiceNode --> CacheCheck["Check Cache"]
+    CacheCheck -->|"hit"| ReturnCached["Return Cached Data"]
+    CacheCheck -->|"miss"| FetchData["Fetch Fresh Data"]
+
+    FetchData --> GithubServiceNode["GitHub Service"]
+    FetchData --> LinkedInServiceNode["LinkedIn Service"]
+
+    LinkedInServiceNode --> LinkedInAPI["LinkedIn API"]
+    GithubServiceNode --> GitHubAPI["GitHub API"]
+
+    FetchData --> StoreCache["Store In Cache"]
+    StoreCache --> ReturnFresh["Return Fresh Data"]

@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Build Starts"] --> Init["SeoFilesPlugin Initialized"]
+    Init --> EmitHook["Register emit Hook"]
+    EmitHook --> OnEmit["Emit Triggered"]
+    OnEmit --> GenerateDate["Generate Current Date"]
+    GenerateDate --> BuildSitemap["Construct sitemap.xml"]
+    GenerateDate --> BuildRobots["Construct robots.txt"]
+    BuildSitemap --> AttachAssets["Attach to compilation.assets"]
+    BuildRobots --> AttachAssets
+    AttachAssets --> EndNode["Files Included in Build Output"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Backend["Backend API (Spring Boot)"] -->|"JSON over HTTP"| ApiLayer["API Services Layer"]
+    ApiLayer -->|"Typed Responses"| Module15["Module 15 - Core Types"]
+    Module15 --> ViewModels["Enhanced Types (Module 16)"]
+    Module15 --> Components["React Components"]
+    Module15 --> Hooks["Custom Hooks"]

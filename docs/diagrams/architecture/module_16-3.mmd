@@ -1,0 +1,6 @@
+flowchart TD
+    ApiResponse["API Response"] --> Transform["Frontend Data Transformation"]
+    Transform --> EnhancedModels["EnhancedCity / EnhancedState / EnhancedRegion"]
+    Transform --> HiringModels["HiringManagerProfile / JobOpening"]
+    EnhancedModels --> UI["Geographic Filters & Leaderboards"]
+    HiringModels --> UI

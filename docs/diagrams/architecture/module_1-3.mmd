@@ -1,0 +1,10 @@
+flowchart TD
+    Request["Incoming Request"] --> CheckCache["get(...)"]
+    CheckCache --> Exists{"Entry Exists?"}
+    Exists -->|"No"| Fetch["Call Supplier"]
+    Exists -->|"Yes"| Stale{"Is Stale?"}
+    Stale -->|"No"| Return["Return Cached Value"]
+    Stale -->|"Yes"| AsyncRefresh["Async Refresh"]
+    AsyncRefresh --> Return
+    Fetch --> Put["Put In Cache"]
+    Put --> Return

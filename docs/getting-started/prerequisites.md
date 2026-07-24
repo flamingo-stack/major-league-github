@@ -1,169 +1,159 @@
 # Prerequisites
 
-Before running Major League GitHub locally, make sure you have all the required software, accounts, and environment variables in place.
+Before running Major League GitHub locally, make sure you have the following tools, accounts, and environment variables set up.
 
 ---
 
 ## Required Software
 
 | Tool | Minimum Version | Purpose |
-|---|---|---|
-| **Java (JDK)** | 21 | Backend microservices runtime |
-| **Maven** | 3.9+ (or use the included `mvnw` wrapper) | Build and run the backend |
-| **Node.js** | 18+ | Frontend build tooling |
-| **npm** | 9+ | Frontend dependency management |
-| **Redis** | 6+ | Distributed cache shared by both microservices |
-| **Git** | Any modern version | Clone the repository |
+|------|----------------|---------|
+| **Java JDK** | 21 | Backend runtime (Spring Boot 3.4) |
+| **Apache Maven** | 3.9+ | Backend build and dependency management |
+| **Node.js** | 18+ | Frontend build tooling (Webpack) |
+| **npm** | 9+ | Frontend package management |
+| **Redis** | 6+ | Distributed caching layer |
+| **Docker** | 24+ | Containerized local execution (optional but recommended) |
+| **Git** | 2.40+ | Source control |
 
-> **Tip:** Use [SDKMAN!](https://sdkman.io/) to manage Java versions on macOS/Linux, and [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions.
+> **Note:** The Maven Wrapper (`./mvnw`) is included in the repository, so a system-wide Maven installation is not strictly required for the backend.
 
 ---
 
 ## System Requirements
 
-| Resource | Recommendation |
-|---|---|
-| **RAM** | 4 GB minimum (8 GB recommended when running both services + Redis + frontend dev server) |
-| **CPU** | 2+ cores |
-| **OS** | macOS, Linux, or Windows (WSL2 recommended on Windows) |
-| **Network** | Internet access required — the backend queries the GitHub GraphQL API at runtime |
+| Resource | Minimum | Recommended |
+|----------|---------|-------------|
+| **RAM** | 4 GB | 8 GB |
+| **CPU** | 2 cores | 4 cores |
+| **Disk** | 2 GB free | 5 GB free |
+| **OS** | macOS, Linux, or Windows (WSL2) | macOS or Linux |
 
 ---
 
-## Account and Access Requirements
+## Account Requirements
 
-### GitHub Personal Access Token (Required)
+You need access to the following external services to run the full application:
 
-The backend service queries the **GitHub GraphQL API** to fetch contributor data. You need at least one GitHub Personal Access Token (PAT) with the appropriate scopes.
+### GitHub API (Required)
 
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Click **Generate new token (classic)**
-3. Select the following scope:
-   - `read:user` — read user profile data
+The backend fetches contributor data exclusively through the **GitHub GraphQL API**. Without a token, no leaderboard data can be fetched.
 
-> **Multiple tokens:** The `GithubTokenRateManager` supports a pool of tokens. Providing multiple PATs improves throughput and reduces the chance of hitting rate limits, especially during cache warm-up.
+- Create a **Personal Access Token (PAT)** at: https://github.com/settings/tokens
+- The token needs the `read:user` and `public_repo` scopes (read-only public data is sufficient)
+- For higher throughput, supply **multiple tokens** — the backend round-robins across them
+
+### LinkedIn API (Optional)
+
+Used only for the hiring section. If not configured, the backend will use fallback default job listings.
+
+- Requires a LinkedIn developer application with `r_organization_social` access
+- Configure via `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, and `LINKEDIN_ORGANIZATION_ID`
 
 ---
 
 ## Required Environment Variables
 
-Both backend microservices and the frontend require certain environment variables at startup.
+The backend is configured via standard Spring Boot application properties or environment variables.
 
-### Backend Services
+### Backend Service (Port 8450)
 
-| Variable | Required | Description |
-|---|---|---|
-| `github.tokens` | **Yes** | Comma-separated list of GitHub PATs (e.g., `token1,token2`) |
-| `github.api.url` | **Yes** | GitHub REST API base URL (e.g., `https://api.github.com`) |
-| `github.api.url.rate_limit` | **Yes** | GitHub rate limit endpoint (e.g., `https://api.github.com/rate_limit`) |
-| `spring.redis.host` | No | Redis hostname (default: `localhost`) |
-| `spring.redis.port` | No | Redis port (default: `6379`) |
-| `github.api.concurrency` | No | Number of parallel API threads (default: `10`) |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `GITHUB_TOKEN_1` | Primary GitHub PAT | `ghp_xxxxxxxxxxxx` |
+| `GITHUB_TOKEN_2` | Optional second token for rate-limit rotation | `ghp_yyyyyyyyyyyy` |
+| `SPRING_REDIS_HOST` | Redis hostname | `localhost` |
+| `SPRING_REDIS_PORT` | Redis port | `6379` |
+| `GITHUB_API_CONCURRENCY` | Thread pool size for GitHub API calls | `10` |
+| `CACHE_IMPLEMENTATION` | `redis` (production) or `disk` (local dev) | `redis` |
+| `CACHE_MODE` | `read-write`, `read-only`, or `force-update` | `read-write` |
 
-These properties can be supplied via `application.yml`, system properties, or environment variables using Spring Boot's standard externalized configuration.
+### Cache Updater Service (Port 8451)
+
+The Cache Updater uses the same Redis and GitHub token configuration as the Backend Service, but is activated with the `cache-updater` Spring profile.
 
 ### Frontend
 
-| Variable | Default | Description |
-|---|---|---|
-| `BACKEND_API_URL` | `https://www.mlg.soccer` | URL of the Backend Service; override to `http://localhost:8450` for local development |
-| `PORT` | `8450` | Frontend dev server port |
-| `NODE_ENV` | `development` | Build mode (`development` or `production`) |
-| `OG_URL` / `BASE_URL` | `https://www.mlg.soccer` | Canonical URL used in SEO metadata |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `BACKEND_API_URL` | URL where the backend is reachable | `/` |
+| `PORT` | Port for the webpack dev server | `8450` |
+| `NODE_ENV` | Build mode | `development` |
+
+---
+
+## CORS Allowed Origins
+
+The backend's CORS policy allows requests from:
+
+```text
+http://localhost:8450
+http://localhost:3000
+https://www.mlg.soccer
+http://www.mlg.soccer
+```
+
+If you run the frontend on a different port, you will need to update the `WebConfig.java` CORS configuration.
 
 ---
 
 ## Verification Commands
 
-Run these commands to confirm your environment is ready before proceeding to the Quick Start guide.
-
-### Check Java Version
+Run these commands to confirm your environment is ready before proceeding:
 
 ```bash
+# Check Java version (must be 21+)
 java -version
-```
 
-Expected output (version 21 or higher):
-
-```text
-openjdk version "21.0.x" ...
-```
-
-### Check Maven Version
-
-```bash
+# Check Maven (or use ./mvnw in the repo)
 mvn -version
-```
 
-Or, using the project's Maven wrapper:
-
-```bash
-cd backend
-./mvnw -version
-```
-
-### Check Node.js Version
-
-```bash
+# Check Node.js version (must be 18+)
 node -version
-```
 
-Expected output (v18 or higher):
-
-```text
-v18.x.x
-```
-
-### Check npm Version
-
-```bash
+# Check npm version
 npm -version
+
+# Check Redis is running
+redis-cli ping
+# Expected output: PONG
+
+# Check Docker (optional)
+docker --version
+
+# Check Git version
+git --version
 ```
 
-Expected output:
+---
 
-```text
-9.x.x
-```
+## Redis Setup
 
-### Check Redis Is Running
+Redis must be running before starting either backend service. The simplest local setup:
 
 ```bash
+# macOS (Homebrew)
+brew install redis
+brew services start redis
+
+# Ubuntu / Debian
+sudo apt-get install redis-server
+sudo systemctl start redis
+
+# Using Docker
+docker run -d -p 6379:6379 --name mlg-redis redis:7
+
+# Verify Redis is reachable
 redis-cli ping
 ```
 
-Expected output:
+---
 
-```text
-PONG
-```
-
-If Redis is not installed, follow the [official Redis installation guide](https://redis.io/docs/getting-started/installation/) for your OS.
-
-### Verify GitHub Token Access
+## Cloning the Repository
 
 ```bash
-curl -H "Authorization: Bearer YOUR_GITHUB_PAT" https://api.github.com/rate_limit
+git clone https://github.com/flamingo-stack/major-league-github.git
+cd major-league-github
 ```
 
-Expected output includes `"limit": 5000` or higher under the `graphql` key. A `401` response means the token is invalid or has insufficient scopes.
-
----
-
-## Notes on macOS (Apple Silicon)
-
-The `pom.xml` includes a native DNS resolver for macOS ARM:
-
-```xml
-<dependency>
-    <groupId>io.netty</groupId>
-    <artifactId>netty-resolver-dns-native-macos</artifactId>
-    <classifier>osx-aarch_64</classifier>
-</dependency>
-```
-
-This dependency eliminates Netty DNS resolution warnings on M1/M2/M3 Macs. No additional configuration is required.
-
----
-
-Once your environment passes all verification checks, proceed to the [Quick Start Guide](quick-start.md) to clone and run the project.
+Once you have all prerequisites verified, continue to the [Quick Start guide](quick-start.md).

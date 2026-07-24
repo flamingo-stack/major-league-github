@@ -1,242 +1,331 @@
 # Contributing to Major League GitHub
 
-Thank you for your interest in contributing to **Major League GitHub**! This is an open-source side project and contributions of all kinds are welcome — bug reports, feature suggestions, documentation improvements, and code changes.
+Thank you for your interest in contributing to Major League GitHub! This document outlines how to set up your development environment, the branching and PR workflow, code style expectations, and the review process.
 
 ---
 
 ## Table of Contents
 
 - [Getting Started](#getting-started)
-- [Project Layout](#project-layout)
-- [Development Setup](#development-setup)
-- [Branch Naming](#branch-naming)
-- [Commit Format](#commit-format)
+- [Development Environment](#development-environment)
+- [Running the Project Locally](#running-the-project-locally)
+- [Branching Strategy](#branching-strategy)
+- [Making Changes](#making-changes)
 - [Pull Request Process](#pull-request-process)
-- [Code Style](#code-style)
-- [Reporting Issues](#reporting-issues)
-- [Community](#community)
+- [Code Style Guidelines](#code-style-guidelines)
+- [Testing](#testing)
+- [Key Design Principles](#key-design-principles)
+- [Getting Help](#getting-help)
 
 ---
 
 ## Getting Started
 
-Before contributing code, make sure you can run the project locally:
+1. **Fork the repository** on GitHub: https://github.com/flamingo-stack/major-league-github
+2. **Clone your fork** locally:
 
-1. Read the [Prerequisites Guide](./docs/getting-started/prerequisites.md) — ensure you have Java 21, Node.js 18+, Redis, and a GitHub PAT.
-2. Follow the [Quick Start Guide](./docs/getting-started/quick-start.md) to clone and run all three services.
-3. Explore the [Development Documentation](./docs/README.md) for architecture notes and development guides.
+```bash
+git clone https://github.com/<your-username>/major-league-github.git
+cd major-league-github
+```
 
----
+3. **Add the upstream remote** so you can keep your fork in sync:
 
-## Project Layout
-
-```text
-major-league-github/
-├── backend/                    # Java 21 + Spring Boot 3.4
-│   ├── pom.xml
-│   └── src/main/java/cx/flamingo/analysis/
-│       ├── config/             # Spring profiles, Redis, async config
-│       ├── controller/         # REST controllers (contributors, autocomplete, hiring)
-│       ├── service/            # Business logic (GitHub, caching, cities, languages)
-│       ├── graphql/            # GitHub GraphQL query builder
-│       ├── cache/              # Cache abstraction and Redis implementation
-│       ├── rate/               # GitHub token rate-limit manager
-│       ├── model/              # Domain models (Contributor, SoccerTeam, City, ...)
-│       └── exception/          # Exception types and global handler
-│
-├── frontend/                   # React 19 + TypeScript
-│   ├── package.json
-│   ├── vite.config.ts          # Vite build config (dev server + fast refresh)
-│   ├── webpack.config.js       # Webpack config (production, SEO, favicons)
-│   └── src/
-│       ├── App.tsx             # Root component with routing and QueryClient
-│       ├── theme.ts            # Material-UI dark theme
-│       ├── components/         # UI components (filters, table, hiring, header)
-│       ├── hooks/              # Custom React hooks (useContributors, useUrlState)
-│       ├── services/           # Axios API client
-│       └── types/              # TypeScript type definitions
-│
-└── docs/                       # Project documentation
+```bash
+git remote add upstream https://github.com/flamingo-stack/major-league-github.git
 ```
 
 ---
 
-## Development Setup
+## Development Environment
 
-### Backend
+### Required Tools
 
-The backend uses two Spring Boot profiles:
+| Tool | Minimum Version | Purpose |
+|------|----------------|---------|
+| **Java JDK** | 21 | Backend runtime |
+| **Node.js** | 18+ | Frontend build tooling |
+| **npm** | 9+ | Frontend package management |
+| **Redis** | 6+ | Distributed caching (or use Docker) |
+| **Docker** | 24+ | Containerized local Redis |
+| **Git** | 2.40+ | Source control |
 
-- **`backend-service`** — REST API on port `8450`
-- **`cache-updater`** — Background cache worker on port `8451`
+> The Maven Wrapper (`./mvnw`) is included — no system-wide Maven installation required.
+
+### IDE Recommendations
+
+- **IntelliJ IDEA** (Community or Ultimate) — recommended for the Spring Boot backend
+  - Install the **Lombok** plugin and enable annotation processing: `Settings → Build → Compiler → Annotation Processors → Enable`
+  - Set Project SDK to **Java 21**: `File → Project Structure → SDK`
+- **VS Code** — recommended for the React + TypeScript frontend
+  - Install the **ESLint** and **Prettier** extensions
+
+### Key IntelliJ Plugins
+
+| Plugin | Purpose |
+|--------|---------|
+| Lombok | Annotation processing for `@Data`, `@Builder`, `@Slf4j` |
+| Spring Boot | Run configurations and endpoint browser |
+| SonarLint | Real-time code quality warnings |
+
+---
+
+## Running the Project Locally
+
+Full setup instructions are in the [Local Development Guide](./docs/development/setup/local-development.md). The short version:
+
+```bash
+# 1. Start Redis
+docker run -d -p 6379:6379 --name mlg-redis redis:7
+
+# 2. Start the Backend Service (port 8450)
+cd backend
+export GITHUB_TOKEN_1=ghp_your_token_here
+./mvnw spring-boot:run -Dspring-boot.run.profiles=backend-service
+
+# 3. Start the Cache Updater (port 8451) — in a new terminal
+cd backend
+export GITHUB_TOKEN_1=ghp_your_token_here
+./mvnw spring-boot:run \
+  -Dspring-boot.run.profiles=cache-updater \
+  -Dspring-boot.run.arguments=--server.port=8451
+
+# 4. Start the Frontend — in a new terminal
+cd frontend
+npm install
+BACKEND_API_URL=http://localhost:8450 npm start
+```
+
+Open http://localhost:8450 in your browser.
+
+---
+
+## Branching Strategy
+
+- `main` — production-ready code; all CI/CD deployments trigger from here
+- `feature/<short-description>` — new features or enhancements
+- `fix/<short-description>` — bug fixes
+- `chore/<short-description>` — dependency updates, tooling, documentation
+
+### Branch Naming Examples
+
+```text
+feature/csv-export-improvements
+fix/redis-connection-timeout
+chore/upgrade-react-19
+```
+
+### Keeping Your Branch Up to Date
+
+```bash
+git fetch upstream
+git rebase upstream/main
+```
+
+---
+
+## Making Changes
+
+### Backend Changes
 
 ```bash
 cd backend
 
-# Backend Service
-./mvnw spring-boot:run \
-  -Dspring-boot.run.profiles=backend-service \
-  -Dspring-boot.run.jvmArguments="\
-    -Dgithub.tokens=YOUR_GITHUB_PAT \
-    -Dgithub.api.url=https://api.github.com \
-    -Dgithub.api.url.rate_limit=https://api.github.com/rate_limit"
+# Compile and check for errors
+./mvnw compile
 
-# Cache Updater (new terminal)
-./mvnw spring-boot:run \
-  -Dspring-boot.run.profiles=cache-updater \
-  -Dspring-boot.run.jvmArguments="\
-    -Dgithub.tokens=YOUR_GITHUB_PAT \
-    -Dgithub.api.url=https://api.github.com \
-    -Dgithub.api.url.rate_limit=https://api.github.com/rate_limit"
+# Run the service locally to test your changes
+./mvnw spring-boot:run -Dspring-boot.run.profiles=backend-service
+
+# Build the JAR
+./mvnw clean package -DskipTests
+```
+
+### Frontend Changes
+
+```bash
+cd frontend
+
+# Install dependencies (first time or after package.json changes)
+npm install
+
+# Start the dev server with hot reload
+BACKEND_API_URL=http://localhost:8450 npm start
+
+# Production build
+NODE_ENV=production npm run build
+```
+
+### No-Redis Development
+
+For backend-only changes that don't require Redis, use disk-based caching:
+
+```bash
+cd backend
+export CACHE_IMPLEMENTATION=disk
+./mvnw spring-boot:run -Dspring-boot.run.profiles=backend-service
+```
+
+---
+
+## Pull Request Process
+
+1. **Create a feature branch** from `main`:
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+2. **Make your changes** with clear, focused commits:
+
+```bash
+git add .
+git commit -m "feat: add MLS team filter to CSV export"
+```
+
+3. **Push your branch** to your fork:
+
+```bash
+git push origin feature/your-feature-name
+```
+
+4. **Open a Pull Request** against `main` on the upstream repository:
+   - https://github.com/flamingo-stack/major-league-github/pulls
+
+5. **Fill out the PR description** with:
+   - What changed and why
+   - How to test the change
+   - Any relevant issues it closes (e.g., `Closes #42`)
+
+6. **Wait for review** — maintainers will review and may request changes before merging
+
+### PR Checklist
+
+- [ ] Code compiles without errors (`./mvnw compile` / `npm run build`)
+- [ ] New endpoints or behaviors are tested manually against a local stack
+- [ ] Environment variables are documented if new ones are introduced
+- [ ] No secrets, tokens, or credentials are committed
+- [ ] The branch is up to date with `main`
+
+---
+
+## Code Style Guidelines
+
+### Backend (Java)
+
+- Follow standard Java conventions (camelCase methods/fields, PascalCase classes)
+- Use Lombok annotations (`@Data`, `@Builder`, `@Slf4j`) to reduce boilerplate
+- Keep controllers thin — business logic belongs in service classes
+- Use `CacheServiceAbs` for any data that should be cached; do not call GitHub directly from controllers
+- Log meaningful messages at `DEBUG` or `INFO` level at service boundaries
+- Wrap all REST responses in `ApiResponse<T>` for consistency
+
+### Frontend (TypeScript / React)
+
+- Use TypeScript strictly — avoid `any` types
+- All filter state must flow through `useUrlState` — do not use component-local state for leaderboard filters
+- Keep components focused and composable; extract reusable logic into custom hooks
+- Use React Query (`useQuery`) for all backend data fetching — do not fetch in `useEffect`
+- Follow existing naming conventions: `use<Name>` for hooks, `<Name>Controller` for complex state logic
+- Strong typing end-to-end: Java DTOs should map 1:1 to TypeScript interfaces in `src/types/`
+
+### General
+
+- Prefer explicit over implicit — clear variable names, no magic numbers
+- Write self-documenting code; comments should explain *why*, not *what*
+- Keep pull requests focused — one concern per PR
+
+---
+
+## Testing
+
+### Backend
+
+```bash
+cd backend
+
+# Run all tests
+./mvnw test
+
+# Run a specific test class
+./mvnw test -Dtest=GithubServiceTest
+
+# Build and run tests together
+./mvnw clean verify
 ```
 
 ### Frontend
 
 ```bash
 cd frontend
-npm install
-BACKEND_API_URL=http://localhost:8450 npm run dev
+
+# Run tests (if configured)
+npm test
 ```
 
-The dev server proxies all `/api` requests to the Backend Service on port `8450`.
-
-### Redis
-
-Both backend services require a Redis instance on `localhost:6379` (default). Start it with:
+### Manual API Testing
 
 ```bash
-redis-server
+# Health check
+curl http://localhost:8450/actuator/health
+
+# Test contributor search
+curl "http://localhost:8450/api/contributors/search?languageId=java&stateId=CA"
+
+# Test city autocomplete
+curl "http://localhost:8450/api/autocomplete/cities?query=San"
+
+# Export as CSV
+curl "http://localhost:8450/api/contributors/export?languageId=java" -o test.csv
 ```
 
 ---
 
-## Branch Naming
+## Key Design Principles
 
-Use descriptive, lowercase, hyphen-separated branch names with a short prefix indicating the type of change:
+When contributing, please respect these architectural decisions:
 
-| Prefix | Use for |
-|---|---|
-| `feat/` | New features |
-| `fix/` | Bug fixes |
-| `docs/` | Documentation changes only |
-| `chore/` | Maintenance, dependency updates, build changes |
-| `refactor/` | Code refactoring with no behaviour change |
-| `test/` | Adding or improving tests |
+| Principle | What It Means |
+|-----------|--------------|
+| **Cache-first** | All expensive GitHub queries go through `CacheServiceAbs`; never call GitHub directly from a controller |
+| **URL-driven state** | All leaderboard filter state lives in URL query params via `useUrlState` — not in React component state |
+| **Strong typing end-to-end** | Java DTOs map 1:1 to TypeScript types; maintain this contract when adding new fields |
+| **Separation of concerns** | Controllers orchestrate; services contain logic; models carry data |
+| **Multi-token rate management** | New GitHub API calls should go through `GithubTokenRateManager` to respect rate limits |
 
-**Examples:**
+---
 
-```text
-feat/add-rust-language-filter
-fix/csv-export-encoding
-docs/update-prerequisites
-chore/bump-spring-boot-version
+## Environment Variables Reference
+
+Never commit secrets. Store tokens in a local `.env.local` file (gitignored):
+
+```bash
+cat > .env.local << 'EOF'
+export GITHUB_TOKEN_1=ghp_your_primary_token_here
+export GITHUB_TOKEN_2=ghp_your_secondary_token_here
+export SPRING_REDIS_HOST=localhost
+export SPRING_REDIS_PORT=6379
+export CACHE_IMPLEMENTATION=redis
+export CACHE_MODE=read-write
+EOF
+
+source .env.local
 ```
 
----
+Required token scopes: `read:user`, `public_repo`
 
-## Commit Format
-
-Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
-
-```text
-<type>(<scope>): <short description>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-**Types:** `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `perf`
-
-**Examples:**
-
-```text
-feat(frontend): add keyboard shortcut Alt+E for CSV export
-fix(backend): handle null city field in contributor response
-docs(readme): update quick-start clone instructions
-chore(deps): upgrade Spring Boot to 3.4.2
-```
-
-- Keep the subject line under 72 characters
-- Use the imperative mood: "add feature" not "added feature"
-- Reference GitHub issues in the footer: `Closes #42`
+Generate tokens at: https://github.com/settings/tokens
 
 ---
 
-## Pull Request Process
+## Getting Help
 
-1. **Fork** the repository on GitHub.
-2. **Create a branch** from `main` using the naming convention above.
-3. **Make your changes** — keep commits focused and atomic.
-4. **Test your changes** locally before opening a PR.
-5. **Open a Pull Request** against the `main` branch of [flamingo-stack/major-league-github](https://github.com/flamingo-stack/major-league-github).
-6. **Fill in the PR template** — describe what changed, why, and how to test it.
-7. **Address review feedback** — be responsive and update the branch as needed.
-
-### PR Checklist
-
-- [ ] The project runs locally with my changes applied
-- [ ] API endpoints still respond correctly (test with `curl` against the local Backend Service)
-- [ ] No new compiler warnings in the backend (`./mvnw clean package`)
-- [ ] No new TypeScript errors in the frontend (`npm run build`)
-- [ ] Documentation updated if behaviour changed
-- [ ] Commit messages follow the Conventional Commits format
+- **GitHub Issues:** https://github.com/flamingo-stack/major-league-github/issues
+- **Pull Requests:** https://github.com/flamingo-stack/major-league-github/pulls
+- **Live Site:** https://www.mlg.soccer
+- **Architecture Docs:** [docs/development/architecture/README.md](./docs/development/architecture/README.md)
+- **Full Documentation:** [docs/README.md](./docs/README.md)
 
 ---
 
-## Code Style
-
-### Backend (Java)
-
-- Java 21 language features are welcome (records, pattern matching, text blocks)
-- Follow standard Java naming conventions (camelCase methods, PascalCase classes)
-- Use Lombok annotations (`@Data`, `@Builder`, `@RequiredArgsConstructor`) consistently with the existing codebase
-- Spring Boot's reactive stack (WebFlux) is used for HTTP — prefer `Mono`/`Flux` over blocking calls
-- Keep controllers thin — business logic belongs in service classes
-
-### Frontend (TypeScript / React)
-
-- All new components should be written in TypeScript with explicit prop types
-- Use React functional components and hooks — no class components
-- Follow the existing Material-UI theming patterns defined in `src/theme.ts`
-- Custom data-fetching hooks belong in `src/hooks/`
-- API calls should go through the Axios client in `src/services/`
-- Filter/URL state is managed via the `useUrlState` hook — extend it rather than bypassing it
-
-### General
-
-- Prefer clarity over cleverness
-- Add comments for non-obvious logic
-- Keep pull requests focused — one concern per PR is easier to review
-
----
-
-## Reporting Issues
-
-Found a bug or have a feature request? Please open an issue on GitHub:
-
-- **Bug reports:** [github.com/flamingo-stack/major-league-github/issues](https://github.com/flamingo-stack/major-league-github/issues)
-- **Feature requests:** Use the same issue tracker with the `enhancement` label
-
-When filing a bug report, please include:
-
-- Your OS and version
-- Java version (`java -version`)
-- Node.js version (`node -version`)
-- Steps to reproduce the issue
-- What you expected to happen
-- What actually happened (including any error output)
-
----
-
-## Community
-
-- **Live site:** [mlg.soccer](https://www.mlg.soccer)
-- **Issues & Discussions:** [github.com/flamingo-stack/major-league-github/issues](https://github.com/flamingo-stack/major-league-github/issues)
-- **Pull Requests:** [github.com/flamingo-stack/major-league-github/pulls](https://github.com/flamingo-stack/major-league-github/pulls)
-
-All contributors are expected to be respectful and constructive. This project follows a standard open-source code of conduct — treat others the way you would want to be treated.
-
----
-
-Thank you for helping make Major League GitHub better! ⚽
+*Thank you for contributing to Major League GitHub!*

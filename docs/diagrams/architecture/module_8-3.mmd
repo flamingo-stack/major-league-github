@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Request Token"] --> CheckSecondary["Skip Tokens Under Secondary Limit"]
+    CheckSecondary --> CheckPrimary["Evaluate Remaining Requests"]
+    CheckPrimary --> SelectBest["Select Token With<br/>Max Remaining + Latest Reset"]
+    SelectBest --> Available{"Token Available?"}
+    Available -->|Yes| ReturnClient["Return WebClient + Token"]
+    Available -->|No| Wait["Wait Until Reset"]
+    Wait --> Start
