@@ -1,8 +1,0 @@
-flowchart TD
-    WebpackCompiler["Webpack Compiler"] -->|"apply()"| SeoPlugin["SeoFilesPlugin"]
-    SeoPlugin -->|"tapAsync emit hook"| EmitPhase["Emit Phase"]
-    EmitPhase -->|"generate sitemap.xml"| SitemapAsset["sitemap.xml"]
-    EmitPhase -->|"generate robots.txt"| RobotsAsset["robots.txt"]
-    SitemapAsset -->|"attach to"| CompilationAssets["Compilation Assets"]
-    RobotsAsset -->|"attach to"| CompilationAssets
-    CompilationAssets -->|"written to"| BuildOutput["Dist Output Directory"]

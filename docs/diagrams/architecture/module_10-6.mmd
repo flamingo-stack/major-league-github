@@ -1,8 +1,0 @@
-flowchart TD
-    User["User Types"] --> Autocomplete["MUI Autocomplete"]
-    Autocomplete --> OnInputChange["onInputChange"]
-    OnInputChange --> Parent["Parent Component State"]
-    Parent --> Options["Updated Options"]
-    Options --> Autocomplete
-    Autocomplete --> OnChange["onChange"]
-    OnChange --> Selected["Selected Entity"]

@@ -1,6 +1,0 @@
-flowchart TD
-    Start["Application Startup"] --> Init["@PostConstruct init()"]
-    Init --> Load["Load regions.csv"]
-    Load --> Parse["Parse CSV Rows"]
-    Parse --> Build["Create Region Objects"]
-    Build --> Store["Store In-Memory List"]

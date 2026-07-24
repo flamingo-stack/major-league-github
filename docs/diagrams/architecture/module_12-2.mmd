@@ -1,6 +1,0 @@
-flowchart LR
-    Input["User Types Input"] --> QueryHook["useQuery"]
-    QueryHook --> ApiCall["autocompleteLanguages(input)"]
-    ApiCall --> Response["Language[]"]
-    Response --> BaseAutocomplete["BaseAutocomplete Component"]
-    BaseAutocomplete --> Selection["Selected Language"]

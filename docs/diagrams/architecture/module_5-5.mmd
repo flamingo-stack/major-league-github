@@ -1,6 +1,0 @@
-flowchart TD
-    Input["List of Field"] --> SerializeFields["serializeFields()"]
-    SerializeFields --> SerializeField["serializeField()"]
-    SerializeField --> SerializeArgs["serializeArguments()"]
-    SerializeField --> Recurse["Process Subfields"]
-    Recurse --> Output["Formatted GraphQL Query"]

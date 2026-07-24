@@ -1,5 +1,0 @@
-flowchart LR
-    Service["Service Layer"] --> DiskCache["DiskCacheService"]
-    DiskCache --> Serialize["Gson Serialize"]
-    Serialize --> Write["Write key.json"]
-    Write --> FS[("File System")]

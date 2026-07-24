@@ -1,5 +1,0 @@
-flowchart LR
-    GitHubService["GithubService (Module 8)"] --> LowExec["contributorsAsyncExecutorLow"]
-    GitHubService --> HighExec["contributorsAsyncExecutorHigh"]
-    LowExec --> WorkerThreads1["Low Priority Threads"]
-    HighExec --> WorkerThreads2["High Priority Threads"]

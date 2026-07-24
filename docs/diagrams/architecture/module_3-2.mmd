@@ -1,6 +1,0 @@
-flowchart LR
-    DefaultProfile["default Profile"] --> StandardBackend["Backend API Mode"]
-    CacheProfile["cache-updater Profile"] --> SchedulerMode["Scheduled Cache Refresh Mode"]
-
-    SchedulerMode --> RedisAccess["RedisTemplate"]
-    StandardBackend --> RedisAccess
