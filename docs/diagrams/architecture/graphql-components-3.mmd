@@ -1,0 +1,8 @@
+flowchart TD
+    Start["serialize(fields)"] --> OpenQuery["append 'query {'"]
+    OpenQuery --> Iterate["iterate fields"]
+    Iterate --> SerializeField["serializeField()"]
+    SerializeField --> SerializeArgs["serializeArguments()"]
+    SerializeField --> SerializeChildren["process subfields"]
+    SerializeChildren --> CloseBlock["append '}'"]
+    CloseBlock --> End["return string"]

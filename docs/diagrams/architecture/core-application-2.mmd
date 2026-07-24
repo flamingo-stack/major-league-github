@@ -1,0 +1,10 @@
+flowchart TD
+    Client["Frontend Application"] -->|"HTTP Request"| Controller["Controller"]
+    Controller -->|"Invoke"| Service["Service Layer"]
+    Service -->|"Check Cache"| Cache["Cache Services"]
+    Service -->|"Build Query"| GraphQL["GraphQL Builder"]
+    GraphQL -->|"GitHub API Call"| GitHub["GitHub GraphQL API"]
+    GitHub -->|"Response"| Service
+    Service -->|"Map To"| Model["Model Entities"]
+    Service -->|"Return"| Controller
+    Controller -->|"JSON Response"| Client

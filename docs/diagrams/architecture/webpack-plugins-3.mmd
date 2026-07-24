@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Plugin Triggered"] --> CheckSVG["Check if SVG Exists"]
+    CheckSVG -->|"No"| Warn["Log Warning"]
+    CheckSVG -->|"Yes"| CheckICO["Check if ICO Exists"]
+    CheckICO --> CompareTime["Compare Modification Time"]
+    CompareTime -->|"ICO Newer"| Skip["Skip Generation"]
+    CompareTime -->|"SVG Newer"| Convert["Convert SVG to PNG via sharp"]
+    Convert --> ToICO["Convert PNG to ICO via to-ico"]
+    ToICO --> Save["Write favicon.ico to Disk"]
+    Save --> End["Done"]

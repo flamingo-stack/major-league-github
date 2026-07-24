@@ -1,0 +1,5 @@
+flowchart LR
+    Service["Service Layer"] --> Cache["RedisCacheService"]
+    Cache --> Template["RedisTemplate"]
+    Template --> Redis[("Redis")]
+    Cache --> Gson["Gson with Time Adapters"]

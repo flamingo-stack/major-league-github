@@ -1,0 +1,5 @@
+flowchart TD
+    CheckSecondary["isUnderSecondaryLimit()"] --> RetryCheck{"retryAfterSeconds and lastSecondaryLimitHit set?"}
+    RetryCheck -->|"No"| NotLimited["Return false"]
+    RetryCheck -->|"Yes"| TimeCheck["elapsedSeconds < retryAfterSeconds"]
+    TimeCheck --> Result["Return true or false"]

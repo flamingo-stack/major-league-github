@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant User
+    participant Component as "Filter Component"
+    participant Hook as "useUrlState"
+    participant Service as "API Service"
+
+    User->>Component: Select language
+    Component->>Hook: updateUrlState({ languageId })
+    Hook->>Component: Updated urlState
+    Component->>Service: Fetch contributors with filters
+    Service->>Component: Return filtered data

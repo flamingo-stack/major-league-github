@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Cache
+    participant Supplier
+
+    Client->>Cache: getHttpResponse()
+    Cache->>Cache: Check staleness
+    Cache-->>Client: Return stale value
+    Cache->>Supplier: Async refresh
+    Supplier-->>Cache: Fresh data
+    Cache->>Cache: Overwrite entry

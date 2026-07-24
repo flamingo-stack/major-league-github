@@ -1,0 +1,5 @@
+flowchart LR
+    Backend["Spring Boot Backend"] -->|"JSON over HTTP"| ApiLayer["Frontend API Services"]
+    ApiLayer -->|"Typed responses"| Types["Frontend Types"]
+    Types -->|"Strongly typed models"| Components["React Components"]
+    Types -->|"Shared interfaces"| Hooks["Custom Hooks"]

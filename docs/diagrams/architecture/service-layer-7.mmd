@@ -1,0 +1,5 @@
+flowchart TD
+    CacheCheck["Check Cache"] -->|"miss"| GithubProfile["Fetch GitHub Profile"]
+    GithubProfile --> BuildProfile["Build HiringManagerProfile"]
+    BuildProfile --> StoreCache["Store in Cache"]
+    StoreCache --> ReturnProfile["Return Response"]

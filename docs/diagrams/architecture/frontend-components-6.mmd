@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant User
+    participant UI as "LanguageAutocomplete"
+    participant Query as "React Query"
+    participant API as "Frontend API Service"
+    participant Backend
+
+    User->>UI: Type "Java"
+    UI->>Query: Trigger query with inputValue
+    Query->>API: autocompleteLanguages("Java")
+    API->>Backend: HTTP Request
+    Backend->>API: Return Language[]
+    API->>Query: Resolve Promise
+    Query->>UI: Provide options
+    User->>UI: Select Language
+    UI->>User: Filter applied in table

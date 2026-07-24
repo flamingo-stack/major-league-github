@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Hiring Request"] --> HiringCtrl["Hiring Controller"]
+    HiringCtrl --> HiringService["Hiring Service"]
+    HiringService --> JobOpening["JobOpening Model"]
+    JobOpening --> Response["JSON Response"]

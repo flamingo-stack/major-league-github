@@ -1,0 +1,5 @@
+flowchart LR
+    Request["HTTP Request"] --> Controller["Autocomplete Controller"]
+    Controller --> Service["Domain Service"]
+    Service --> Entities["Model Entities"]
+    Entities --> Response["ApiResponse<List<T>>"]
