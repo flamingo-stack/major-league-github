@@ -1,5 +1,0 @@
-flowchart TD
-    Request["Incoming Request"] --> ReadOnly["ReadOnlyCacheService"]
-    ReadOnly --> Redis[("Redis")]
-    Redis -->|"Hit"| Return["Return Value"]
-    Redis -->|"Miss"| Empty["Return Empty Optional"]

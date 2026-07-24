@@ -1,9 +1,0 @@
-flowchart TD
-    Client["Frontend Client"] -->|"HTTP /api/*"| Controllers["Module 4 Controllers"]
-
-    Controllers -->|"calls"| Services["Service Layer<br/>Modules 8-10"]
-    Controllers -->|"uses"| Cache["Cache Layer<br/>Modules 1-2"]
-    Controllers -->|"returns"| ApiResponse["ApiResponse<T><br/>Module 6"]
-
-    Services -->|"builds queries with"| GraphQLField["GraphQL Field<br/>Module 4"]
-    Services -->|"uses"| QueryBuilder["GitHubQueryBuilder<br/>Module 5"]

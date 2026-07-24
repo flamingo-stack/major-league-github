@@ -1,9 +1,0 @@
-sequenceDiagram
-    participant Service as Service Layer (Module 8)
-    participant Builder as Module 5
-    participant GitHub as GitHub API
-
-    Service->>Builder: Configure query
-    Builder->>Service: Return query string
-    Service->>GitHub: Execute GraphQL request
-    GitHub->>Service: Return JSON response

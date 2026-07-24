@@ -1,9 +1,0 @@
-flowchart TD
-    App["MajorLeagueGithubApplication"] --> CacheAbs["CacheServiceAbs"]
-    CacheAbs --> DiskCache["DiskCacheService"]
-    CacheAbs --> ReadOnlyCache["ReadOnlyCacheService"]
-
-    DiskCache --> FileSystem[("File System Cache")]
-    ReadOnlyCache --> Redis[("Redis Cache")]
-
-    Services["Backend Services"] --> CacheAbs

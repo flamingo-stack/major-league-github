@@ -1,8 +1,0 @@
-flowchart TD
-    Load["Page Load"] --> Regions["Regions Available"]
-    Regions --> RequestGeo["Request Geolocation"]
-    RequestGeo --> Decision{"Permission Granted?"}
-    Decision -->|"Yes"| Calculate["Compute Distances"]
-    Decision -->|"No"| Error["Set Error State"]
-    Calculate --> Select["Select Nearest Region"]
-    Select --> UpdateState["Set nearestRegion"]

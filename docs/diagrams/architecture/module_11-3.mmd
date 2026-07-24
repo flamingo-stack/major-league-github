@@ -1,6 +1,0 @@
-flowchart TD
-    Start["Render Table"] --> CheckLoading{"isLoading?"}
-    CheckLoading -->|"Yes"| ShowLoader["Display Loading Spinner"]
-    CheckLoading -->|"No"| CheckError{"error != null?"}
-    CheckError -->|"Yes"| ShowError["Display Error State"]
-    CheckError -->|"No"| RenderRows["Render Contributor Rows"]

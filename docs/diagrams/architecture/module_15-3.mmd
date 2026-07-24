@@ -1,7 +1,0 @@
-flowchart TD
-    Region["Region"] -->|"contains"| State["State"]
-    State -->|"contains"| City["City"]
-    City -->|"nearestTeamId"| SoccerTeam["Soccer Team"]
-    Contributor["Contributor"] -->|"located in"| City
-    Contributor -->|"assigned to"| SoccerTeam
-    Contributor -->|"uses"| Language["Language"]

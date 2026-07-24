@@ -1,5 +1,0 @@
-flowchart TD
-    Service["Service"] --> PutCall["Call put()"]
-    PutCall --> Serialize["Gson toJson()"]
-    Serialize --> RedisSetValue["Redis SET key"]
-    Serialize --> RedisSetExpiration["Redis SET key:expiration"]

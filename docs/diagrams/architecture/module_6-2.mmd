@@ -1,6 +1,0 @@
-flowchart LR
-    Contributor["Contributor"] --> Type{"Role Type?"}
-    Type -->|"CONTRIBUTOR"| Convert["Convert Fields<br/>to Map"]
-    Type -->|"HIRING_MANAGER"| Direct["Return githubStats"]
-    Convert --> MapOut["Map<String,Integer>"]
-    Direct --> MapOut

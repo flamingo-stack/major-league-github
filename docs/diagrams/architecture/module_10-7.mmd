@@ -1,9 +1,0 @@
-flowchart TD
-    User["User Selects Region"] --> RegionService
-    RegionService --> States["Filtered States"]
-    States --> StateService
-    StateService --> Cities["Filtered Cities"]
-    Cities --> Contributors["Contributor Filtering"]
-
-    Cities --> SoccerTeamService
-    SoccerTeamService --> Team["Nearest Team"]

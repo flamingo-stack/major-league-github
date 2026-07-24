@@ -1,6 +1,0 @@
-flowchart TD
-    Start["Create Builder"] --> SearchUsers["searchUsers(size)"]
-    SearchUsers --> Filters["Apply Filters"]
-    Filters --> Cursor["Optional Cursor"]
-    Cursor --> Build["build()"]
-    Build --> Output["GraphQL Query String"]
