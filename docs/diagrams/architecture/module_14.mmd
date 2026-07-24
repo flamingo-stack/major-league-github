@@ -1,8 +1,0 @@
-flowchart TD
-    UI["React Components"] --> Hooks["useUrlState Hook"]
-    Hooks --> APIService["API Service Layer"]
-    APIService --> Axios["Axios HTTP Client"]
-    Axios --> Backend["Backend REST API"]
-
-    APIService --> Types["API Types"]
-    Types --> UI

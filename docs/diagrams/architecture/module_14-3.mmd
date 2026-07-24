@@ -1,9 +1,0 @@
-sequenceDiagram
-    participant UI
-    participant Service
-    participant Backend
-
-    UI->>Service: getContributors(filters)
-    Service->>Backend: GET /api/contributors/search
-    Backend-->>Service: ApiResponse<Contributor[]>
-    Service-->>UI: Contributor[]
