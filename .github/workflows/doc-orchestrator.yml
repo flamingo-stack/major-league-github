@@ -701,7 +701,7 @@ jobs:
           # ===================================================================
           # Custom instructions come as plain text from user
           # Read from the environment rather than interpolating into single quotes.
-          # `${{ }}` substitution happens BEFORE bash parses the line, so a single
+          # GitHub Actions expression substitution runs BEFORE bash parses the line, so a
           # apostrophe anywhere in an admin's instructions used to terminate the
           # string and kill the step with a syntax error.
           USER_CUSTOM_INSTRUCTIONS="$CUSTOM_REPO_INSTRUCTIONS"
