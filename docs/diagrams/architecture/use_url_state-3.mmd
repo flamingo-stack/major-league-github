@@ -1,0 +1,12 @@
+flowchart TD
+    Trigger["updateUrlState Called"] --> Clear["Clear Existing Timeout"]
+    Clear --> Decide["Immediate Or Debounced?"]
+    Decide -->|"Immediate"| Execute["Execute Update"]
+    Decide -->|"Debounced"| Schedule["setTimeout(updateFn)"]
+    Schedule --> Execute
+
+    Execute --> Clone["Clone Current SearchParams"]
+    Clone --> Compare["Compare Each New Value"]
+    Compare -->|"Changed"| Modify["Set Or Delete Param"]
+    Compare -->|"No Change"| Skip["Skip"]
+    Modify --> Replace["setSearchParams replace=true"]

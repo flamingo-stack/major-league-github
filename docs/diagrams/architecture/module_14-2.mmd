@@ -1,0 +1,5 @@
+flowchart TD
+    UserAction["User Selects Filter"] --> UpdateHook["updateUrlState()"]
+    UpdateHook --> Params["URLSearchParams Updated"]
+    Params --> Browser["Browser URL Updated"]
+    Browser --> ReRender["Component Re-render"]

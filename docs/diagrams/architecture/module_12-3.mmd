@@ -1,0 +1,5 @@
+flowchart TD
+    Start["Render Pagination"] --> CheckPages["totalPages > 1?"]
+    CheckPages -->|"No"| End["Return null"]
+    CheckPages -->|"Yes"| RenderButtons["Render Previous and Next"]
+    RenderButtons --> UpdatePage["onPageChange(page)"]

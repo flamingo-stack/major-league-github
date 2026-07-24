@@ -1,0 +1,6 @@
+flowchart LR
+    Query["Autocomplete Query"] --> FilterRegion["Filter by Region"]
+    FilterRegion --> FilterState["Filter by State"]
+    FilterState --> Sort["Sort by Population Desc"]
+    Sort --> Limit["Apply Max Results"]
+    Limit --> Result["Return Cities"]

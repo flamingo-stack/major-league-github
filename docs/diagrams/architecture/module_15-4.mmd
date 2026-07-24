@@ -1,0 +1,7 @@
+flowchart TD
+    Http["HTTP Response"] --> ApiResponse["ApiResponse<Contributor[]>"]
+    ApiResponse --> ApiContributor["API Contributor"]
+    ApiContributor --> Mapper["Mapping Layer"]
+    Mapper --> UIContributor["UI Contributor"]
+    UIContributor --> Table["Contributors Table"]
+    UIContributor --> Profile["Contributor Profile Card"]

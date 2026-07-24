@@ -1,0 +1,5 @@
+flowchart TD
+    City["City Coordinates"] --> DistanceCalc["Haversine Formula"]
+    Teams["All Teams"] --> DistanceCalc
+    DistanceCalc --> Min["Find Minimum Distance"]
+    Min --> Result["Return Team ID"]

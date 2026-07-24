@@ -1,0 +1,5 @@
+flowchart LR
+    Autocomplete["Language Or Region Autocomplete"] --> Hook["useUrlState"]
+    Pagination["Pagination Component"] --> Hook
+    Hook --> ApiLayer["API Service Layer"]
+    ApiLayer --> Backend["Backend Service"]

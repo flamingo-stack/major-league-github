@@ -1,0 +1,6 @@
+flowchart TD
+    Startup["Application Startup"] --> Init["@PostConstruct init()"]
+    Init --> LoadCSV["Load languages.csv"]
+    LoadCSV --> ParseRows["Parse CSV Rows"]
+    ParseRows --> BuildLanguage["Build Language Objects"]
+    BuildLanguage --> StoreMemory["Store In Memory List"]

@@ -1,0 +1,8 @@
+flowchart LR
+    URL["URL Query Params"] --> Hook["useUrlState"]
+    Hook --> Filters["Filter Parameters"]
+    Filters --> API["API Service"]
+    API --> Backend["Spring Boot Backend"]
+    Backend --> API
+    API --> TypedData["Typed Contributor Data"]
+    TypedData --> UI["React Components"]

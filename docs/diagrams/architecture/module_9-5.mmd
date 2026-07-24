@@ -1,0 +1,7 @@
+flowchart TD
+    Scheduler["Scheduled Task"] --> StartCycle["Start Cache Cycle"]
+    StartCycle --> GetLanguages["Get All Languages"]
+    GetLanguages --> LoopLang["For Each Language"]
+    LoopLang --> FetchContributors["Call Contributor Controller"]
+    FetchContributors --> UpdateCache["Populate Cache"]
+    UpdateCache --> MarkReady["Set Cache Ready"]

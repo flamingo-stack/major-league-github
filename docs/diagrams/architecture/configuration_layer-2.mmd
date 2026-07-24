@@ -1,0 +1,10 @@
+flowchart LR
+    Property["github.api.concurrency"] --> CoreSize["Core Pool Size"]
+    CoreSize --> ExecutorLow["Low Priority Executor"]
+    CoreSize --> ExecutorHigh["High Priority Executor"]
+
+    ExecutorLow --> QueueLow["Queue Capacity: 1000"]
+    ExecutorHigh --> QueueHigh["Queue Capacity: 1000"]
+
+    ExecutorLow --> MaxLow["Max Pool Size: 100"]
+    ExecutorHigh --> MaxHigh["Max Pool Size: 100"]
