@@ -7,101 +7,112 @@
 </div>
 
 <p align="center">
-  <a href="LICENSE.md"><img alt="License" src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.0-%23FFC109?style=for-the-badge&labelColor=white"></a>
+  <a href="https://www.mlg.soccer"><img alt="Live Site" src="https://img.shields.io/badge/live-mlg.soccer-%2300b140?style=for-the-badge&labelColor=white"></a>
+  <a href="https://github.com/flamingo-stack/major-league-github/blob/main/LICENSE.md"><img alt="License" src="https://img.shields.io/badge/LICENSE-FLAMINGO%20AI%20Unified%20v1.0-%23FFC109?style=for-the-badge&labelColor=white"></a>
+  <a href="https://github.com/flamingo-stack/major-league-github/issues"><img alt="Issues" src="https://img.shields.io/github/issues/flamingo-stack/major-league-github?style=for-the-badge&labelColor=white"></a>
 </p>
 
 # Major League GitHub
 
-**[mlg.soccer](https://www.mlg.soccer)** — an open-source, sports-styled leaderboard that ranks GitHub contributors like professional soccer players. Contributors are filtered and ranked by programming language, geographic location, and proximity to MLS stadiums.
+**[Major League GitHub](https://www.mlg.soccer)** is an open-source, sports-themed leaderboard that ranks GitHub contributors like professional soccer players. It maps open-source developers across the United States by programming language, geographic location, and proximity to MLS stadiums — combining GitHub GraphQL analytics with geospatial modeling to create a gamified developer leaderboard.
 
-> **This is a standalone, independent open-source project.**
+> **Live:** [https://www.mlg.soccer](https://www.mlg.soccer) · **Repository:** [https://github.com/flamingo-stack/major-league-github](https://github.com/flamingo-stack/major-league-github)
 
 ---
 
 ## Features
 
-- **Language Filtering** — Filter the leaderboard by programming language (Java, TypeScript, Python, and more)
-- **Geographic Filtering** — Narrow results by U.S. city, state, or geographic region
-- **MLS Stadium Proximity** — Rank contributors near professional soccer stadiums using Haversine distance
-- **Weighted Scoring** — `Score = commits × max(stars, 1) × recencyMultiplier` rewards volume, impact, and freshness
-- **Shareable URLs** — All filter state is encoded in the URL for easy deep linking and sharing
-- **Auto-detected Region** — Browser geolocation auto-selects the nearest soccer region on first load
-- **Hiring Section** — Surfaces hiring manager profiles and job openings alongside the leaderboard
-- **CSV Export** — Download the full contributor list as a spreadsheet
-- **Cache-first Architecture** — Redis-backed distributed caching with async background refresh
-
----
-
-## Technology Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Backend** | Java 21 + Spring Boot 3.4 |
-| **HTTP Client** | Spring WebFlux (WebClient) |
-| **Caching** | Redis (production) / Disk (local dev) |
-| **Frontend** | React 19 + TypeScript |
-| **UI Library** | Material-UI (MUI) |
-| **Data Fetching** | React Query (@tanstack/react-query) |
-| **Routing** | React Router |
-| **Build Tool** | Webpack (with custom SEO + favicon plugins) |
-| **Deployment** | Docker + Google Kubernetes Engine (GKE) |
-| **CI/CD** | GitHub Actions |
-| **External Data** | GitHub GraphQL API + LinkedIn API |
+- **Language Filtering** — Filter contributors by any programming language (Java, Python, TypeScript, Go, and more)
+- **Geographic Filtering** — Narrow results by city, state, or geographic region
+- **MLS Stadium Proximity** — Rank contributors by distance to the nearest MLS stadium using Haversine distance
+- **Contributor Scoring** — Transparent scoring formula: `commits × max(starsReceived, 1) × recencyMultiplier`
+- **Real-Time Leaderboard** — GitHub GraphQL data refreshed on a schedule via the Cache Updater microservice
+- **Shareable URLs** — Every filter combination is encoded in the URL — bookmark or share any leaderboard view
+- **CSV Export** — Download any filtered leaderboard as a CSV file for hiring, analytics, or research
+- **Hiring Section** — Highlights top contributors alongside associated job openings
+- **Responsive UI** — Works across desktop and mobile with Material-UI components
+- **Cache-First Architecture** — Redis-backed distributed cache with async background refresh to minimize API latency
+- **Multi-Token GitHub Rate Management** — Distributes requests across multiple GitHub PATs for resilient throughput
+- **SEO Build Optimization** — Custom Webpack plugins auto-generate `sitemap.xml`, `robots.txt`, and `favicon.ico`
 
 ---
 
 ## Architecture
 
-Major League GitHub is composed of two Spring Boot microservices, a React frontend, and a Redis cache — all deployed to Kubernetes via GitHub Actions.
+Major League GitHub is a distributed full-stack application split into two backend microservices and a React frontend:
 
 ```mermaid
 flowchart TD
-    User["User Browser"] --> Frontend["React 19 + TypeScript Frontend"]
-    Frontend --> Backend["Backend Service\nPort 8450"]
-    Frontend --> CacheUpdater["Cache Updater\nPort 8451"]
-
-    Backend --> Controllers["REST Controllers\n/api/contributors /api/autocomplete /api/hiring"]
-    Controllers --> Services["Service Layer\nGithubService · CityService · HiringService"]
-    Services --> Cache["CacheServiceAbs\nRedis / Disk"]
-    Services --> GraphQL["GitHubQueryBuilder\nGraphQL DSL"]
-    GraphQL --> GitHub["GitHub GraphQL API"]
-    Services --> LinkedIn["LinkedIn API\nHiring Data"]
-
-    Cache --> Redis[("Redis")]
-    CacheUpdater --> Redis
-
-    subgraph GKE["Google Kubernetes Engine"]
-        Backend
-        CacheUpdater
-        Redis
-    end
+    User["User Browser"] --> Frontend["React 19 Frontend"]
+    Frontend --> Backend["Backend Service (Port 8450)"]
+    Backend --> Redis[("Redis Cache")]
+    Backend --> GitHub["GitHub GraphQL API"]
+    Backend --> LinkedIn["LinkedIn API (Hiring)"]
+    CacheUpdater["Cache Updater (Port 8451)"] --> Redis
+    CacheUpdater --> GitHub
+    GitHubActions["GitHub Actions CI/CD"] --> Docker["Docker Images"]
+    Docker --> GKE["Google Kubernetes Engine"]
+    GKE --> Backend
+    GKE --> CacheUpdater
+    GKE --> Redis
 ```
 
-### Contributor Scoring Formula
+### Backend Request Flow
 
-```text
-Score = commits × max(starsReceived, 1) × recencyMultiplier
+```mermaid
+sequenceDiagram
+    participant Client as "Frontend"
+    participant Controller as "ContributorController"
+    participant Cache as "CacheServiceAbs"
+    participant Service as "GithubService"
+    participant Rate as "GithubTokenRateManager"
+    participant GitHub as "GitHub GraphQL API"
 
-Where:
-  commits           = total GitHub contributions
-  starsReceived     = stars on repositories in the selected language
-  recencyMultiplier = [1.0, 2.0] scaled by recency of last activity
+    Client->>Controller: GET /api/contributors/search
+    Controller->>Cache: isCacheReady()?
+    Cache-->>Controller: true
+    Controller->>Cache: getHttpResponse(filters, loader)
+    Cache->>Service: getTopContributorsIn(cities, language)
+    Service->>Rate: getBestAvailableClient()
+    Rate-->>Service: WebClient
+    Service->>GitHub: POST /graphql
+    GitHub-->>Service: JSON response
+    Service-->>Cache: List<Contributor>
+    Cache-->>Controller: Cached response
+    Controller-->>Client: ApiResponse<List<Contributor>>
 ```
 
-This rewards developers who make frequent, high-impact commits and have stayed active recently.
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Java 21 + Spring Boot 3.4 |
+| Frontend | React 19 + TypeScript + Material-UI |
+| State Management | URL-driven state via `useUrlState` hook |
+| API Integration | Axios + React Query |
+| Caching | Redis 7 (distributed) |
+| External Data | GitHub GraphQL API |
+| Hiring Data | LinkedIn API (optional) |
+| Build | Webpack + custom SEO + favicon plugins |
+| Deployment | Docker + Kubernetes (GKE) |
+| CI/CD | GitHub Actions |
 
 ---
 
 ## Quick Start
 
+Get the full stack running locally in about 5 minutes.
+
 ### Prerequisites
 
-- Java 21, Apache Maven 3.9+ (or use the included `./mvnw` wrapper)
+- Java 21+, Maven 3.9+
 - Node.js 18+, npm 9+
-- Redis 6+ (or Docker)
-- A [GitHub Personal Access Token](https://github.com/settings/tokens) with `read:user` and `public_repo` scopes
+- Docker (for Redis)
+- A [GitHub Personal Access Token](https://github.com/settings/tokens) with `read:user` scope
 
-### Run Locally
+### Run It
 
 ```bash
 # 1. Clone the repository
@@ -113,141 +124,121 @@ docker run -d -p 6379:6379 --name mlg-redis redis:7
 
 # 3. Start the Backend Service (port 8450)
 cd backend
-export GITHUB_TOKEN_1=ghp_your_token_here
-./mvnw spring-boot:run -Dspring-boot.run.profiles=backend-service
+GITHUB_TOKENS=your_github_pat \
+SPRING_REDIS_HOST=localhost \
+SPRING_REDIS_PORT=6379 \
+mvn spring-boot:run -Pbackend-service
 
-# 4. In a new terminal — start the Cache Updater (port 8451)
+# 4. (New terminal) Start the Cache Updater (port 8451)
 cd backend
-export GITHUB_TOKEN_1=ghp_your_token_here
-./mvnw spring-boot:run \
-  -Dspring-boot.run.profiles=cache-updater \
-  -Dspring-boot.run.arguments=--server.port=8451
+GITHUB_TOKENS=your_github_pat \
+SPRING_REDIS_HOST=localhost \
+SPRING_REDIS_PORT=6379 \
+mvn spring-boot:run -Pcache-updater
 
-# 5. In a new terminal — start the Frontend
+# 5. (New terminal) Start the Frontend Dev Server
 cd frontend
 npm install
-BACKEND_API_URL=http://localhost:8450 npm start
-
-# 6. Open the app
-open http://localhost:8450
+BACKEND_API_URL=http://localhost:8450 npx webpack serve
 ```
 
-### Verify the Backend
+Open [http://localhost:8450](http://localhost:8450) in your browser. The leaderboard will appear once the `PreCacheService` finishes its first warm-up pass (typically 30–90 seconds).
+
+### API Quick Test
 
 ```bash
-# Health check
-curl http://localhost:8450/actuator/health
-
-# Fetch top contributors
-curl "http://localhost:8450/api/contributors/search" | head -c 500
+curl http://localhost:8450/api/contributors/search?languageId=java&maxResults=5
 ```
-
-### Build for Production
-
-```bash
-# Backend — build executable JAR
-cd backend
-./mvnw clean package -DskipTests
-
-# Frontend — build minified static assets
-cd frontend
-NODE_ENV=production npm run build
-```
-
----
-
-## Key Environment Variables
-
-### Backend
-
-| Variable | Description |
-|----------|-------------|
-| `GITHUB_TOKEN_1` | Primary GitHub Personal Access Token (required) |
-| `GITHUB_TOKEN_2` | Optional second token for rate-limit rotation |
-| `SPRING_REDIS_HOST` | Redis hostname (default: `localhost`) |
-| `SPRING_REDIS_PORT` | Redis port (default: `6379`) |
-| `CACHE_IMPLEMENTATION` | `redis` (production) or `disk` (local dev) |
-| `CACHE_MODE` | `read-write`, `read-only`, or `force-update` |
-
-### Frontend
-
-| Variable | Description |
-|----------|-------------|
-| `BACKEND_API_URL` | URL where the backend is reachable |
-| `NODE_ENV` | Build mode (`development` or `production`) |
-
----
-
-## REST API Overview
-
-```text
-GET /api/contributors/search    — Search and rank contributors (filtered leaderboard)
-GET /api/contributors/export    — Download contributors as CSV
-GET /api/autocomplete/cities    — City autocomplete
-GET /api/autocomplete/states    — State autocomplete
-GET /api/autocomplete/regions   — Region autocomplete
-GET /api/autocomplete/languages — Language autocomplete
-GET /api/autocomplete/teams     — MLS team autocomplete
-GET /api/hiring/...             — Hiring manager + job openings
-GET /actuator/health            — Health check
-```
-
-All responses use a standardized envelope:
 
 ```json
 {
   "status": "success",
-  "message": "OK",
-  "data": []
+  "message": "Found 5 contributors matching the criteria",
+  "data": [...]
 }
 ```
 
 ---
 
-## Repository Structure
+## Project Structure
 
 ```text
 major-league-github/
-├── backend/                    Spring Boot backend (both microservices)
+├── backend/                  # Java 21 + Spring Boot 3.4
 │   └── src/main/java/cx/flamingo/analysis/
-│       ├── cache/              Cache abstraction + Redis/Disk implementations
-│       ├── config/             Spring configuration (Redis, async, CORS, profiles)
-│       ├── controller/         REST controllers (/api/*)
-│       ├── graphql/            GitHub GraphQL query builder
-│       ├── model/              Domain models (Contributor, City, Language, etc.)
-│       ├── rate/               GitHub token rate-limit management
-│       └── service/            Business logic services
-├── frontend/                   React + TypeScript frontend
-│   ├── src/
-│   │   ├── components/         React UI components
-│   │   ├── hooks/              Custom hooks (useUrlState, useNearestRegion)
-│   │   ├── services/           API service layer (Axios)
-│   │   └── types/              TypeScript type definitions
-│   └── webpack-plugins/        Custom Webpack plugins (SEO, favicon generation)
-└── docs/                       Documentation
+│       ├── controller/       # REST API controllers (port 8450)
+│       ├── service/          # Business logic + GitHub integration
+│       ├── cache/            # Cache abstraction + Redis/disk implementations
+│       ├── config/           # Spring configuration (CORS, Redis, scheduling)
+│       ├── graphql/          # GitHub GraphQL query builder
+│       ├── model/            # Domain models (Contributor, City, Region, etc.)
+│       └── rate/             # GitHub token rate management
+├── frontend/                 # React 19 + TypeScript (Webpack)
+│   └── src/
+│       ├── components/       # UI components (ContributorsTable, FiltersPanel)
+│       ├── hooks/            # useUrlState, useNearestRegion
+│       ├── services/         # Axios API service layer
+│       └── types/            # TypeScript API type definitions
+└── docs/                     # Full documentation
 ```
+
+---
+
+## Contributor Scoring
+
+The scoring formula is transparent and intentional:
+
+```text
+Score = commits × max(starsReceived, 1) × recencyMultiplier
+```
+
+| Component | Source | Effect |
+|-----------|--------|--------|
+| `commits` | GitHub contributions calendar | Rewards high activity volume |
+| `starsReceived` | Stars on language-specific repos | Rewards community impact |
+| `recencyMultiplier` | Activity freshness (1.0–2.0) | Rewards recent contributions |
+
+---
+
+## REST API
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/contributors/search` | Search and rank contributors by filters |
+| `GET /api/contributors/export` | Download leaderboard as CSV |
+| `GET /api/autocomplete/cities` | City autocomplete suggestions |
+| `GET /api/autocomplete/languages` | Language autocomplete suggestions |
+| `GET /api/autocomplete/regions` | Region autocomplete suggestions |
+| `GET /api/autocomplete/states` | State autocomplete suggestions |
+| `GET /api/autocomplete/teams` | MLS team autocomplete suggestions |
+| `GET /api/entities/teams/{id}` | Look up an MLS team by ID |
+| `GET /api/entities/regions/{id}` | Look up a region by ID |
+| `GET /api/hiring/manager` | Hiring manager profile |
+| `GET /api/hiring/jobs` | Active job openings |
+| `GET /actuator/health` | Backend health check |
 
 ---
 
 ## Documentation
 
-📚 See the [Documentation](./docs/README.md) for comprehensive guides including architecture reference, local development setup, and contribution guidelines.
+📚 See the [Documentation](./docs/README.md) for comprehensive guides including getting started tutorials, local development setup, architecture deep-dives, and security guidelines.
 
 - [Introduction](./docs/getting-started/introduction.md) — What is Major League GitHub?
 - [Prerequisites](./docs/getting-started/prerequisites.md) — Required tools and accounts
-- [Quick Start](./docs/getting-started/quick-start.md) — Get up and running in minutes
-- [Architecture Overview](./docs/development/architecture/README.md) — System design and data flow
+- [Quick Start](./docs/getting-started/quick-start.md) — Run the full stack in 5 minutes
+- [First Steps](./docs/getting-started/first-steps.md) — Explore features after startup
+- [Local Development](./docs/development/setup/local-development.md) — Full development workflow
+- [Architecture Overview](./docs/development/architecture/README.md) — System design and module map
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before submitting a pull request.
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) to understand the development workflow, code style, branching conventions, and PR process.
 
-- **Issues:** https://github.com/flamingo-stack/major-league-github/issues
-- **Pull Requests:** https://github.com/flamingo-stack/major-league-github/pulls
-- **Releases:** https://github.com/flamingo-stack/major-league-github/releases
-- **Live Site:** https://www.mlg.soccer
+- 🐛 [Report a bug](https://github.com/flamingo-stack/major-league-github/issues)
+- 💡 [Request a feature](https://github.com/flamingo-stack/major-league-github/issues)
+- 🔒 [Report a security vulnerability](https://github.com/flamingo-stack/major-league-github/security/advisories)
 
 ---
 
