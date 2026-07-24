@@ -1,4 +1,4 @@
-# Doc Orchestrator Pipeline
+# 📚 AI Documentation (doc-orchestrator pipeline)
 # ===========================
 # This GitHub Actions workflow is triggered by the multi-platform-hub to generate
 # comprehensive documentation for this repository and create a PR with the results.
@@ -22,7 +22,7 @@
 #    - DOC_ORCH_GITHUB_PAT: (Optional) For private dependency access
 #    - YOUTUBE_API_KEY: (Optional) For YouTube video embedding in Stage 3 & 4
 
-name: Doc Orchestrator Pipeline
+name: 📚 AI Documentation
 
 on:
   # Push trigger - registers workflow with GitHub Actions (required for workflow_dispatch API)
