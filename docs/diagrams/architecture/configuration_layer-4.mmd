@@ -1,4 +1,0 @@
-flowchart LR
-    Service["Service Component"] -->|"@Autowired CacheServiceAbs"| CacheBean["Selected Cache Implementation"]
-    Service -->|"@Autowired contributorsAsyncExecutorLow"| ExecutorLow["Low Priority Executor"]
-    Service -->|"@Autowired contributorsAsyncExecutorHigh"| ExecutorHigh["High Priority Executor"]

@@ -1,5 +1,0 @@
-flowchart LR
-    Frontend["React Frontend"] -->|"REST API"| Backend["Core Application"]
-    Backend -->|"Cache"| Redis["Redis"]
-    Backend -->|"GraphQL"| GitHub["GitHub API"]
-    CacheUpdater["Cache Updater Service"] -->|"Warm Cache"| Redis

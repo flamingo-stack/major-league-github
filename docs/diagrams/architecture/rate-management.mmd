@@ -1,7 +1,0 @@
-flowchart TD
-    Controllers["Controllers"] --> Services["Service Layer"]
-    Services --> RateManager["GithubTokenRateManager"]
-    RateManager --> WebClient["WebClient per Token"]
-    WebClient --> GitHubAPI["GitHub API"]
-
-    RateManager --> TokenState["GithubToken State"]

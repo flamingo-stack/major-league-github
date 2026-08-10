@@ -1,7 +1,0 @@
-flowchart TD
-    Service["Service"] --> CheckCache["Call get()"]
-    CheckCache --> RedisLookup["Redis GET key"]
-    RedisLookup --> Found{"Value Found?"}
-    Found -->|"Yes"| Deserialize["Gson fromJson()"]
-    Deserialize --> ReturnValue["Return Optional<T>"]
-    Found -->|"No"| Empty["Return Optional.empty()"]

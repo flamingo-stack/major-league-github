@@ -1,7 +1,0 @@
-flowchart TD
-    ServiceLayer["Service Layer"] -->|"builds query"| GitHubQueryBuilder["GitHubQueryBuilder"]
-    GitHubQueryBuilder -->|"uses"| SearchFieldBuilder["SearchField (Builder)"]
-    GitHubQueryBuilder -->|"composes"| InnerField["Field (Inner Class)"]
-    QuerySerializer["QuerySerializer"] -->|"serializes"| FieldModel["Field (Model)"]
-    GitHubQueryBuilder -->|"produces"| QueryString["GraphQL Query String"]
-    QuerySerializer -->|"produces"| QueryString

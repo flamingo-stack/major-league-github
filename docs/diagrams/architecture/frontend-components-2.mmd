@@ -1,8 +1,0 @@
-flowchart TD
-    Input["User Types"] --> InputChange["onInputChange"]
-    InputChange --> ParentState["Parent State Update"]
-    ParentState --> OptionsUpdate["Options Prop Updated"]
-    OptionsUpdate --> AutocompleteRender["Autocomplete Renders Options"]
-
-    Select["User Selects Option"] --> OnChange["onChange Handler"]
-    OnChange --> ParentSelection["Parent Updates Selected Value"]

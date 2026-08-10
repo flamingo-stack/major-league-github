@@ -1,9 +1,0 @@
-flowchart TD
-    Start["Regions Provided"] --> GeoCheck{"Geolocation Supported?"}
-    GeoCheck -->|"No"| ErrorNode["Set Error"]
-    GeoCheck -->|"Yes"| GetPos["getCurrentPosition()"]
-    GetPos --> Loop["Iterate Regions"]
-    Loop --> Compute["getDistance()"]
-    Compute --> Compare["Track Minimum Distance"]
-    Compare --> Select["Select Nearest Region"]
-    Select --> ReturnNode["Return nearestRegion"]

@@ -1,8 +1,0 @@
-flowchart TD
-    NewState["New UrlState"] --> HasPrevious["Previous Exists?"]
-    HasPrevious -->|"No"| Store["Store As Previous"]
-    HasPrevious -->|"Yes"| Compare["Compare Each Field"]
-    Compare -->|"Any Difference"| True["Return True"]
-    Compare -->|"No Difference"| False["Return False"]
-    True --> UpdatePrev["Update Previous Ref"]
-    False --> UpdatePrev

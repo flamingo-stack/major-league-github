@@ -1,9 +1,0 @@
-flowchart TD
-    UpdateCall["updateUrlState(newState)"] --> Compare["Compare with current params"]
-    Compare --> HasChanges{"Changes?"}
-    HasChanges -->|"No"| Exit["Skip Update"]
-    HasChanges -->|"Yes"| DebounceCheck{"Debounce?"}
-    DebounceCheck -->|"Immediate"| Apply["setSearchParams()"]
-    DebounceCheck -->|"Delayed"| Timeout["setTimeout()"]
-    Timeout --> Apply
-    Apply --> EndNode["URL Updated"]

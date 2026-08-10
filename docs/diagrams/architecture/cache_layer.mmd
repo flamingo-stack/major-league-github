@@ -1,5 +1,0 @@
-flowchart TD
-    Controller["Controller Layer"] --> Service["Service Layer"]
-    Service --> CacheAbs["CacheServiceAbs"]
-    CacheAbs --> RedisCache["RedisCacheService"]
-    RedisCache --> Redis["Redis Server"]

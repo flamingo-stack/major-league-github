@@ -1,6 +1,0 @@
-flowchart TD
-    Startup["Application Startup"] --> PreCacheService
-    PreCacheService --> ForEachLanguage["Iterate Languages"]
-    ForEachLanguage --> ContributorController
-    ContributorController --> GithubService
-    GithubService --> CacheFilled["Cache Filled"]
