@@ -11,34 +11,24 @@ Get Major League GitHub running locally in about 5 minutes.
 git clone https://github.com/flamingo-stack/major-league-github.git
 cd major-league-github
 
-# 2. Start Redis (Docker)
-docker run -d -p 6379:6379 --name mlg-redis redis:7
+# 2. Start Redis
+redis-server
 
-# 3. Start the Backend Service
+# 3. Start the backend (new terminal)
 cd backend
-GITHUB_TOKENS=your_github_pat \
-SPRING_REDIS_HOST=localhost \
-SPRING_REDIS_PORT=6379 \
-mvn spring-boot:run -Pbackend-service
+GITHUB_TOKENS=your_github_token_here mvn spring-boot:run
 
-# 4. (New terminal) Start the Cache Updater
-cd backend
-GITHUB_TOKENS=your_github_pat \
-SPRING_REDIS_HOST=localhost \
-SPRING_REDIS_PORT=6379 \
-mvn spring-boot:run -Pcache-updater
-
-# 5. (New terminal) Start the Frontend
+# 4. Start the frontend (new terminal)
 cd frontend
 npm install
-BACKEND_API_URL=http://localhost:8450 npx webpack serve
+BACKEND_API_URL=http://localhost:8450 npm run dev
 ```
 
-Open your browser at [http://localhost:8450](http://localhost:8450).
+Open your browser at **[http://localhost:3000](http://localhost:3000)**.
 
 ---
 
-## Step-by-Step
+## Step-by-Step Setup
 
 ### Step 1 — Clone the Repository
 
@@ -49,118 +39,115 @@ cd major-league-github
 
 ### Step 2 — Start Redis
 
-The backend requires Redis for distributed caching. The quickest way is Docker:
+Redis must be running before the backend starts. If you installed Redis via Homebrew (macOS):
 
 ```bash
-docker run -d \
-  -p 6379:6379 \
-  --name mlg-redis \
-  redis:7
+brew services start redis
+```
+
+Or start it directly:
+
+```bash
+redis-server
 ```
 
 Verify Redis is running:
 
 ```bash
-docker logs mlg-redis
-# Expected: Ready to accept connections
+redis-cli ping
 ```
 
-### Step 3 — Configure GitHub Tokens
-
-Export your GitHub Personal Access Token as an environment variable:
-
-```bash
-export GITHUB_TOKENS="ghp_yourTokenHere"
-```
-
-> For higher throughput, supply multiple tokens separated by commas:
-> `export GITHUB_TOKENS="ghp_token1,ghp_token2,ghp_token3"`
-
-### Step 4 — Start the Backend Service
-
-The Backend Service serves the REST API on port 8450:
-
-```bash
-cd backend
-GITHUB_TOKENS=$GITHUB_TOKENS \
-SPRING_REDIS_HOST=localhost \
-SPRING_REDIS_PORT=6379 \
-mvn spring-boot:run -Pbackend-service
-```
-
-Wait for this log line before proceeding:
+Expected output:
 
 ```text
-Started MajorLeagueGithubApplication in X.XXX seconds
+PONG
 ```
 
-### Step 5 — Start the Cache Updater (Optional but Recommended)
+### Step 3 — Start the Backend
 
-The Cache Updater populates Redis with fresh GitHub data in the background:
+The backend is a Spring Boot 3.4 application built with Maven. The `backend-service` profile runs the REST API on port 8450.
 
 ```bash
-# In a new terminal
 cd backend
-GITHUB_TOKENS=$GITHUB_TOKENS \
-SPRING_REDIS_HOST=localhost \
-SPRING_REDIS_PORT=6379 \
-mvn spring-boot:run -Pcache-updater
+GITHUB_TOKENS=ghp_your_token_here mvn spring-boot:run
 ```
 
-> **Note:** The Cache Updater runs scheduled refresh jobs. On first startup the `PreCacheService` iterates all configured languages and pre-warms the Redis cache. The frontend will show an empty leaderboard until the cache is ready.
+> Replace `ghp_your_token_here` with a real GitHub Personal Access Token. See the Prerequisites guide for token creation instructions.
 
-### Step 6 — Start the Frontend Dev Server
+You should see Spring Boot startup output followed by:
+
+```text
+Started MajorLeagueGithubApplication
+```
+
+The cache will begin warming up immediately. The first load may take a moment as GitHub data is fetched and cached.
+
+**To use the disk cache instead of Redis (simpler for dev):**
 
 ```bash
-# In a new terminal
+cd backend
+GITHUB_TOKENS=ghp_your_token_here \
+CACHE_IMPLEMENTATION=disk \
+mvn spring-boot:run
+```
+
+### Step 4 — Install Frontend Dependencies
+
+```bash
 cd frontend
 npm install
-BACKEND_API_URL=http://localhost:8450 npx webpack serve
 ```
 
-The dev server proxies all `/api` requests to the backend.
-
----
-
-## Expected Result
-
-Open [http://localhost:8450](http://localhost:8450) in your browser.
-
-You should see:
-- The Major League GitHub leaderboard loading
-- Filter controls for language, city, state, region, and MLS team
-- Contributor cards rendering as the cache warms up
-
-If the leaderboard shows "Cache is still being populated", wait 30–60 seconds for the `PreCacheService` to finish its first pass.
-
----
-
-## API Quick Test
-
-Confirm the backend is responding:
+### Step 5 — Start the Frontend Dev Server
 
 ```bash
-curl http://localhost:8450/api/contributors/search?languageId=java&maxResults=5
+BACKEND_API_URL=http://localhost:8450 npm run dev
 ```
 
-Expected response shape:
+The frontend dev server starts on port 3000.
 
-```json
-{
-  "status": "success",
-  "message": "Found 5 contributors matching the criteria",
-  "data": [...]
-}
+### Step 6 — Open the App
+
+Navigate to:
+
+```text
+http://localhost:3000
 ```
+
+You should see the Major League GitHub leaderboard. Use the filter panel to select a programming language and geographic location.
 
 ---
 
-## What Happens Next
+## Expected Results
 
-After the cache is warm, the leaderboard becomes fully responsive. Try:
+Once the app is running, you should see:
 
-- Selecting a different programming language from the filter panel
-- Filtering by a U.S. state or MLS team
-- Copying the URL — all filters are encoded as query parameters for sharing
+- A leaderboard displaying ranked GitHub contributors
+- Filter dropdowns for language, city, state, region, and MLS team
+- A scoring display showing commits, stars, and the calculated score
+- A CSV export button to download results
 
-For a guided tour of features, see the [First Steps](first-steps.md) guide.
+---
+
+## Multiple GitHub Tokens (Optional)
+
+To increase rate limits and support higher API concurrency, provide multiple tokens separated by commas:
+
+```bash
+GITHUB_TOKENS=ghp_token1,ghp_token2,ghp_token3 mvn spring-boot:run
+```
+
+The `GithubTokenRateManager` will automatically distribute requests across all tokens and rotate intelligently based on remaining rate limits.
+
+---
+
+## Running the Cache Updater (Optional)
+
+The Cache Updater is a second microservice that pre-warms and refreshes cached data on a schedule. Run it on port 8451:
+
+```bash
+cd backend
+GITHUB_TOKENS=ghp_your_token_here mvn spring-boot:run -Dspring-boot.run.profiles=cache-updater
+```
+
+For most local development scenarios, the Cache Updater is not required. The backend service warms the cache on startup automatically.

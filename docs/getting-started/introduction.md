@@ -1,26 +1,18 @@
 # Introduction to Major League GitHub
 
-**Major League GitHub** ([mlg.soccer](https://www.mlg.soccer)) is an open-source, sports-themed leaderboard that ranks GitHub contributors like professional soccer players. It maps open-source developers across the United States using programming language preferences, geographic location, and proximity to MLS stadiums — combining GitHub analytics with geospatial modeling to create a uniquely gamified developer leaderboard.
+**Major League GitHub** ([mlg.soccer](https://www.mlg.soccer)) is an open-source, sports-themed leaderboard that ranks GitHub contributors like professional soccer players. Inspired by Major League Soccer (MLS), it filters contributors by programming language, geographic location, and proximity to real MLS stadiums — turning open-source contribution data into a competitive, engaging leaderboard experience.
 
-> **Repository:** [https://github.com/flamingo-stack/major-league-github](https://github.com/flamingo-stack/major-league-github)
+> **This is an independent open-source side project.** It is not affiliated with any commercial platform.
 
 ---
 
-## What Is It?
+## Elevator Pitch
 
-Major League GitHub turns GitHub contributor statistics into a leaderboard experience inspired by Major League Soccer (MLS). Just as soccer rankings reward goals, assists, and appearances, MLG ranks developers using:
+GitHub has millions of contributors. Major League GitHub answers the question:
 
-- **Commits** — total contributions made
-- **Stars received** — community impact of their repositories
-- **Recency multiplier** — how recently they have been active
+> *"Who are the top Java developers within 50 miles of a Chicago MLS stadium?"*
 
-The formula is intentionally transparent:
-
-```text
-Score = commits × max(starsReceived, 1) × recencyMultiplier
-```
-
-Where `recencyMultiplier` ranges from 1.0 to 2.0 based on activity within the past year.
+It pulls real-time data from GitHub's GraphQL API, applies a scoring formula based on commits and repository stars, and presents results in a clean, filterable leaderboard — all filtered by language, city, state, region, and nearest MLS team.
 
 ---
 
@@ -28,66 +20,108 @@ Where `recencyMultiplier` ranges from 1.0 to 2.0 based on activity within the pa
 
 | Feature | Description |
 |---------|-------------|
-| **Language Filtering** | Filter contributors by any programming language (Java, Python, TypeScript, etc.) |
-| **Geographic Filtering** | Narrow results by city, state, or region |
-| **MLS Stadium Proximity** | Rank contributors by their distance to the nearest MLS stadium |
-| **Real-Time Leaderboard** | GitHub GraphQL data refreshed on a schedule via the Cache Updater service |
-| **Shareable URLs** | All filters are reflected in the URL — bookmark or share any leaderboard view |
-| **CSV Export** | Download any filtered leaderboard result as a CSV file |
-| **Hiring Section** | Highlights top developers and associated job openings |
-| **Responsive UI** | Works across desktop and mobile with Material-UI components |
+| **Language Filtering** | Filter contributors by any programming language (Java, TypeScript, Python, etc.) |
+| **Geographic Filtering** | Filter by city, state, or multi-state region |
+| **MLS Team Proximity** | Find contributors near any Major League Soccer stadium |
+| **Contributor Scoring** | Rank by a formula: `commits × max(stars, 1) × recency multiplier` |
+| **CSV Export** | Download ranked results as a CSV with social links |
+| **Hiring Mode** | Hiring managers can publish open roles and appear in contributor profiles |
+| **Distributed Cache** | Redis-backed caching protects GitHub API rate limits |
+| **URL-Driven State** | Filters persist in the URL — shareable and bookmarkable |
 
 ---
 
-## Target Audience
+## Who Is This For?
 
-Major League GitHub is designed for:
-
-- **Developers** who want to see how they rank among regional peers for a given language
-- **Hiring managers** looking to discover talented open-source contributors near their offices
-- **Open-source enthusiasts** who enjoy gamified community analytics
-- **Engineers** interested in how to build a full-stack, production-grade application with Spring Boot, React, Redis, and Kubernetes
+- **Developers** curious about where the best contributors in their city or language are
+- **Hiring managers** looking to find top open-source contributors near their offices
+- **Open-source enthusiasts** who want to explore contribution patterns by geography
+- **Contributors** who want to see how they rank among their peers
 
 ---
 
 ## System Overview
 
+Major League GitHub is a full-stack, microservice-based system:
+
 ```mermaid
-flowchart TD
-    User["User Browser"] --> Frontend["React + TypeScript Frontend"]
-    Frontend --> BackendAPI["Backend Service (Port 8450)"]
-    BackendAPI --> Redis["Redis Cache"]
-    BackendAPI --> GitHub["GitHub GraphQL API"]
-    CacheUpdater["Cache Updater (Port 8451)"] --> Redis
+flowchart LR
+    User["User (Browser)"] --> Frontend["React 19 Frontend"]
+    Frontend --> Backend["Backend Service (Port 8450)"]
+    Backend --> Redis["Redis Cache"]
+    Backend --> GitHub["GitHub GraphQL API"]
+    Backend --> LinkedIn["LinkedIn API"]
+    CacheUpdater["Cache Updater (Port 8451)"] --> Backend
     CacheUpdater --> GitHub
-    BackendAPI --> LinkedIn["LinkedIn API (Hiring)"]
 ```
 
-The system is split into two backend microservices:
+### Technology Stack
 
-- **Backend Service (port 8450)** — serves the public REST API consumed by the React frontend
-- **Cache Updater (port 8451)** — runs scheduled jobs that keep GitHub contributor data fresh in Redis
+**Backend** — Java 21 + Spring Boot 3.4
+- Two microservices: Backend Service (port 8450) and Cache Updater (port 8451)
+- GitHub GraphQL API integration with multi-token rate management
+- Redis for distributed caching
+- Apache Commons CSV for export
+- Lombok for clean model definitions
 
-Both services are built from the same Spring Boot codebase, activated via Maven profiles.
+**Frontend** — React 19 + TypeScript
+- Material UI (MUI) component library
+- TanStack React Query for server-state management
+- React Router for URL-driven filter state
+- Axios for HTTP communication
+- Webpack 5 build system with custom SEO and favicon plugins
+
+**Infrastructure** — Docker + Kubernetes (GKE)
+- Google Kubernetes Engine deployment
+- GitHub Actions CI/CD pipeline
 
 ---
 
-## Tech Stack at a Glance
+## Contributor Ranking Algorithm
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Java 21 + Spring Boot 3.4 |
-| Frontend | React 19 + TypeScript + Material-UI |
-| Caching | Redis (distributed) |
-| External Data | GitHub GraphQL API |
-| Build | Webpack (custom plugins for SEO + favicon) |
-| Deployment | Docker + Kubernetes (GKE) |
-| CI/CD | GitHub Actions |
+The scoring formula at the heart of the leaderboard is:
+
+```text
+score = commits × max(starsReceived, 1) × recencyMultiplier
+```
+
+- **Commits** — total commit count across repositories
+- **starsReceived** — total stars across repositories (minimum of 1 to avoid zero scores)
+- **recencyMultiplier** — ranges from 1.0 to 2.0, rewarding contributors active in the past year
 
 ---
 
-## How to Get Started
+## Repository
 
-- **Install prerequisites** — see the [Prerequisites](prerequisites.md) guide
-- **Run it in 5 minutes** — see the [Quick Start](quick-start.md) guide
-- **First things to do** — see the [First Steps](first-steps.md) guide
+The source code is available at:
+
+**[https://github.com/flamingo-stack/major-league-github](https://github.com/flamingo-stack/major-league-github)**
+
+---
+
+## Project Structure
+
+```text
+major-league-github/
+├── backend/          # Java 21 + Spring Boot 3.4 backend
+│   └── src/main/java/cx/flamingo/analysis/
+│       ├── controller/   # REST API endpoints
+│       ├── service/      # Business logic
+│       ├── cache/        # Redis/Disk caching
+│       ├── graphql/      # GitHub GraphQL query builder
+│       ├── model/        # Domain models
+│       ├── rate/         # GitHub token rate management
+│       └── config/       # Spring Boot configuration
+└── frontend/         # React 19 + TypeScript frontend
+    └── src/
+        ├── components/   # UI components
+        ├── hooks/        # React hooks
+        ├── services/     # API service layer
+        └── types/        # TypeScript type contracts
+```
+
+---
+
+## Live Site
+
+The application runs live at **[https://www.mlg.soccer](https://www.mlg.soccer)**.

@@ -1,129 +1,172 @@
 # First Steps
 
-After starting Major League GitHub locally, here are the five things to do first to orient yourself and explore the platform.
+After completing the quick start and getting the app running, here are the first things to explore and configure.
 
 ---
 
-## 1. Explore the Leaderboard Filters
+## 1. Explore the Leaderboard
 
-The filter panel at the top of the page lets you slice the leaderboard across several dimensions simultaneously:
+Open **[http://localhost:3000](http://localhost:3000)** and try the following:
 
-| Filter | Description |
-|--------|-------------|
-| **Language** | Programming language (Java, Python, TypeScript, Go, etc.) |
-| **City** | Filter contributors near a specific U.S. city |
-| **State** | Filter by U.S. state |
-| **Region** | Filter by geographic region (e.g., Pacific Northwest) |
-| **MLS Team** | Filter contributors nearest to an MLS stadium |
+### Filter by Programming Language
 
-Try combining a language (e.g., `Python`) with a state (e.g., `California`) to see how the leaderboard responds. Notice that the URL updates as you apply filters — the full filter state is encoded in the query parameters.
+Use the **Language** autocomplete to select a language (e.g., Java, TypeScript, Python). The leaderboard updates automatically using the TanStack React Query caching layer — no page reload needed.
 
----
+### Filter by Location
 
-## 2. Share a Leaderboard View
+Combine geographic filters:
 
-Every leaderboard configuration is fully shareable via URL. For example:
+- **City** — drill down to a specific city
+- **State** — view contributors across an entire U.S. state
+- **Region** — multi-state MLS regions (e.g., Pacific, Southeast)
+- **MLS Team** — contributors near a specific stadium
 
-```text
-https://www.mlg.soccer/?languageId=python&stateId=california
-```
+> Filters are URL-driven. Every filter change updates the browser URL, making results shareable and bookmarkable.
 
-All filter parameters are managed by the `useUrlState` hook in the frontend, which keeps the browser URL in sync with the current view. This means:
+### Try the "Near Me" Feature
 
-- Bookmarking a URL preserves your filters
-- Sharing a link with a colleague shows them the exact same leaderboard
-- Refreshing the page maintains your current filter selections
+The `useNearestRegion` hook uses your browser's Geolocation API to automatically suggest the closest MLS region. Click **Use My Location** if prompted by the browser.
 
 ---
 
-## 3. Understand Contributor Scoring
+## 2. Explore the REST API
 
-Each contributor card displays a score. The scoring formula is:
+With the backend running on port 8450, open a browser or use curl to explore the API directly:
 
-```text
-Score = commits × max(starsReceived, 1) × recencyMultiplier
-```
-
-Where:
-- **commits** = total contributions to repositories in the selected language
-- **starsReceived** = total stars on repositories in that language
-- **recencyMultiplier** = 1.0–2.0 based on activity within the past year
-
-Higher scores indicate developers who are prolific, have impactful projects, and have been recently active. This formula deliberately rewards both volume and impact.
-
----
-
-## 4. Export Results to CSV
-
-Any filtered leaderboard view can be exported as a CSV file. The export button triggers a browser download of a file named `contributors.csv` containing:
-
-- GitHub username, display name, and profile URL
-- Location (city, state, region)
-- Nearest MLS team
-- Score breakdown (commits, stars, recency)
-- Social links (GitHub, Twitter, Mastodon, Bluesky, website, email)
-
-To export, click the **Export CSV** button in the UI, or make a direct request:
+**Get ranked contributors (default language, no location filter):**
 
 ```bash
-curl "http://localhost:8450/api/contributors/export?languageId=java&maxResults=15" \
+curl "http://localhost:8450/api/contributors/search"
+```
+
+**Filter by language and state:**
+
+```bash
+curl "http://localhost:8450/api/contributors/search?languageId=java&stateId=ca"
+```
+
+**Autocomplete cities:**
+
+```bash
+curl "http://localhost:8450/api/autocomplete/cities?query=San"
+```
+
+**Autocomplete languages:**
+
+```bash
+curl "http://localhost:8450/api/autocomplete/languages?query=ty"
+```
+
+**Get a specific city by ID:**
+
+```bash
+curl "http://localhost:8450/api/entities/cities/1"
+```
+
+**Export as CSV:**
+
+```bash
+curl "http://localhost:8450/api/contributors/export?languageId=java" \
   -o contributors.csv
 ```
 
----
-
-## 5. Check the REST API Directly
-
-The backend exposes a clean REST API you can explore directly. Key endpoints:
-
-```bash
-# Get top Java contributors in California
-curl "http://localhost:8450/api/contributors/search?languageId=java&stateId=california"
-
-# Autocomplete cities starting with "San"
-curl "http://localhost:8450/api/autocomplete/cities?query=San"
-
-# Autocomplete available programming languages
-curl "http://localhost:8450/api/autocomplete/languages?query=py"
-
-# Look up a specific MLS team by ID
-curl "http://localhost:8450/api/entities/teams/la-galaxy"
-
-# Look up a specific region by ID
-curl "http://localhost:8450/api/entities/regions/west-coast"
-```
-
-All responses follow the standardized `ApiResponse<T>` wrapper:
+The API always returns a consistent JSON envelope:
 
 ```json
 {
   "status": "success",
-  "message": "...",
-  "data": ...
+  "message": null,
+  "data": [...]
 }
 ```
 
 ---
 
-## Where to Get Help
+## 3. Understand the Scoring Formula
 
-- **Open an issue:** [https://github.com/flamingo-stack/major-league-github/issues](https://github.com/flamingo-stack/major-league-github/issues)
-- **Browse open PRs:** [https://github.com/flamingo-stack/major-league-github/pulls](https://github.com/flamingo-stack/major-league-github/pulls)
-- **Read the architecture docs** in the `docs/reference/architecture/` folder of this repository for deep-dives into each module
-- **Spring Boot Actuator** — the backend exposes `/actuator/health` for service health checks at [http://localhost:8450/actuator/health](http://localhost:8450/actuator/health)
+The ranking formula is:
+
+```text
+score = commits × max(starsReceived, 1) × recencyMultiplier
+```
+
+- **recencyMultiplier** ranges from `1.0` to `2.0`
+- Contributors with activity in the past year receive a higher multiplier
+- Stars floored at `1` to prevent zero-scores for active contributors with few-starred repos
+
+This means a contributor with many commits and recent activity will outrank someone with high stars but old activity.
 
 ---
 
-## Common Early Questions
+## 4. Configure the Cache
 
-**Q: The leaderboard is empty after starting. What's wrong?**
-A: The `PreCacheService` warms the Redis cache on startup by iterating all languages. Wait 30–90 seconds and refresh. The `/actuator/health` endpoint confirms the backend is running.
+By default, the backend uses **Redis** in `read-write` mode. You can switch to disk-based caching for simpler local development:
 
-**Q: Can I add more GitHub tokens?**
-A: Yes. Set `GITHUB_TOKENS` to a comma-separated list. The `GithubTokenRateManager` automatically distributes requests across tokens and selects the one with the most remaining quota.
+**Disk cache (no Redis required):**
 
-**Q: Where is geographic data stored?**
-A: Cities, states, regions, and teams are loaded from CSV files in `backend/src/main/resources/data/` at startup. No database migrations are needed.
+```bash
+GITHUB_TOKENS=your_token \
+CACHE_IMPLEMENTATION=disk \
+mvn spring-boot:run -f backend/pom.xml
+```
 
-**Q: How do I change the default language?**
-A: The default language is Java (configured in `LanguageService`). Change `languageId` in the URL to switch — or modify the `LanguageService` default for your own deployment.
+**Force-update mode (bypasses cache, always fetches fresh):**
+
+```bash
+GITHUB_TOKENS=your_token \
+CACHE_MODE=force-update \
+mvn spring-boot:run -f backend/pom.xml
+```
+
+> **Warning:** `force-update` mode makes a live GitHub API call on every request. Use sparingly to avoid hitting rate limits.
+
+---
+
+## 5. Check Application Health
+
+Spring Boot Actuator is included. Check application health:
+
+```bash
+curl "http://localhost:8450/actuator/health"
+```
+
+Expected response:
+
+```json
+{
+  "status": "UP"
+}
+```
+
+---
+
+## Key Configuration Reference
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `cache.implementation` | `redis` | Cache backend: `redis` or `disk` |
+| `cache.mode` | `read-write` | Cache mode: `read-write`, `read-only`, `force-update` |
+| `spring.redis.host` | `localhost` | Redis host |
+| `spring.redis.port` | `6379` | Redis port |
+| `github.tokens` | — | Comma-separated GitHub PATs |
+| `github.api.concurrency` | varies | Concurrent GitHub API calls |
+
+---
+
+## Where to Get Help
+
+- **GitHub Issues:** [https://github.com/flamingo-stack/major-league-github/issues](https://github.com/flamingo-stack/major-league-github/issues)
+- **GitHub Discussions / PRs:** [https://github.com/flamingo-stack/major-league-github/pulls](https://github.com/flamingo-stack/major-league-github/pulls)
+- **Live Site:** [https://www.mlg.soccer](https://www.mlg.soccer)
+
+---
+
+## Common First-Run Issues
+
+| Issue | Likely Cause | Fix |
+|-------|-------------|-----|
+| Backend won't start | Redis not running | Run `redis-server` first |
+| Empty leaderboard | Cache still warming | Wait 30–60 seconds after startup |
+| `Rate limit exceeded` error | GitHub token missing or exhausted | Check `GITHUB_TOKENS` env var |
+| CORS error in browser | Frontend/backend URL mismatch | Set `BACKEND_API_URL=http://localhost:8450` |
+| Frontend 404 on refresh | Dev server not configured for SPA routing | Use the frontend dev server, not a static server |

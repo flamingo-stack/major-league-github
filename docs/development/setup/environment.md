@@ -1,194 +1,223 @@
 # Development Environment Setup
 
-This guide walks you through configuring your IDE, installing required tools, and setting up editor extensions for an optimal Major League GitHub development experience.
+This guide covers IDE recommendations, required development tools, and editor extensions for working on Major League GitHub.
 
 ---
 
-## Recommended IDE
+## IDE Recommendations
 
-### IntelliJ IDEA (Backend)
+### Backend (Java / Spring Boot)
 
-IntelliJ IDEA Community or Ultimate is the recommended IDE for Java backend development.
+**IntelliJ IDEA** (recommended)
 
-**Required plugins:**
-- **Lombok** — enables annotation processing for `@Data`, `@Builder`, `@RequiredArgsConstructor`, etc.
-- **Spring** — provides Spring Boot run configurations and bean navigation
+IntelliJ IDEA provides the best Java 21 + Spring Boot 3.4 development experience:
 
-**Setup steps:**
+- Built-in Spring Boot run configurations
+- Lombok annotation processing (required for model classes)
+- Full Maven integration
+- Integrated Redis monitoring via Database Tools
 
-1. Open IntelliJ IDEA and choose **Open → select the `backend/` directory** (or the repo root)
-2. IntelliJ auto-detects the Maven project from `backend/pom.xml`
-3. Go to **Settings → Build, Execution, Deployment → Compiler → Annotation Processors** and enable annotation processing
-4. Set the Project SDK to **Java 21**
+**VS Code** (alternative)
 
-```bash
-# Verify your active JDK
-java -version
-# Requires: openjdk 21.x.x
-```
+Use with the following extensions:
+- **Extension Pack for Java** (Microsoft)
+- **Spring Boot Extension Pack** (VMware)
+- **Lombok Annotations Support for VS Code**
 
-### VS Code (Frontend)
+### Frontend (React / TypeScript)
 
-VS Code is recommended for the React + TypeScript frontend.
+**VS Code** (recommended)
 
-**Required extensions:**
-- **ESLint** (`dbaeumer.vscode-eslint`) — uses the project's `eslint.config.js`
-- **Prettier** (`esbenp.prettier-vscode`) — code formatting
-- **TypeScript and JavaScript Language Features** — built-in, provides IntelliSense
-- **GitLens** (`eamodio.gitlens`) — enhanced Git tooling
+The frontend is built with React 19 + TypeScript. Use VS Code with:
 
-**Optional extensions:**
-- **vscode-styled-components** — for MUI `sx` prop syntax highlighting
-- **Error Lens** — inline error display
-- **Import Cost** — shows bundle size impact of imports
+- **ESLint** — enforces the project's ESLint config (`eslint.config.js`)
+- **Prettier** — code formatting (configure to match project style)
+- **TypeScript + JavaScript** (built-in)
+- **ES7+ React/Redux/React-Native snippets**
 
-**VS Code workspace settings** (create `.vscode/settings.json` in the repo root):
+**IntelliJ IDEA / WebStorm** (alternative)
 
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "typescript.tsdk": "frontend/node_modules/typescript/lib",
-  "eslint.workingDirectories": ["frontend"]
-}
-```
+WebStorm provides excellent TypeScript and React support out of the box.
 
 ---
 
 ## Required Development Tools
 
-| Tool | Install Command | Notes |
-|------|----------------|-------|
-| JDK 21 | [adoptium.net](https://adoptium.net) or `brew install temurin@21` | Set `JAVA_HOME` |
-| Maven 3.9+ | `brew install maven` or [maven.apache.org](https://maven.apache.org) | |
-| Node.js 18+ | [nodejs.org](https://nodejs.org) or `brew install node@18` | |
-| npm 9+ | Bundled with Node.js | |
-| Redis 7+ | `brew install redis` or Docker | |
-| Docker | [docs.docker.com](https://docs.docker.com/get-docker/) | Optional but recommended |
+### Java Toolchain
+
+Install Java 21. The recommended distributions:
+
+- **Temurin (Eclipse Adoptium)** — free, production-grade
+- **Oracle JDK 21** — official release
+- **Amazon Corretto 21** — AWS-maintained distribution
+
+Verify after installation:
+
+```bash
+java -version
+```
+
+Expected output should show `openjdk version "21"` (or similar).
+
+### Maven
+
+Maven 3.9+ is required for building the backend.
+
+```bash
+mvn -version
+```
+
+> **Tip:** IntelliJ IDEA bundles a Maven version. You can use the bundled Maven for IDE-only builds, but install Maven system-wide for terminal builds.
+
+### Node.js and npm
+
+Install Node.js 18 or later (LTS recommended). npm is bundled with Node.js.
+
+```bash
+node --version
+npm --version
+```
+
+Use [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions if you work on multiple projects.
+
+### Redis
+
+Redis 6 or later is required for the backend cache layer.
+
+**macOS (Homebrew):**
+
+```bash
+brew install redis
+brew services start redis
+```
+
+**Linux (apt):**
+
+```bash
+sudo apt-get update
+sudo apt-get install redis-server
+sudo systemctl start redis
+```
+
+**Windows:**
+
+Use WSL2 with a Linux distribution and install Redis inside it.
+
+Verify:
+
+```bash
+redis-cli ping
+```
+
+Expected: `PONG`
+
+---
+
+## Lombok Setup
+
+The backend uses **Lombok** for boilerplate reduction (`@Data`, `@Builder`, `@Slf4j`, etc.). Annotation processing must be enabled in your IDE.
+
+### IntelliJ IDEA
+
+1. Go to **Settings → Build, Execution, Deployment → Compiler → Annotation Processors**
+2. Check **Enable annotation processing**
+3. Install the **Lombok Plugin** from the marketplace if prompted
+
+### VS Code
+
+Install the **Lombok Annotations Support for VS Code** extension.
 
 ---
 
 ## Environment Variables for Development
 
-Create a file at `backend/.env.local` (or export in your shell profile) for backend development:
+Set these in your shell profile (`~/.bashrc`, `~/.zshrc`, or equivalent) or in your IDE run configuration:
 
 ```bash
-# Backend Service
+# Required — at least one GitHub Personal Access Token
 export GITHUB_TOKENS="ghp_your_token_here"
+
+# Optional — use disk cache instead of Redis for simpler local dev
+export CACHE_IMPLEMENTATION="disk"
+
+# Optional — Redis connection (defaults to localhost:6379)
 export SPRING_REDIS_HOST="localhost"
 export SPRING_REDIS_PORT="6379"
-export SPRING_PROFILES_ACTIVE="backend-service"
-```
 
-For the frontend dev server, pass variables inline or export them:
-
-```bash
-# Frontend dev server
+# Optional — Frontend API URL (for running frontend separately)
 export BACKEND_API_URL="http://localhost:8450"
-export NODE_ENV="development"
-export PORT="8450"
 ```
 
-> **Never commit tokens or secrets.** The `GITHUB_TOKENS` variable is sensitive. Add `.env.local` to `.gitignore` and use environment-specific secret management in CI/CD.
+---
+
+## IntelliJ IDEA Run Configuration (Backend)
+
+To run the backend from IntelliJ IDEA:
+
+1. Open the `backend/` directory as a Maven project
+2. Find `MajorLeagueGithubApplication.java`
+3. Right-click → **Run**
+4. In the run configuration, add environment variables:
+   - `GITHUB_TOKENS` = your token(s)
+   - `CACHE_IMPLEMENTATION` = `disk` (optional, to skip Redis during dev)
+5. The active profile defaults to `backend-service` (port 8450)
 
 ---
 
-## Path Aliases (Frontend)
+## Frontend Build System
 
-The Webpack config defines two path aliases for cleaner imports:
+The frontend uses **Webpack 5** as its primary bundler with a Vite config also available:
 
-| Alias | Resolves To | Example |
-|-------|------------|---------|
-| `@/` | `frontend/src/` | `import { Layout } from '@/components/Layout'` |
-| `@flamingo/ui-kit` | `ui-kit/src/` | `import { Button } from '@flamingo/ui-kit'` |
+| Config | Use Case |
+|--------|----------|
+| `webpack.config.js` | Production builds, custom plugins (SEO, favicon) |
+| `vite.config.js` | Development server with hot module replacement |
 
-These are configured in `frontend/webpack.config.js` and are available across all TypeScript source files in the frontend.
+The project includes two custom Webpack plugins:
+
+- **FaviconGeneratorPlugin** — generates favicon assets at build time
+- **SeoFilesPlugin** — generates sitemap and robots.txt at build time
+
+These run automatically during `npm run build`.
 
 ---
 
-## Linting and Formatting
+## ESLint Configuration
 
-The frontend uses ESLint configured via `frontend/eslint.config.js`.
+The project uses ESLint 9 with TypeScript support. The configuration is defined in `frontend/eslint.config.js`.
 
-Run the linter:
+Key rules enabled:
+- `eslint-plugin-react-hooks` — enforces React Hooks rules
+- `eslint-plugin-react-refresh` — warns about components incompatible with hot reload
+- `typescript-eslint` — TypeScript-specific linting
+
+Run lint checks:
 
 ```bash
 cd frontend
 npx eslint src/
 ```
 
-The linter enforces:
-- TypeScript type-safety rules
-- React hooks exhaustive dependencies
-- Import ordering
-
 ---
 
-## Netty DNS (macOS Apple Silicon)
+## Recommended .editorconfig Settings
 
-The backend `pom.xml` includes a macOS-specific DNS resolver:
+If you create a `.editorconfig` at the repository root, use these settings to match the project's code style:
 
-```xml
-<dependency>
-    <groupId>io.netty</groupId>
-    <artifactId>netty-resolver-dns-native-macos</artifactId>
-    <classifier>osx-aarch_64</classifier>
-</dependency>
+```text
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{ts,tsx,js,jsx}]
+indent_size = 2
+
+[*.{yml,yaml}]
+indent_size = 2
 ```
-
-This resolves a known Netty warning when running Spring WebFlux on Apple Silicon Macs. No action is required — it is already wired in.
-
----
-
-## Redis in Development
-
-For local development, run Redis via Docker (no persistent volume needed):
-
-```bash
-docker run -d \
-  --name mlg-redis \
-  -p 6379:6379 \
-  redis:7
-```
-
-To stop and remove:
-
-```bash
-docker stop mlg-redis && docker rm mlg-redis
-```
-
-Alternatively, if you installed Redis via Homebrew:
-
-```bash
-brew services start redis
-# Stop with:
-brew services stop redis
-```
-
----
-
-## Verify Your Setup
-
-Run this checklist to confirm everything is in place:
-
-```bash
-# Java
-java -version && javac -version
-
-# Maven
-mvn -version
-
-# Node + npm
-node -v && npm -v
-
-# Redis
-redis-cli ping
-
-# Compile backend (no tests)
-cd backend && mvn compile -DskipTests
-
-# Install frontend deps
-cd ../frontend && npm install && echo "Frontend deps OK"
-```
-
-All commands should return without errors before you begin development.

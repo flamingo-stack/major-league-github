@@ -1,192 +1,233 @@
 # Architecture Overview
 
-Major League GitHub is a full-stack, distributed application organized into layered backend modules and a component-driven React frontend. This document provides a high-level map of how all the pieces fit together.
+Major League GitHub is a full-stack, microservice-based system that transforms GitHub contribution data into a sports-themed leaderboard. This document provides the high-level architecture, component breakdown, data flow, and key design decisions.
 
-> For deep-dives into individual modules, see the reference documentation in `docs/reference/architecture/`.
+For detailed per-module documentation, see the [reference architecture](../../reference/architecture/README.md).
 
 ---
 
-## System Architecture
+## High-Level Architecture
 
 ```mermaid
-flowchart TD
-    Browser["User Browser"] --> Frontend["React 19 Frontend (Webpack)"]
-    Frontend --> BackendService["Backend Service (Spring Boot, Port 8450)"]
-    BackendService --> Redis[("Redis Cache")]
-    BackendService --> GitHub["GitHub GraphQL API"]
-    BackendService --> LinkedIn["LinkedIn API"]
-    CacheUpdater["Cache Updater (Spring Boot, Port 8451)"] --> Redis
+flowchart LR
+    User["User (Browser)"] --> Frontend["React 19 Frontend (Port 3000)"]
+    Frontend --> Backend["Backend Service (Spring Boot - Port 8450)"]
+    Backend --> Redis["Redis Cache"]
+    Backend --> GitHub["GitHub GraphQL API"]
+    Backend --> LinkedIn["LinkedIn API"]
+    CacheUpdater["Cache Updater (Port 8451)"] --> Backend
     CacheUpdater --> GitHub
-    GitHubActions["GitHub Actions CI/CD"] --> Docker["Docker Images"]
-    Docker --> GKE["Google Kubernetes Engine"]
-    GKE --> BackendService
-    GKE --> CacheUpdater
-    GKE --> Redis
 ```
 
----
+The system has three main runtime components:
 
-## Core Components
+| Component | Port | Technology | Role |
+|-----------|------|-----------|------|
+| Frontend | 3000 | React 19 + TypeScript | Leaderboard UI |
+| Backend Service | 8450 | Java 21 + Spring Boot 3.4 | REST API + ranking engine |
+| Cache Updater | 8451 | Java 21 + Spring Boot 3.4 | Scheduled cache warming |
 
-| Component | Technology | Role |
-|-----------|-----------|------|
-| **Backend Service** | Java 21 + Spring Boot 3.4 | Serves REST API on port 8450 |
-| **Cache Updater** | Java 21 + Spring Boot 3.4 | Scheduled GitHub data refresh on port 8451 |
-| **Redis** | Redis 7 | Distributed cache shared by both services |
-| **React Frontend** | React 19 + TypeScript + Material-UI | Leaderboard UI |
-| **GitHub GraphQL API** | External | Source of contributor data |
-| **LinkedIn API** | External (optional) | Source of job postings |
+Redis serves as the shared distributed cache between both backend services.
 
 ---
 
-## Backend Layer Architecture
+## Backend Architecture
 
-The backend is organized into logical modules, each with a clearly defined responsibility:
+The backend is a single Maven project that runs as two microservices via Spring profiles.
 
 ```mermaid
 flowchart TD
-    App["MajorLeagueGithubApplication"] --> Controllers["REST Controllers"]
-    Controllers --> ServiceLayer["Service Layer"]
-    ServiceLayer --> CacheAbs["CacheServiceAbs (Abstraction)"]
-    ServiceLayer --> GraphQL["GraphQL Query Builder"]
-    ServiceLayer --> RateManager["GitHub Token Rate Manager"]
-    CacheAbs --> Redis[("RedisCacheService")]
-    CacheAbs --> Disk["DiskCacheService (Dev)"]
-    CacheAbs --> ReadOnly["ReadOnlyCacheService"]
-    ServiceLayer --> Models["Domain Models (Contributor, City, Region, etc.)"]
+    AppCore["Application Core"]
+    Controllers["REST Controllers"]
+    Services["Backend Services"]
+    CacheLayer["Cache Services"]
+    GraphQL["GraphQL Components"]
+    Rate["Rate Management"]
+    Models["Model Entities"]
+    Config["Configuration Layer"]
+
+    AppCore --> Controllers
+    AppCore --> Services
+    AppCore --> CacheLayer
+    AppCore --> Config
+
+    Controllers --> Services
+    Services --> GraphQL
+    Services --> Rate
+    Services --> Models
+    Services --> CacheLayer
 ```
 
-### Backend Module Map
+### Backend Module Breakdown
 
-| Module | Contents |
-|--------|---------|
-| Module 1 | Application bootstrap + cache abstraction (`CacheServiceAbs`) |
-| Module 2 | Redis implementation + async thread pool configuration |
-| Module 3 | Infrastructure config: Redis, CORS, scheduling, JSON adapters |
-| Module 4 | REST controllers (`/api/contributors`, `/api/autocomplete`, `/api/entities`, `/api/hiring`) |
-| Module 5 | GitHub GraphQL query builder (fluent DSL) |
-| Module 6–7 | Domain models: `Contributor`, `City`, `Region`, `State`, `SoccerTeam`, `Language` |
-| Module 8 | `GithubService` (scoring engine) + `GithubTokenRateManager` + `CityService` |
-| Module 9 | `HiringService`, `LanguageService`, `PreCacheService`, `LinkedInService` |
-| Module 10 | `RegionService`, `StateService`, `SoccerTeamService`, `ReferencePopulationService` |
+| Module | Path | Responsibility |
+|--------|------|----------------|
+| Application Core | `cx.flamingo.analysis` | Bootstrap, `@EnableCaching`, `@EnableAsync` |
+| Controllers | `cx.flamingo.analysis.controller` | REST endpoints (`/api/contributors`, `/api/autocomplete`, etc.) |
+| Backend Services | `cx.flamingo.analysis.service` | Business logic, GitHub data, scoring, hiring |
+| Cache Services | `cx.flamingo.analysis.cache` | Pluggable cache (Redis, Disk, ReadOnly) |
+| GraphQL Components | `cx.flamingo.analysis.graphql` | Fluent GitHub GraphQL query builder |
+| Rate Management | `cx.flamingo.analysis.rate` | Multi-token GitHub rate limit orchestration |
+| Model Entities | `cx.flamingo.analysis.model` | Domain models: `Contributor`, `City`, `Region`, etc. |
+| Configurations | `cx.flamingo.analysis.config` | Spring beans, profiles, Redis, CORS, async pools |
 
 ---
 
-## GitHub Data Retrieval Flow
+## Frontend Architecture
+
+The frontend is a React 19 + TypeScript SPA using Webpack 5 for production builds and Vite for development.
+
+```mermaid
+flowchart TD
+    Pages["React Pages"] --> Components["Frontend Components"]
+    Components --> Hooks["Custom React Hooks"]
+    Hooks --> Services["Frontend Services (Axios)"]
+    Services --> Backend["Backend REST API"]
+    Hooks --> Router["React Router (URL State)"]
+```
+
+### Frontend Module Breakdown
+
+| Module | Path | Responsibility |
+|--------|------|----------------|
+| Components | `src/components/` | UI: filters, leaderboard table, autocomplete, tooltips |
+| Hooks | `src/hooks/` | URL state management, nearest region geolocation |
+| Services | `src/services/` | Axios-based API calls with typed responses |
+| Types | `src/types/` | TypeScript contracts mirroring backend domain models |
+| Styles | `src/styles/` | Theme configuration, color mappings |
+| Webpack Plugins | `webpack-plugins/` | SEO files generator, favicon generator |
+
+---
+
+## Core Data Flow
+
+### Contributor Search Request
 
 ```mermaid
 sequenceDiagram
-    participant Client as "Frontend"
-    participant Controller as "ContributorController"
-    participant Cache as "CacheServiceAbs"
-    participant Service as "GithubService"
-    participant Rate as "GithubTokenRateManager"
-    participant Builder as "GitHubQueryBuilder"
-    participant GitHub as "GitHub GraphQL API"
+    participant Browser
+    participant ReactApp as React App
+    participant Hook as useUrlState Hook
+    participant Service as Frontend Service
+    participant Controller as ContributorController
+    participant GithubSvc as GithubService
+    participant Cache as CacheServiceAbs
+    participant GitHubAPI as GitHub GraphQL API
 
-    Client->>Controller: GET /api/contributors/search
-    Controller->>Cache: isCacheReady()?
-    Cache-->>Controller: true
-    Controller->>Cache: getHttpResponse(filters, loader)
-    Cache->>Service: getTopContributorsIn(cities, language)
-    Service->>Builder: build GraphQL query
-    Builder-->>Service: query string
-    Service->>Rate: getBestAvailableClient()
-    Rate-->>Service: WebClient
-    Service->>GitHub: POST /graphql
-    GitHub-->>Service: JSON response
-    Service-->>Cache: List<Contributor>
-    Cache-->>Controller: Cached response
-    Controller-->>Client: ApiResponse<List<Contributor>>
+    Browser->>ReactApp: User selects language/location filter
+    ReactApp->>Hook: Update URL state (cityId, languageId, etc.)
+    Hook->>Service: getContributors(params)
+    Service->>Controller: GET /api/contributors/search
+    Controller->>Cache: getHttpResponse()
+    Cache-->>Controller: Cache Hit (return cached list)
+    Controller-->>Service: ApiResponse with Contributor[]
+    Service-->>ReactApp: Contributor[]
+    ReactApp-->>Browser: Render leaderboard
+
+    Note over Cache,GitHubAPI: On cache miss:
+    Cache->>GithubSvc: Execute supplier
+    GithubSvc->>GitHubAPI: GraphQL query (location + language)
+    GitHubAPI-->>GithubSvc: User data
+    GithubSvc->>GithubSvc: Score contributors
+    GithubSvc-->>Cache: Store result
 ```
 
 ---
 
 ## Contributor Scoring Formula
 
-The scoring engine in `GithubService` ranks developers using:
+The ranking engine scores each contributor as:
 
 ```text
-Score = commits × max(starsReceived, 1) × recencyMultiplier
+score = commits × max(starsReceived, 1) × recencyMultiplier
 ```
 
-| Component | Source | Effect |
-|-----------|--------|--------|
-| `commits` | GitHub contributions calendar | Rewards high activity volume |
-| `starsReceived` | Stars on language-specific repos | Rewards community impact |
-| `recencyMultiplier` | Activity freshness (1.0–2.0) | Rewards recent contributions |
+- **commits** — total commits across repositories
+- **starsReceived** — total stars received (floored at 1 to prevent zero score)
+- **recencyMultiplier** — `1.0` to `2.0`, based on activity in the past year
 
 ---
 
-## Caching Strategy
+## Cache Architecture
 
-Major League GitHub uses a **cache-first** architecture to minimize GitHub API rate pressure and reduce response latency:
-
-```mermaid
-flowchart TD
-    Request["Incoming Request"] --> CacheCheck["CacheServiceAbs.get()"]
-    CacheCheck --> Exists{"Entry Exists?"}
-    Exists -->|"No"| Fetch["Fetch From GitHub"]
-    Exists -->|"Yes"| Stale{"Is Stale?"}
-    Stale -->|"No"| Return["Return Cached Data"]
-    Stale -->|"Yes"| AsyncRefresh["Async Background Refresh"]
-    Fetch --> Store["Store In Cache"]
-    Store --> Return
-```
-
-| Cache Mode | Use Case |
-|-----------|---------|
-| `read-write` (default) | Normal production operation |
-| `read-only` | Prevent writes during maintenance |
-| Disk cache | Local development without Redis |
-
-Cache keys encode: city, language, and page number. Empty results are also cached to prevent repeated expensive API calls.
-
----
-
-## Frontend Architecture
-
-```mermaid
-flowchart TD
-    BrowserRouter["BrowserRouter (react-router-dom)"] --> useUrlState["useUrlState Hook"]
-    useUrlState --> APIService["API Service (Axios)"]
-    APIService --> Backend["Backend REST API"]
-    APIService --> Types["TypeScript API Types"]
-    Types --> EnhancedTypes["Enhanced Models"]
-    EnhancedTypes --> ContributorsTable["ContributorsTable Component"]
-    ContributorsTable --> FiltersPanel["FiltersPanel"]
-    ContributorsTable --> Pagination["Pagination"]
-```
-
-The frontend is driven by **URL state**. All filter parameters (language, city, state, region, team) are stored as URL query parameters via the `useUrlState` hook. This makes every leaderboard view fully shareable and bookmarkable.
-
-### Key Frontend Modules
-
-| Module | Contents |
-|--------|---------|
-| Module 11–12 | Contributors table, pagination, mobile/desktop views |
-| Module 13 | `useUrlState` — URL ↔ filter state synchronization |
-| Module 14 | API service layer (Axios) + `useUrlState` basic hook |
-| Module 15 | Core API TypeScript types (`Contributor`, `City`, `ApiResponse<T>`) |
-| Module 16–17 | Enhanced types, hiring types (`HiringManagerProfile`, `JobOpening`) |
-| Module 18 | SEO Webpack plugin (`SeoFilesPlugin` → `sitemap.xml`, `robots.txt`) |
-
----
-
-## Deployment Architecture
+The cache layer uses a pluggable abstraction supporting three implementations:
 
 ```mermaid
 flowchart LR
-    GitHubActions["GitHub Actions CI/CD"] --> Docker["Docker Images"]
-    Docker --> GKE["Google Kubernetes Engine (GKE)"]
-    GKE --> BackendPod["Backend Pod (8450)"]
-    GKE --> CacheUpdaterPod["Cache Updater Pod (8451)"]
-    GKE --> RedisPod["Redis Pod"]
-    BackendPod --> RedisPod
-    CacheUpdaterPod --> RedisPod
+    Services["Backend Services"] --> Abstract["CacheServiceAbs (Abstract)"]
+    Abstract --> Redis["RedisCacheService"]
+    Abstract --> Disk["DiskCacheService"]
+    Redis --> ReadOnly["ReadOnlyCacheService"]
+
+    Redis --> RedisDB[("Redis")]
+    Disk --> FS[("File System")]
 ```
 
-Both backend services are built from the same JAR but run in separate Kubernetes pods with different Spring profiles. CI/CD is managed through GitHub Actions, which builds Docker images and deploys to Google Kubernetes Engine (GKE).
+| Mode | Description |
+|------|-------------|
+| `read-write` | Normal operation — read from cache, write on miss |
+| `read-only` | Safe mode — read from Redis, never write |
+| `force-update` | Always bypass cache and fetch fresh |
+
+The active implementation is selected at startup via `cache.implementation` and `cache.mode` properties.
+
+---
+
+## Rate Management
+
+GitHub API rate limits are managed via `GithubTokenRateManager`:
+
+```mermaid
+flowchart TD
+    Request["Outbound GitHub Request"] --> Evaluate["Evaluate All Tokens"]
+    Evaluate --> SecondaryCheck{"All Under Secondary Limit?"}
+    SecondaryCheck -->|"Yes"| WaitSecondary["Sleep Until Earliest Retry"]
+    SecondaryCheck -->|"No"| PrimaryCheck{"All Exhausted?"}
+    PrimaryCheck -->|"Yes"| WaitPrimary["Sleep Until Earliest Reset"]
+    PrimaryCheck -->|"No"| Select["Select Token with Highest Remaining Requests"]
+    WaitSecondary --> Select
+    WaitPrimary --> Select
+    Select --> Execute["Execute GitHub GraphQL API Call"]
+```
+
+Multiple tokens can be configured via `github.tokens`. The manager tracks:
+- **Primary rate limits** (per-hour quota)
+- **Secondary rate limits** (burst/abuse protection via `Retry-After` headers)
+
+---
+
+## Geographic Modeling
+
+Contributors are filtered using a multi-level geographic model:
+
+```mermaid
+flowchart TD
+    Region["Region (multi-state MLS area)"] --> State["State"]
+    State --> City["City"]
+    City --> SoccerTeam["Nearest MLS Team (Haversine distance)"]
+```
+
+Data is loaded from static CSV files at startup (`cities.csv`, `states.csv`, `regions.csv`, `teams.csv`). No database is required.
+
+The Haversine formula (Earth radius = 6371 km) is used to compute the nearest MLS stadium for each city.
+
+---
+
+## Deployment Model
+
+```mermaid
+flowchart LR
+    GitHubRepo["GitHub Repository"] --> CI["GitHub Actions CI/CD"]
+    CI --> Docker["Docker Images"]
+    Docker --> GKE["Google Kubernetes Engine"]
+    GKE --> BackendPods["Backend + Cache Updater Pods"]
+    GKE --> RedisPod["Redis Pod"]
+    GKE --> FrontendService["Frontend Service"]
+```
+
+- **Containerized:** All services run as Docker containers
+- **Orchestrated:** Kubernetes (GKE) manages scaling and health
+- **CI/CD:** GitHub Actions builds, tests, and deploys on push
 
 ---
 
@@ -194,10 +235,10 @@ Both backend services are built from the same JAR but run in separate Kubernetes
 
 | Decision | Rationale |
 |----------|-----------|
-| **Two Spring profiles, one JAR** | Simplifies build and deployment while enabling distinct runtime behaviors |
-| **Cache-first with async refresh** | Prevents latency spikes from synchronous GitHub API calls |
-| **Multi-token rate management** | Resilient throughput under GitHub's strict per-token rate limits |
-| **CSV-based reference data** | Cities, states, regions, and teams load from CSVs at startup — no database required |
-| **URL-driven frontend state** | Every filter combination is bookmarkable and shareable |
-| **Haversine distance for MLS proximity** | Accurately calculates geographic distance to nearest stadium |
-| **Custom Webpack plugins** | SEO and favicon assets generated at build time — zero runtime overhead |
+| Two microservices from one codebase | Shared code, separated concerns; profile switching via Maven |
+| Redis as distributed cache | Prevents redundant GitHub API calls across pods |
+| Multi-token rate management | Maximizes GitHub API throughput without hitting limits |
+| URL-driven frontend state | Filter state is shareable and bookmarkable without backend session |
+| CSV data files (no database) | Eliminates database dependency for geographic reference data |
+| Pluggable cache abstraction | Swap Redis ↔ Disk without changing business logic |
+| Haversine proximity for teams | Accurate great-circle distance for stadium assignment |
