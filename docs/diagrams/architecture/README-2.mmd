@@ -1,10 +1,19 @@
 flowchart TD
-    App["MajorLeagueGithubApplication (Module 1)"] 
-    App --> Controllers["Controllers (Module 4)"]
-    Controllers --> Services["Services (Module 8–10)"]
-    Services --> GraphQL["GraphQL Builder (Module 5)"]
-    Services --> RateManager["GitHub Rate Manager (Module 8)"]
-    Services --> Cache["Cache Abstraction (Module 1)"]
-    Cache --> RedisImpl["RedisCacheService (Module 2)"]
-    Cache --> DiskImpl["DiskCacheService (Module 1)"]
-    Services --> Models["Domain Models (Module 6–7)"]
+    AppCore["Application Core"]
+    Controllers["Controllers"]
+    Services["Backend Services"]
+    CacheLayer["Cache Services"]
+    GraphQL["GraphQL Components"]
+    Rate["Rate Management"]
+    Models["Model Entities"]
+    Config["Configurations"]
+
+    AppCore --> Controllers
+    AppCore --> Services
+    AppCore --> CacheLayer
+    AppCore --> Config
+    Services --> GraphQL
+    Services --> Rate
+    Services --> Models
+    Controllers --> Services
+    Services --> CacheLayer

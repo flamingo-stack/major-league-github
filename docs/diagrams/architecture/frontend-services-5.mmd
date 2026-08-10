@@ -1,5 +1,6 @@
 flowchart TD
-    Services["Frontend Services"] --> Types["Frontend Types"]
-    Services --> Hooks["Frontend Hooks"]
-    Services --> Components["Frontend Components"]
-    Services --> BackendControllers["Backend Controllers"]
+    A["getEntityById(id)"] --> B["GET /api/entities/{type}/{id}"]
+    B --> C["ApiResponse<Entity>"]
+    C --> D{"status success?"}
+    D -->|"Yes"| E["Return data"]
+    D -->|"No"| F["Throw Error"]

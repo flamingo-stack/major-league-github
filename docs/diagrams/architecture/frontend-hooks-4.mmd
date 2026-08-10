@@ -1,9 +1,10 @@
-flowchart TD
-    Start["Regions Provided"] --> GeoCheck{"Geolocation Supported?"}
-    GeoCheck -->|"No"| ErrorNode["Set Error"]
-    GeoCheck -->|"Yes"| GetPos["getCurrentPosition()"]
-    GetPos --> Loop["Iterate Regions"]
-    Loop --> Compute["getDistance()"]
-    Compute --> Compare["Track Minimum Distance"]
-    Compare --> Select["Select Nearest Region"]
-    Select --> ReturnNode["Return nearestRegion"]
+sequenceDiagram
+    participant UI
+    participant Hook as "useUrlState"
+    participant Router as "React Router"
+
+    UI->>Hook: updateUrlState(newState)
+    Hook->>Hook: debounce if configured
+    Hook->>Router: setSearchParams()
+    Router->>Hook: searchParams updated
+    Hook->>UI: new urlState

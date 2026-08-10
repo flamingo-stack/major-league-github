@@ -1,4 +1,0 @@
-flowchart TD
-    Caller["Service or Error Handler"] --> Invalidate["Call invalidate()"]
-    Invalidate --> DeleteValue["Redis DEL key"]
-    Invalidate --> DeleteExpiration["Redis DEL key:expiration"]

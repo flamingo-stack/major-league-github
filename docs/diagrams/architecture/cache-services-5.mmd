@@ -1,0 +1,7 @@
+flowchart TD
+    Request --> Mode{"Mode == FORCE_UPDATE?"}
+    Mode -->|"Yes"| Execute["Execute Supplier"]
+    Execute --> Store
+    Store --> Return
+
+    Mode -->|"No"| Normal["Normal Cache Flow"]

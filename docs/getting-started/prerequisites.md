@@ -1,6 +1,6 @@
 # Prerequisites
 
-Before running Major League GitHub locally, make sure you have the following tools and accounts in place.
+Before setting up Major League GitHub locally, ensure you have the required tools, accounts, and environment variables in place.
 
 ---
 
@@ -8,89 +8,12 @@ Before running Major League GitHub locally, make sure you have the following too
 
 | Tool | Minimum Version | Purpose |
 |------|----------------|---------|
-| Java (JDK) | 21 | Backend runtime (Spring Boot 3.4 requires Java 17+; project targets Java 21) |
-| Maven | 3.9+ | Backend build tool |
-| Node.js | 18+ | Frontend build toolchain (Webpack, npm) |
-| npm | 9+ | Frontend package manager |
-| Redis | 7+ | Distributed cache (required for production mode) |
-| Docker | 24+ | Containerized local Redis or full deployment |
-| Git | 2.40+ | Source control |
-
----
-
-## Verification Commands
-
-Run these commands to confirm your environment is ready:
-
-```bash
-# Java 21
-java -version
-# Expected: openjdk 21.x.x ...
-
-# Maven
-mvn -version
-# Expected: Apache Maven 3.9.x ...
-
-# Node.js
-node --version
-# Expected: v18.x.x or higher
-
-# npm
-npm --version
-# Expected: 9.x.x or higher
-
-# Redis (if running locally)
-redis-cli ping
-# Expected: PONG
-
-# Docker
-docker --version
-# Expected: Docker version 24.x.x ...
-
-# Git
-git --version
-# Expected: git version 2.x.x
-```
-
----
-
-## GitHub API Access
-
-The backend calls the GitHub GraphQL API. You will need one or more **GitHub Personal Access Tokens (PATs)** with at minimum `read:user` scope.
-
-### Creating a GitHub PAT
-
-1. Go to [https://github.com/settings/tokens](https://github.com/settings/tokens)
-2. Click **Generate new token (classic)**
-3. Select the scopes:
-   - `read:user`
-   - `repo` (if you want repository star counts)
-4. Copy the generated token
-
-> **Multi-token support:** The backend supports multiple tokens for increased throughput. Configure them as a comma-separated list in the `GITHUB_TOKENS` environment variable. The `GithubTokenRateManager` automatically selects the optimal token per request.
-
----
-
-## Environment Variables
-
-The following environment variables are required to run the backend. Set them in your shell, a `.env` file, or Kubernetes secrets depending on your deployment method.
-
-### Backend Service
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `GITHUB_TOKENS` | Yes | Comma-separated GitHub Personal Access Tokens |
-| `SPRING_REDIS_HOST` | Yes | Redis host (e.g., `localhost`) |
-| `SPRING_REDIS_PORT` | Yes | Redis port (default: `6379`) |
-| `SPRING_PROFILES_ACTIVE` | Yes | Profile to activate: `backend-service` or `cache-updater` |
-
-### Frontend Development
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BACKEND_API_URL` | `https://www.mlg.soccer` | Backend API base URL for Webpack dev server proxy |
-| `PORT` | `8450` | Webpack dev server port |
-| `NODE_ENV` | `development` | Build mode |
+| **Java JDK** | 21 | Backend runtime (Spring Boot) |
+| **Apache Maven** | 3.9+ | Backend build and dependency management |
+| **Node.js** | 18+ | Frontend build toolchain |
+| **npm** | 9+ | Frontend package manager |
+| **Redis** | 6+ | Distributed cache (required for backend) |
+| **Git** | 2.x | Source control |
 
 ---
 
@@ -98,36 +21,116 @@ The following environment variables are required to run the backend. Set them in
 
 | Resource | Recommended |
 |----------|-------------|
-| RAM | 4 GB+ (8 GB for running all services concurrently) |
-| CPU | 2+ cores |
-| Disk | 2 GB free (Maven + npm dependency caches) |
-| OS | macOS, Linux, or Windows (WSL2 recommended on Windows) |
+| **RAM** | 4 GB minimum, 8 GB recommended |
+| **Disk** | 2 GB free (for Maven + npm dependencies) |
+| **OS** | macOS, Linux, or Windows (WSL2 recommended) |
+| **CPU** | Any modern x86-64 or ARM64 (Apple Silicon supported) |
+
+> **Apple Silicon (M1/M2/M3) Note:** The pom.xml includes the `netty-resolver-dns-native-macos` dependency with the `osx-aarch_64` classifier, which is required for macOS ARM64 DNS resolution. No special configuration needed beyond the standard Maven build.
 
 ---
 
-## macOS Note
+## Account Requirements
 
-The backend's `pom.xml` includes a Netty DNS resolver for macOS (`netty-resolver-dns-native-macos` for `osx-aarch_64`). If you are on an Apple Silicon Mac, this dependency is already bundled and no additional configuration is required.
+### GitHub Personal Access Token (Required)
+
+The backend queries the GitHub GraphQL API on your behalf. You need at least one GitHub Personal Access Token.
+
+1. Go to [GitHub Settings → Developer Settings → Personal Access Tokens](https://github.com/settings/tokens)
+2. Create a **Classic** or **Fine-grained** token
+3. Required scopes: `read:user`, `public_repo`
+
+> **Multiple tokens:** For production use, the rate manager supports multiple tokens (`github.tokens`). More tokens allow higher API concurrency and better rate limit resilience.
+
+### LinkedIn API Credentials (Optional)
+
+The hiring section integrates with the LinkedIn API to pull job postings. This is optional for development; the system falls back to predefined remote roles if the API is unavailable.
 
 ---
 
-## Optional: LinkedIn API
+## Environment Variables
 
-The hiring section fetches job postings via the LinkedIn API. This is entirely optional. If LinkedIn credentials are not configured, the system falls back to static default job entries.
+The following environment variables are required or optional depending on your setup:
 
-| Variable | Description |
-|----------|-------------|
-| `LINKEDIN_CLIENT_ID` | LinkedIn OAuth2 Client ID |
-| `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth2 Client Secret |
-| `LINKEDIN_ORGANIZATION_ID` | LinkedIn Organization ID for job postings |
+### Backend Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GITHUB_TOKENS` | **Yes** | Comma-separated GitHub Personal Access Tokens |
+| `SPRING_REDIS_HOST` | No | Redis host (default: `localhost`) |
+| `SPRING_REDIS_PORT` | No | Redis port (default: `6379`) |
+| `CACHE_IMPLEMENTATION` | No | Cache backend: `redis` or `disk` (default: `redis`) |
+| `CACHE_MODE` | No | Cache mode: `read-write`, `read-only`, `force-update` (default: `read-write`) |
+| `GITHUB_API_CONCURRENCY` | No | Number of concurrent GitHub API requests (default varies by profile) |
+
+### Frontend Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `BACKEND_API_URL` | No | Backend API base URL (default: `/`, same-origin) |
+
+> Set `BACKEND_API_URL` to `http://localhost:8450` when running the frontend separately from the backend during local development.
 
 ---
 
-## Repository
+## Verification Commands
 
-Clone the repository to get started:
+Use these commands to verify your environment is ready:
 
+**Check Java version:**
 ```bash
-git clone https://github.com/flamingo-stack/major-league-github.git
-cd major-league-github
+java -version
 ```
+Expected output should show Java 21 or higher.
+
+**Check Maven version:**
+```bash
+mvn -version
+```
+
+**Check Node.js version:**
+```bash
+node --version
+```
+
+**Check npm version:**
+```bash
+npm --version
+```
+
+**Check Redis connectivity:**
+```bash
+redis-cli ping
+```
+Expected output: `PONG`
+
+**Check Git version:**
+```bash
+git --version
+```
+
+---
+
+## Spring Boot Maven Profiles
+
+The backend uses two Maven profiles that determine which microservice starts:
+
+| Profile | Port | Purpose |
+|---------|------|---------|
+| `backend-service` | 8450 | REST API (active by default) |
+| `cache-updater` | 8451 | Scheduled cache warming |
+
+The `backend-service` profile is active by default. You do not need to set anything extra to run the API server.
+
+---
+
+## CORS Allowed Origins
+
+The backend is pre-configured to allow CORS from:
+
+- `http://localhost:3000` (local frontend dev server)
+- `http://localhost:8450` (local backend)
+- `https://www.mlg.soccer` (production)
+- `http://www.mlg.soccer` (production HTTP)
+
+No additional CORS configuration is required for standard local development.

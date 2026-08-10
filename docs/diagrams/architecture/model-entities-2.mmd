@@ -1,4 +1,9 @@
-flowchart TD
-    Region["Region"] -->|"contains"| State["State"]
-    State -->|"contains"| City["City"]
-    City -->|"near"| SoccerTeam["SoccerTeam"]
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+
+    Client->>Controller: HTTP Request
+    Controller->>Service: Execute logic
+    Service->>Controller: Domain Model
+    Controller->>Client: ApiResponse<DomainObject>

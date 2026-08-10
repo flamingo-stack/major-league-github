@@ -1,15 +1,6 @@
-sequenceDiagram
-    participant Controller
-    participant Service as GithubService
-    participant Rate as GithubTokenRateManager
-    participant Builder as GitHubQueryBuilder
-    participant GitHub
-
-    Controller->>Service: getTopContributors(filters)
-    Service->>Builder: build GraphQL query
-    Builder-->>Service: query string
-    Service->>Rate: select optimal token
-    Rate-->>Service: WebClient
-    Service->>GitHub: Execute GraphQL request
-    GitHub-->>Service: JSON response
-    Service-->>Controller: Ranked Contributors
+flowchart TD
+    Pages["React Pages"] --> Components["Frontend Components"]
+    Components --> Hooks["Frontend Hooks"]
+    Hooks --> Services["Frontend Services"]
+    Services --> Backend["Backend REST API"]
+    Services --> Types["Frontend Types"]

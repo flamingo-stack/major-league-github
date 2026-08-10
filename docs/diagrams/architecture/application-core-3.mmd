@@ -1,0 +1,5 @@
+flowchart LR
+    Service["Backend Service"] -->|"@Cacheable"| CacheAbstraction["Spring Cache Abstraction"]
+    CacheAbstraction --> Redis["Redis Cache"]
+    CacheAbstraction --> Disk["Disk Cache"]
+    CacheAbstraction --> ReadOnly["Read Only Cache"]

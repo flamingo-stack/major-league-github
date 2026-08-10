@@ -1,6 +1,7 @@
 flowchart TD
-    GitHubQueryBuilder --> SearchFieldInner["SearchField (Inner Class)"]
-    SearchFieldInner --> DefaultFields["Default User Fields"]
-    DefaultFields --> Contributions["Contribution Data"]
-    DefaultFields --> Repositories["Repositories & Stars"]
-    DefaultFields --> SocialAccounts["Social Accounts"]
+    Root["Field: search"] --> Args["Arguments"]
+    Root --> Nodes["Subfields"]
+    Nodes --> User["... on User"]
+    User --> Login["login"]
+    User --> Location["location"]
+    User --> Repositories["repositories"]

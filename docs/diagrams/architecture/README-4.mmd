@@ -1,11 +1,10 @@
 flowchart TD
-    Router["React Router"] --> UrlState["useUrlState (Module 13)"]
-    UrlState --> ApiService["API Service (Module 14)"]
-    ApiService --> BackendAPI["Backend REST API"]
-
-    BackendAPI --> Types["Core API Types (Module 15)"]
-    Types --> Enhanced["Enhanced Models (Module 16)"]
-    Enhanced --> Table["Contributors Table (Module 11–12)"]
-
-    Table --> Autocomplete["BaseAutocomplete (Module 10)"]
-    Table --> Pagination["Pagination (Module 12)"]
+    Request["Contributor Search Request"] --> CacheCheck["CacheServiceAbs.getHttpResponse()"]
+    CacheCheck -->|Miss| GithubFetch["GithubService"]
+    GithubFetch --> QueryBuilder["GitHubQueryBuilder"]
+    QueryBuilder --> GitHubAPI["GitHub GraphQL API"]
+    GitHubAPI --> Parse["Parse & Map to Contributor"]
+    Parse --> Score["Apply Scoring Formula"]
+    Score --> Store["Store in Cache"]
+    Store --> Response["ApiResponse<List<Contributor>>"]
+    CacheCheck -->|Hit| Response

@@ -1,45 +1,40 @@
 # Frontend Components
 
-The **Frontend Components** module contains the reusable UI building blocks for the Major League GitHub React application. These components are responsible for rendering interactive controls, contributor data visualizations, autocomplete inputs, and lightweight pagination.
+The **Frontend Components** module contains the reusable UI building blocks used by the Major League GitHub React application. It provides typed, composable, and API-integrated components that power search, filtering, leaderboard display, and navigation interactions in the frontend.
 
-Built with **React 19**, **TypeScript**, and **Material-UI (MUI)**, this module emphasizes:
+This module is focused purely on presentation and user interaction. It relies on:
 
-- Type-safe component contracts
-- Reusable generic UI primitives
-- Clear separation between presentation and data fetching
-- Compatibility with React Query for asynchronous data
+- Frontend Services for API communication
+- Frontend Types for shared domain models
+- React Query for server state management
+- Material UI for design system components
 
-This module sits at the presentation layer of the frontend architecture and interacts primarily with:
-
-- Frontend Hooks (state + URL synchronization)
-- Frontend Services (API communication)
-- Frontend Types (shared domain contracts)
+Together, these components render contributor rankings, language filters, and lightweight pagination behavior across the application.
 
 ---
 
 ## Architectural Overview
 
-The Frontend Components module follows a layered UI composition pattern:
-
-- **Generic UI primitives** (e.g., BaseAutocomplete)
-- **Domain-specific components** (e.g., LanguageAutocomplete)
-- **Typed table contracts** (ContributorsTable types)
-- **Lightweight utility UI elements** (Pagination)
+The Frontend Components module sits between the UI layer and the frontend service layer.
 
 ```mermaid
 flowchart TD
-    User["User Interaction"] --> Page["Page Component"]
-    Page --> DomainComponent["Domain Component<br/>LanguageAutocomplete"]
-    DomainComponent --> BaseComponent["BaseAutocomplete<T>"]
-    Page --> TableTypes["ContributorsTable Types"]
-    Page --> PaginationComp["Pagination"]
-
-    DomainComponent --> ReactQuery["React Query"]
-    ReactQuery --> ApiService["Frontend Services"]
-    ApiService --> Backend["Backend API"]
+    User["User"] --> UI["React Pages"]
+    UI --> Components["Frontend Components"]
+    Components --> Hooks["Frontend Hooks"]
+    Components --> Services["Frontend Services"]
+    Services --> Backend["Backend API"]
 ```
 
-The diagram shows how reusable base components support domain-specific components, which then integrate with data services and the backend.
+### Responsibilities
+
+- Provide reusable, generic UI primitives
+- Encapsulate Material UI configuration
+- Integrate with React Query for data-driven components
+- Define component-level TypeScript contracts
+- Render domain models (Contributor, Language, State, SoccerTeam)
+
+The module is intentionally thin in business logic. All data processing and aggregation are delegated to backend services and frontend hooks.
 
 ---
 
@@ -47,335 +42,207 @@ The diagram shows how reusable base components support domain-specific component
 
 ## 1. BaseAutocomplete
 
-**File:** `frontend/src/components/BaseAutocomplete.tsx`
+**Core Types:**
+- `BaseEntity`
+- `BaseAutocompleteProps<T>`
 
-### Purpose
+The `BaseAutocomplete` component is a generic, reusable wrapper around Material UI's `Autocomplete` component. It standardizes:
 
-`BaseAutocomplete` is a fully generic, reusable wrapper around MUI's `Autocomplete` component. It abstracts common behaviors such as:
+- Controlled input behavior
+- Icon rendering
+- Free-text support (`freeSolo` mode)
+- Option rendering
+- Blur normalization
 
-- Free text entry (`freeSolo` mode)
-- Controlled input and selected value
-- Icon rendering for selected items
-- Custom option rendering
-- Clear/reset handling
+### Generic Entity Model
 
-It enables strong typing through the `BaseEntity` interface and generic constraints.
-
----
-
-### BaseEntity Interface
-
-```typescript
-export interface BaseEntity {
-  id: string;
-  name?: string;
-  displayName?: string;
-  iconUrl?: string;
-  logoUrl?: string;
-}
+```text
+BaseEntity
+ ├── id
+ ├── name?
+ ├── displayName?
+ ├── iconUrl?
+ └── logoUrl?
 ```
 
-This ensures every selectable entity:
+Any domain object used in autocomplete (Language, City, State, etc.) must satisfy the `BaseEntity` contract.
 
-- Has a stable `id`
-- May include display labels
-- May optionally include an icon or logo
-
-This abstraction allows the component to support:
-
-- Languages
-- Regions
-- States
-- Soccer teams
-- Any future entity with minimal additional configuration
-
----
-
-### BaseAutocompleteProps
-
-The component is fully controlled:
-
-- `value`: Selected entity
-- `onChange`: Selection handler
-- `inputValue`: Current input string
-- `onInputChange`: Input change handler
-- `options`: Available suggestions
-- `getOptionLabel`: Label resolver
-- `renderIcon`: Optional icon extractor
-- `renderOptionContent`: Custom row rendering override
-
-This design prevents hidden state and keeps business logic outside the component.
-
----
-
-### Rendering Flow
+### Behavior Flow
 
 ```mermaid
 flowchart TD
-    Input["User Types"] --> InputChange["onInputChange"]
-    InputChange --> ParentState["Parent State Update"]
-    ParentState --> OptionsUpdate["Options Prop Updated"]
-    OptionsUpdate --> AutocompleteRender["Autocomplete Renders Options"]
-
-    Select["User Selects Option"] --> OnChange["onChange Handler"]
-    OnChange --> ParentSelection["Parent Updates Selected Value"]
+    Input["User Types"] --> QueryState["inputValue Updated"]
+    QueryState --> Options["Options Provided"]
+    Options --> Select["User Selects Option"]
+    Select --> OnChange["onChange(value)"]
+    OnChange --> Sync["Input Normalized on Blur"]
 ```
 
-Key behaviors:
+### Key Design Decisions
 
-- Clearing input resets both `inputValue` and `value`
-- Blur restores the selected label
-- Icon is rendered using `iconUrl` or `logoUrl`
+- **Free Solo Mode**: Allows raw typing even if no option is selected
+- **Icon Rendering Strategy**: Automatically displays `iconUrl` or `logoUrl`
+- **Extensible Rendering**: Optional `renderOptionContent` for custom row rendering
+- **Strict Generics**: Ensures type safety across autocomplete usages
 
-This makes `BaseAutocomplete` the foundation for all autocomplete-style inputs.
+This component acts as the foundation for all search dropdowns in the application.
 
 ---
 
 ## 2. LanguageAutocomplete
 
-**File:** `frontend/src/components/LanguageAutocomplete.tsx`
+**Core Type:**
+- `LanguageAutocompleteProps`
 
-### Purpose
+`LanguageAutocomplete` is a specialization of `BaseAutocomplete` for GitHub programming languages.
 
-`LanguageAutocomplete` is a domain-specific wrapper around `BaseAutocomplete` configured for programming languages.
+It integrates directly with:
 
-It connects UI interaction with remote API calls using React Query.
+- React Query (`useQuery`)
+- `autocompleteLanguages` API function
+- Shared `Language` type from frontend types
 
----
-
-### Responsibilities
-
-- Fetch language suggestions dynamically
-- Debounce via query key behavior
-- Bind API results into `BaseAutocomplete`
-- Provide correct label resolution (`displayName`)
-
----
-
-### Data Flow
+### Data Fetching Flow
 
 ```mermaid
 flowchart TD
-    UserInput["User Types Language"] --> QueryKey["Query Key: ['languages', inputValue]"]
-    QueryKey --> ReactQuery["useQuery()"]
+    UserInput["User Types Language"] --> ReactQuery["useQuery"]
     ReactQuery --> ApiCall["autocompleteLanguages(inputValue)"]
-    ApiCall --> Backend["Backend Controller"]
-    Backend --> ApiResponse["Language[]"]
-    ApiResponse --> BaseAuto["BaseAutocomplete<Language>"]
+    ApiCall --> Backend["Backend Language Endpoint"]
+    Backend --> Response["Language[]"]
+    Response --> Autocomplete["BaseAutocomplete"]
 ```
 
-Important details:
+### Important Characteristics
 
-- `staleTime: 0` ensures fresh suggestions
-- `signal` enables request cancellation
-- Strong typing via `Language` interface from shared API types
+- Query key is derived from `inputValue`
+- No stale caching (`staleTime: 0`)
+- Fully controlled input state
+- Uses `displayName` as the option label
 
-This component demonstrates the architectural pattern:
-
-> Generic UI primitive + Domain binding + Data fetching hook
-
----
-
-## 3. ContributorsTable Types
-
-**File:** `frontend/src/components/ContributorsTable/types.ts`
-
-### Purpose
-
-This file defines the TypeScript contracts for contributor table rendering.
-
-It separates:
-
-- Visual structure
-- Tooltip data contracts
-- Location display logic
-- Statistics display
+This pattern ensures responsive, server-driven autocomplete behavior while preserving type safety.
 
 ---
 
-### Domain Models Included
+## 3. Contributors Table Types
 
+**Core Types:**
+- `ContributorsTableProps`
+- `ContributorInfoProps`
+- `LocationInfoProps`
+- `StatsDisplayProps`
+- `LocationTooltipProps`
+- `ContributorTooltipProps`
 - `SoccerTeam`
 - `State`
 
-These extend backend data models with UI-focused fields such as:
+This file defines all UI-level type contracts used by the contributors leaderboard table.
 
-- `logoUrl`
-- `displayName`
-- Geographic metadata
+### Domain Alignment
 
----
+The table relies on the shared `Contributor` API type but extends UI-specific display requirements such as:
 
-### Table Props
+- Tooltip metadata
+- Location formatting
+- Team display information
+- State and regional grouping
 
-```typescript
-export interface ContributorsTableProps {
-  contributors: Contributor[];
-  isLoading: boolean;
-  error: Error | null;
-}
-```
-
-This ensures the table component:
-
-- Supports loading states
-- Displays error states
-- Is fully controlled by parent container
-
----
-
-### Type Relationships
+### Table Data Model
 
 ```mermaid
-flowchart LR
-    ApiContributor["API Contributor"] --> TableProps["ContributorsTableProps"]
-    TableProps --> InfoProps["ContributorInfoProps"]
-    TableProps --> LocationProps["LocationInfoProps"]
-    TableProps --> StatsProps["StatsDisplayProps"]
-    TableProps --> TooltipProps["ContributorTooltipProps"]
+flowchart TD
+    Contributor["Contributor API Model"] --> Info["ContributorInfoProps"]
+    Contributor --> Location["LocationInfoProps"]
+    Contributor --> Stats["StatsDisplayProps"]
+    Contributor --> Tooltip["ContributorTooltipProps"]
+    Contributor --> LocationTooltip["LocationTooltipProps"]
 ```
 
-This layered typing approach enables:
+### SoccerTeam and State Models
 
-- Clear separation of responsibilities
-- Strong typing for subcomponents
-- Safer refactoring
+These interfaces represent enriched geographic and league information used to:
+
+- Display MLS team branding
+- Show state and regional affiliation
+- Associate contributors with nearest stadiums
+
+They are UI-level representations and may include display-specific properties such as `iconUrl` and `logoUrl`.
 
 ---
 
 ## 4. Pagination
 
-**File:** `frontend/src/components/pagination.tsx`
+**Core Type:**
+- `PaginationProps`
 
-### Purpose
+The `Pagination` component is intentionally minimal. Major League GitHub does not require complex cursor-based or infinite scrolling patterns.
 
-`Pagination` is a minimal stub implementation designed specifically for Major League GitHub.
+### Behavior
 
-Unlike complex enterprise pagination systems, this implementation:
-
-- Only supports simple previous/next navigation
-- Hides itself when `totalPages <= 1`
-- Delegates state control to parent
-
----
-
-### Props Contract
-
-```typescript
-interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange?: (page: number) => void;
-}
+```mermaid
+flowchart LR
+    Prev["Previous Button"] --> PageState["currentPage"]
+    Next["Next Button"] --> PageState
+    PageState --> Render["Re-render with new page"]
 ```
 
+### Design Characteristics
+
+- Stateless aside from props
+- Optional `onPageChange`
+- Disabled boundaries at first and last page
+- Tailwind-based lightweight styling
+
+It exists primarily to satisfy persistent pagination imports while keeping UI logic simple.
+
 ---
 
-### Behavioral Logic
+# Component Interaction Model
+
+The following diagram shows how the primary frontend components collaborate:
 
 ```mermaid
 flowchart TD
-    Start["Render Pagination"] --> CheckPages{"totalPages <= 1?"}
-    CheckPages -->|Yes| Hide["Return null"]
-    CheckPages -->|No| ShowControls["Render Previous / Next"]
-    ShowControls --> PrevClick["onPageChange(currentPage - 1)"]
-    ShowControls --> NextClick["onPageChange(currentPage + 1)"]
+    Page["Leaderboard Page"] --> LanguageAuto["LanguageAutocomplete"]
+    LanguageAuto --> BaseAuto["BaseAutocomplete"]
+    Page --> Table["Contributors Table"]
+    Page --> PaginationComp["Pagination"]
+    LanguageAuto --> Services["Frontend Services"]
+    Table --> Types["Frontend Types"]
 ```
-
-Design considerations:
-
-- No internal state
-- Fully controlled component
-- Minimal UI complexity
-
-This aligns with the lightweight UX needs of the project.
 
 ---
 
-# Design Principles of Frontend Components
+# Design Principles
 
 ## 1. Strong Typing Everywhere
 
-All components rely heavily on:
+All components are built around explicit TypeScript interfaces. Domain objects from the API are reused and extended rather than duplicated.
 
-- Generic constraints
-- Shared API type contracts
-- Explicit prop interfaces
+## 2. Clear Separation of Concerns
 
-This prevents UI/data mismatches and improves maintainability.
+- Components handle rendering and interaction
+- Hooks manage derived state and URL synchronization
+- Services handle network communication
+- Backend handles business logic
 
----
+## 3. Reusability via Generics
 
-## 2. Controlled Components Only
+`BaseAutocomplete` demonstrates the module's pattern: define a generic abstraction once, specialize it per domain.
 
-Every major component follows controlled patterns:
+## 4. Minimal UI Logic
 
-- Value passed from parent
-- Changes emitted via callback
-- No hidden state
-
-This simplifies debugging and URL synchronization.
+The module avoids embedding business logic. All ranking, geographic filtering, and rate-limited GitHub querying are handled outside this layer.
 
 ---
 
-## 3. Separation of Concerns
+# How Frontend Components Fit into the System
 
-- UI logic in components
-- Data fetching in hooks or React Query
-- API calls in services
-- Domain contracts in shared types
+In the overall system architecture:
 
-This results in clean boundaries and high testability.
+- The backend provides contributor rankings, geographic data, and language metadata.
+- Frontend services call backend endpoints.
+- Frontend hooks synchronize URL state and derived logic.
+- Frontend Components render structured, interactive UI elements.
 
----
-
-# End-to-End UI Interaction Example
-
-Below is a simplified interaction sequence for filtering contributors by language.
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant UI as "LanguageAutocomplete"
-    participant Query as "React Query"
-    participant API as "Frontend API Service"
-    participant Backend
-
-    User->>UI: Type "Java"
-    UI->>Query: Trigger query with inputValue
-    Query->>API: autocompleteLanguages("Java")
-    API->>Backend: HTTP Request
-    Backend->>API: Return Language[]
-    API->>Query: Resolve Promise
-    Query->>UI: Provide options
-    User->>UI: Select Language
-    UI->>User: Filter applied in table
-```
-
----
-
-# How This Module Fits into the System
-
-The Frontend Components module represents the **presentation layer** of the frontend architecture.
-
-It:
-
-- Consumes typed API data
-- Renders domain-specific UI
-- Delegates state and data to higher layers
-- Remains framework-consistent with MUI
-
-By combining generic UI primitives with strongly typed domain wrappers, this module enables Major League GitHub to maintain a clean, scalable, and maintainable React codebase.
-
----
-
-# Summary
-
-The **Frontend Components** module provides:
-
-- A generic and reusable Autocomplete abstraction
-- Domain-specific language filtering UI
-- Strongly typed contributor table contracts
-- Lightweight pagination controls
-
-Together, these components deliver the interactive experience that powers the Major League GitHub leaderboard interface while preserving architectural clarity and type safety.
+This module represents the visual and interactive layer of Major League GitHub, transforming structured API data into a sports-inspired leaderboard experience.

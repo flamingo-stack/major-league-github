@@ -1,0 +1,7 @@
+flowchart LR
+    Controller["Controller"] --> Service["GithubService"]
+    Service --> Builder["GitHubQueryBuilder"]
+    Builder --> Query["GraphQL Query String"]
+    Query --> GitHubAPI["GitHub API"]
+    GitHubAPI --> Response["JSON Response"]
+    Response --> Model["Model Entities"]

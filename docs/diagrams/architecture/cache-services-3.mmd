@@ -1,11 +1,14 @@
-sequenceDiagram
-    participant Client
-    participant Cache
-    participant Supplier
+flowchart TD
+    Put["put(cachePath, key, value)"] --> Serialize["Serialize to JSON"]
+    Serialize --> WriteFile["Write <key>.json"]
 
-    Client->>Cache: getHttpResponse()
-    Cache->>Cache: Check staleness
-    Cache-->>Client: Return stale value
-    Cache->>Supplier: Async refresh
-    Supplier-->>Cache: Fresh data
-    Cache->>Cache: Overwrite entry
+    Get["get(cachePath, key)"] --> Exists{"File Exists?"}
+    Exists -->|"No"| Miss["Cache Miss"]
+    Exists -->|"Yes"| Stale{"Stale?"}
+
+    Stale -->|"Yes"| Delete["Delete File"]
+    Delete --> Miss
+
+    Stale -->|"No"| Read["Read JSON"]
+    Read --> Deserialize["Gson.fromJson"]
+    Deserialize --> Hit["Return Value"]

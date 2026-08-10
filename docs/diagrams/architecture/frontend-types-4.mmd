@@ -1,2 +1,4 @@
 flowchart LR
-    ApiContributor["Contributor (API)"] -->|"transform"| UiContributor["Contributor (UI)"]
+    RawRegion["Region (IDs)"] --> EnhanceRegion["EnhancedRegion (Objects)"]
+    RawState["State (IDs)"] --> EnhanceState["EnhancedState (Objects)"]
+    RawCity["City (Optional refs)"] --> EnhanceCity["EnhancedCity (Resolved refs)"]

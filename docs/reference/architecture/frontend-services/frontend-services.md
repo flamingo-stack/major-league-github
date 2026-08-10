@@ -1,93 +1,69 @@
 # Frontend Services
 
-The **Frontend Services** module acts as the API integration layer of the React + TypeScript frontend. It provides a typed, centralized abstraction over all HTTP communication with the Backend Service, encapsulating request construction, query parameter handling, response validation, file downloads, and error propagation.
+The **Frontend Services** module acts as the HTTP communication layer between the React frontend and the Spring Boot backend of Major League GitHub. It centralizes all API calls, enforces consistent response handling, and provides strongly typed interfaces for data exchange.
 
-By isolating network logic in one place, the Frontend Services module keeps UI components declarative and focused on presentation while ensuring consistent communication patterns across the application.
+This module is responsible for:
 
----
+- Configuring the HTTP client (Axios) and base backend URL
+- Fetching and exporting contributor rankings
+- Powering autocomplete search across geographic and language filters
+- Fetching entity details by ID
+- Exposing hiring-related endpoints
+- Ensuring consistent `ApiResponse<T>` validation and error handling
 
-## 1. Purpose and Responsibilities
-
-The Frontend Services module is responsible for:
-
-- Configuring the Axios HTTP client
-- Managing the backend base URL via environment configuration
-- Defining strongly typed API parameter contracts (e.g., `GetContributorsParams`)
-- Wrapping backend endpoints in reusable service functions
-- Validating `ApiResponse<T>` envelopes
-- Supporting request cancellation via `AbortSignal`
-- Triggering file downloads (CSV export)
-
-It interacts closely with:
-
-- [Frontend Types](../frontend-types/frontend-types.md) for shared API and domain models
-- [Frontend Hooks](../frontend-hooks/frontend-hooks.md) for state synchronization and request lifecycle handling
-- [Frontend Components](../frontend-components/frontend-components.md) which consume these services
-- Backend Controllers exposed by the Backend Service
+By isolating API logic from UI components and hooks, the Frontend Services module keeps presentation concerns separate from networking and data orchestration.
 
 ---
 
-## 2. High-Level Architecture
+## 1. Architectural Role
+
+The Frontend Services module sits between React components/hooks and the backend REST API.
 
 ```mermaid
 flowchart LR
-    subgraph UI["Frontend UI Layer"]
-        Components["React Components"]
-        Hooks["Custom Hooks"]
-    end
-
-    subgraph Services["Frontend Services"]
-        ApiModule["api.ts"]
-        AxiosConfig["Axios Configuration"]
-    end
-
-    subgraph Backend["Backend Service"]
-        Controllers["REST Controllers"]
-    end
-
-    Components -->|"calls"| Hooks
-    Hooks -->|"invokes"| ApiModule
-    ApiModule -->|"uses"| AxiosConfig
-    ApiModule -->|"HTTP GET /api/..."| Controllers
+    UI["React Components"] --> Hooks["Custom Hooks"]
+    Hooks --> Services["Frontend Services"]
+    Services --> Axios["Axios HTTP Client"]
+    Axios --> Backend["Spring Boot Backend API"]
 ```
 
-### Key Observations
+### Responsibilities by Layer
 
-- UI never calls `axios` directly.
-- All API requests pass through `api.ts`.
-- Backend responses are wrapped in a typed `ApiResponse<T>` envelope.
-- Errors are normalized by checking `response.data.status`.
+- **React Components**: Render tables, filters, and views.
+- **Custom Hooks**: Manage URL state, filtering logic, and lifecycle behavior.
+- **Frontend Services**: Perform HTTP requests and validate API responses.
+- **Backend API**: Provides REST endpoints for contributors, autocomplete, entities, and hiring data.
+
+The module ensures UI layers never directly construct raw URLs or handle response envelope parsing.
 
 ---
 
-## 3. Axios Configuration
+## 2. Axios Configuration and Environment Integration
 
-### Base URL Resolution
-
-The backend URL is resolved from the environment:
+At initialization, Axios is configured with a base URL:
 
 ```typescript
 const BACKEND_API_URL = process.env.BACKEND_API_URL || '/';
 axios.defaults.baseURL = BACKEND_API_URL;
 ```
 
-This enables:
+### Key Characteristics
 
-- Local development against `http://localhost:8450`
-- Production deployments with environment-specific backend routing
-- Reverse-proxy setups where `/api` is forwarded to the backend
+- Uses `process.env.BACKEND_API_URL` for environment-based backend routing.
+- Defaults to `/` for same-origin deployments.
+- Applies globally via `axios.defaults.baseURL`.
 
-### Global Behavior
+This design supports:
 
-- All requests inherit the configured `baseURL`
-- Requests return typed `ApiResponse<T>`
-- Non-success responses throw a JavaScript `Error`
+- Local development against a remote backend
+- Reverse-proxy deployments
+- Containerized or Kubernetes-based environments
 
 ---
 
-## 4. Core Interface: GetContributorsParams
+## 3. Core Interface: GetContributorsParams
 
-The `GetContributorsParams` interface defines filtering criteria for contributor search:
+The `GetContributorsParams` interface defines filter inputs for contributor search.
 
 ```typescript
 interface GetContributorsParams {
@@ -101,86 +77,73 @@ interface GetContributorsParams {
 }
 ```
 
-### Design Characteristics
+### Design Principles
 
-- All filters are optional
-- Supports request cancellation (`AbortSignal`)
-- Encapsulates search query construction logic
+- All filters are optional to support flexible combinations.
+- `maxResults` defaults to 15.
+- `signal` enables request cancellation (important for rapid filter changes).
 
-This interface is consumed by both search and export functionality.
+This interface enforces strong typing at compile time and prevents malformed queries.
 
 ---
 
-## 5. Contributor Search Flow
+## 4. Contributor Retrieval Flow
 
-### Service Function
-
-```typescript
-getContributors(params: GetContributorsParams): Promise<Contributor[]>
-```
-
-### Request Lifecycle
+The `getContributors` function builds query parameters dynamically and validates the backend response envelope.
 
 ```mermaid
 sequenceDiagram
-    participant UI as React Component
-    participant Hook as Custom Hook
+    participant UI as React UI
     participant Service as Frontend Services
-    participant Backend as Backend Controller
+    participant API as Backend API
 
-    UI->>Hook: Trigger search
-    Hook->>Service: getContributors(params)
-    Service->>Backend: GET /api/contributors/search
-    Backend-->>Service: ApiResponse<Contributor[]>
-    Service-->>Hook: Contributor[]
-    Hook-->>UI: Render table
+    UI->>Service: getContributors(filters)
+    Service->>Service: Build URLSearchParams
+    Service->>API: GET /api/contributors/search
+    API-->>Service: ApiResponse<Contributor[]>
+    Service->>Service: Validate status === "success"
+    Service-->>UI: Contributor[]
 ```
 
 ### Important Behaviors
 
-- Query parameters built via `URLSearchParams`
-- `maxResults` defaults to 15
-- Response envelope validated (`status === 'success'`)
-- Throws error if backend reports failure
+1. Dynamically constructs `URLSearchParams`.
+2. Sends `GET /api/contributors/search`.
+3. Expects `ApiResponse<Contributor[]>`.
+4. Throws an error if `status !== "success"`.
+5. Returns only the `data` field to the caller.
 
-The returned `Contributor` type originates from [Frontend Types](../frontend-types/frontend-types.md).
+This prevents UI components from needing to understand the response wrapper format.
 
 ---
 
-## 6. CSV Export Flow
+## 5. CSV Export Flow
 
-### Service Function
-
-```typescript
-downloadContributors(params: Omit<GetContributorsParams, 'signal'>)
-```
-
-### Behavior
-
-Instead of using Axios for file streaming, this function:
-
-1. Constructs query parameters
-2. Creates a temporary anchor element
-3. Sets `href` to `/api/contributors/export`
-4. Programmatically triggers download
+The `downloadContributors` function triggers a CSV export.
 
 ```mermaid
 flowchart TD
-    BuildParams["Build Query Parameters"] --> CreateLink["Create Hidden Anchor Element"]
-    CreateLink --> SetHref["Set export URL"]
-    SetHref --> ClickLink["Trigger click()"]
-    ClickLink --> Download["Browser Downloads CSV"]
+    A["User Clicks Export"] --> B["Build Query Parameters"]
+    B --> C["Create Hidden Anchor Element"]
+    C --> D["Set href to Export Endpoint"]
+    D --> E["Trigger click()"]
+    E --> F["Browser Downloads contributors.csv"]
 ```
 
-This avoids CORS or blob handling complexity and delegates file handling to the browser.
+### Characteristics
+
+- Uses `/api/contributors/export`.
+- Constructs a hidden `<a>` element.
+- Avoids using Axios for file streaming.
+- Delegates download handling to the browser.
+
+This approach simplifies file handling and avoids Blob management complexity.
 
 ---
 
-## 7. Autocomplete Services
+## 6. Autocomplete Endpoints
 
-Autocomplete endpoints support dynamic filtering in UI components such as dropdowns.
-
-### Supported Autocomplete Domains
+Autocomplete endpoints support dynamic filtering across multiple dimensions:
 
 - Regions
 - States
@@ -188,27 +151,28 @@ Autocomplete endpoints support dynamic filtering in UI components such as dropdo
 - Languages
 - Soccer Teams
 
-Each function:
+### Autocomplete Request Pattern
 
-- Accepts a `query` string
-- Accepts optional filtering context (e.g., `stateId`, `regionId`)
-- Supports `AbortSignal` for debounced cancellation
-- Returns typed arrays (`Region[]`, `State[]`, etc.)
+All autocomplete functions:
 
-### Example Pattern
+- Call `/api/autocomplete/...`
+- Accept a `query` string
+- Optionally accept related entity filters
+- Support `AbortSignal`
+- Validate `ApiResponse<T[]>`
 
-```typescript
-export const autocompleteRegions = async (
-  query: string,
-  stateId?: string,
-  cityIds?: string[],
-  signal?: AbortSignal
-): Promise<Region[]>
+```mermaid
+flowchart LR
+    QueryInput["User Types"] --> Debounce["Debounced Hook"]
+    Debounce --> ServiceCall["autocompleteX()"]
+    ServiceCall --> BackendCall["GET /api/autocomplete/*"]
+    BackendCall --> Response["ApiResponse<T[]>"]
+    Response --> FilteredList["Return T[]"]
 ```
 
-### Parameter Serialization
+### Special Case: Array Parameter Serialization
 
-For array parameters such as `cityIds`, Axios is configured with:
+For endpoints accepting `cityIds`, Axios is configured with:
 
 ```typescript
 paramsSerializer: {
@@ -216,16 +180,13 @@ paramsSerializer: {
 }
 ```
 
-This ensures:
-
-- `cityIds=1&cityIds=2`
-- Not `cityIds[]=1&cityIds[]=2`
+This prevents `[]` suffixes in query strings and ensures backend compatibility.
 
 ---
 
-## 8. Entity Lookup Services
+## 7. Entity Retrieval by ID
 
-These services retrieve individual entities by ID:
+The module exposes entity-specific retrieval functions:
 
 - `getRegionById`
 - `getStateById`
@@ -233,49 +194,41 @@ These services retrieve individual entities by ID:
 - `getLanguageById`
 - `getTeamById`
 
-### Pattern
-
-```typescript
-axios.get<ApiResponse<EntityType>>(`/api/entities/.../${id}`)
-```
-
-### Responsibilities
-
-- Enforce consistent response envelope validation
-- Return strongly typed domain objects
-- Shield UI from endpoint structure changes
-
----
-
-## 9. Hiring Services
-
-The hiring endpoints expose:
-
-- `getHiringManagerProfile()`
-- `getJobOpenings()`
-
-These return:
-
-- `HiringManagerProfile`
-- `JobOpening[]`
-
-Types originate from [Frontend Types](../frontend-types/frontend-types.md).
-
-### Hiring Data Flow
+All follow the same structure:
 
 ```mermaid
-flowchart LR
-    HiringPage["Hiring Page"] --> HiringService["Frontend Services"]
-    HiringService --> BackendHiring["/api/hiring/* Endpoints"]
-    BackendHiring --> HiringService
-    HiringService --> HiringPage
+flowchart TD
+    A["getEntityById(id)"] --> B["GET /api/entities/{type}/{id}"]
+    B --> C["ApiResponse<Entity>"]
+    C --> D{"status success?"}
+    D -->|"Yes"| E["Return data"]
+    D -->|"No"| F["Throw Error"]
 ```
+
+This uniform pattern improves predictability and simplifies testing.
 
 ---
 
-## 10. Error Handling Strategy
+## 8. Hiring Endpoints
 
-All service methods follow a consistent pattern:
+The module also integrates hiring-related features:
+
+- `getHiringManagerProfile()` → `/api/hiring/manager`
+- `getJobOpenings()` → `/api/hiring/jobs`
+
+Both:
+
+- Expect `ApiResponse<T>`.
+- Enforce strict success validation.
+- Return typed domain objects.
+
+These endpoints power hiring pages and profile displays in the frontend.
+
+---
+
+## 9. Error Handling Strategy
+
+Every request validates:
 
 ```typescript
 if (response.data.status !== 'success') {
@@ -283,69 +236,71 @@ if (response.data.status !== 'success') {
 }
 ```
 
-### Benefits
+### Implications
 
-- Centralized error normalization
-- UI components can rely on promise rejection
-- Compatible with React error boundaries
-- Clean integration with async hooks
+- Centralized validation logic.
+- UI receives either typed data or a thrown error.
+- No partial or malformed payloads propagate upward.
+
+This enforces a clean contract between frontend and backend.
 
 ---
 
-## 11. Dependency Relationships
+## 10. Data Type Integration
+
+The module relies on strongly typed interfaces:
+
+- `ApiResponse<T>`
+- `Contributor`
+- `City`
+- `Region`
+- `State`
+- `Language`
+- `SoccerTeam`
+- `HiringManagerProfile`
+- `JobOpening`
 
 ```mermaid
-flowchart TD
-    Services["Frontend Services"] --> Types["Frontend Types"]
-    Services --> Hooks["Frontend Hooks"]
-    Services --> Components["Frontend Components"]
-    Services --> BackendControllers["Backend Controllers"]
+flowchart LR
+    Services["Frontend Services"] --> ApiResponseType["ApiResponse<T>"]
+    Services --> ContributorType["Contributor"]
+    Services --> GeoTypes["City / Region / State"]
+    Services --> HiringTypes["HiringManagerProfile / JobOpening"]
 ```
 
-### Module Responsibilities Separation
-
-| Module | Responsibility |
-|--------|----------------|
-| Frontend Services | API communication layer |
-| Frontend Types | Shared domain and API typing |
-| Frontend Hooks | URL state + lifecycle coordination |
-| Frontend Components | Presentation and user interaction |
+This guarantees compile-time safety and consistency with backend contracts.
 
 ---
 
-## 12. Design Principles
+## 11. Design Patterns Used
 
-### 1. Single Source of Network Truth
-All HTTP calls live in one file (`api.ts`).
+### 1. Service Layer Abstraction
+All HTTP logic is centralized in one module.
 
-### 2. Strong Typing
-Every request returns a typed domain model.
+### 2. Response Envelope Validation
+Backend responses are always unwrapped before returning to the UI.
 
-### 3. Envelope Validation
-No component must manually check `status`.
+### 3. Optional Filter Composition
+Query parameters are dynamically composed only when provided.
 
-### 4. Separation of Concerns
-UI logic is decoupled from backend communication.
+### 4. Request Cancellation Support
+`AbortSignal` enables cancellation for:
 
-### 5. Abortable Requests
-Autocomplete and search support cancellation to prevent race conditions.
+- Autocomplete queries
+- Rapid filter switching
+- Component unmount safety
 
 ---
 
-## 13. How This Module Fits Into the System
+## 12. Summary
 
-The Frontend Services module forms the boundary between:
+The Frontend Services module is the networking backbone of the Major League GitHub frontend. It:
 
-- The React application
-- The Spring Boot Backend Service
+- Encapsulates all REST communication
+- Normalizes backend responses
+- Provides strong typing guarantees
+- Enables flexible filtering and search
+- Supports CSV exports
+- Maintains separation between UI and transport logic
 
-It translates UI interactions into REST calls and transforms backend envelopes into usable domain models.
-
-Without this module:
-
-- Components would duplicate HTTP logic
-- Error handling would be inconsistent
-- Type safety would degrade
-- Backend endpoint changes would require widespread refactoring
-
-By centralizing network communication, the Frontend Services module ensures scalability, maintainability, and clarity across the Major League GitHub frontend architecture.
+By isolating HTTP concerns in a dedicated service layer, the application remains modular, maintainable, and scalable as new backend endpoints are introduced.

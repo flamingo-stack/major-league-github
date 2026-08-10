@@ -1,322 +1,293 @@
 # Controllers
 
-The **Controllers** module is the HTTP entry point of the Major League GitHub backend service. It exposes RESTful APIs that power the React frontend, handling contributor search, autocomplete filters, entity lookups, and hiring-related endpoints.
+The **Controllers** module exposes the public REST API for the Major League GitHub backend service. It acts as the entry point for all HTTP requests coming from the React frontend and external clients.
 
-Built on Spring Boot 3.4, the Controllers module follows a clean layered architecture:
+Controllers are responsible for:
 
-- Controllers handle HTTP requests and responses
-- Services encapsulate business logic
-- Models represent domain entities
-- Cache and rate management layers optimize GitHub API usage
+- Mapping HTTP routes to application use cases
+- Validating and parsing request parameters
+- Delegating business logic to services
+- Formatting responses using `ApiResponse` or HTTP entities
+- Handling basic error and cache readiness scenarios
 
-This module sits at the boundary between the frontend and the backend service layer.
+This module sits at the boundary between the web layer (Spring MVC) and the business logic layer implemented in the [Backend Services](../backend-services/backend-services.md) module.
 
 ---
 
 ## Architectural Overview
 
-The Controllers module orchestrates requests across the Service Layer, Cache Services, and Model Entities.
+At a high level, the Controllers module follows a classic Spring Boot layered architecture:
 
 ```mermaid
 flowchart TD
-    Client["Frontend (React App)"] -->|"HTTP REST"| Controllers["Controllers Module"]
-
-    subgraph controllers_layer["Controllers"]
-        AutocompleteCtrl["Autocomplete Controller"]
-        ContributorCtrl["Contributor Controller"]
-        EntityCtrl["Entity Controller"]
-        HiringCtrl["Hiring Controller"]
-    end
-
-    Controllers --> AutocompleteCtrl
-    Controllers --> ContributorCtrl
-    Controllers --> EntityCtrl
-    Controllers --> HiringCtrl
-
-    AutocompleteCtrl -->|"delegates"| CityService["City Service"]
-    AutocompleteCtrl --> StateService["State Service"]
-    AutocompleteCtrl --> RegionService["Region Service"]
-    AutocompleteCtrl --> LanguageService["Language Service"]
-    AutocompleteCtrl --> SoccerTeamService["Soccer Team Service"]
-
-    ContributorCtrl --> GithubService["GitHub Service"]
-    ContributorCtrl --> CacheService["Cache Service"]
-    ContributorCtrl --> CityService
-    ContributorCtrl --> LanguageService
-
-    EntityCtrl --> CityService
-    EntityCtrl --> RegionService
-    EntityCtrl --> StateService
-    EntityCtrl --> LanguageService
-    EntityCtrl --> SoccerTeamService
-
-    HiringCtrl --> HiringService["Hiring Service"]
-
-    GithubService -->|"uses"| GraphQLLayer["GraphQL Components"]
-    GithubService -->|"rate limited by"| RateManager["GitHub Token Rate Manager"]
-    CacheService --> CacheImpl["Redis / Disk Cache"]
+    Client["Frontend Client"] -->|"HTTP Request"| ControllerLayer["Controllers"]
+    ControllerLayer -->|"delegates"| ServiceLayer["Backend Services"]
+    ServiceLayer -->|"reads/writes"| ModelLayer["Model Entities"]
+    ServiceLayer -->|"queries"| GraphQLLayer["GraphQL Components"]
+    ServiceLayer -->|"uses"| CacheLayer["Cache Services"]
+    ServiceLayer -->|"rate limits"| RateLayer["Rate Management"]
+    ControllerLayer -->|"wraps response"| ApiResponseNode["ApiResponse"]
+    ApiResponseNode --> Client
 ```
 
-### Key Responsibilities
+### Key Relationships
 
-1. **Request validation and parameter parsing**
-2. **Delegation to appropriate services**
-3. **Response wrapping using `ApiResponse`**
-4. **Cache-aware contributor search**
-5. **CSV export generation for leaderboard data**
-
----
-
-## Controller Breakdown
-
-The Controllers module consists of four primary REST controllers:
-
-- **Autocomplete Controller** – Filter suggestions for UI dropdowns
-- **Contributor Controller** – Contributor search and CSV export
-- **Entity Controller** – Lookup of single domain entities by ID
-- **Hiring Controller** – Hiring manager profile and job openings
-
-Each controller is described below.
+- **Controllers → Backend Services**: All business logic is delegated to services.
+- **Controllers → Cache Services**: Contributor-related endpoints use caching abstractions.
+- **Controllers → Model Entities**: Domain models (City, Region, Contributor, etc.) are serialized into JSON.
+- **Controllers → ApiResponse**: Most endpoints return a standardized response wrapper.
 
 ---
 
-# Autocomplete Controller
+## REST Endpoint Structure
+
+The module defines four main REST controllers:
+
+1. **AutocompleteController** – Autocomplete endpoints for filters.
+2. **ContributorController** – Contributor search and export functionality.
+3. **EntityController** – Direct entity lookup by ID.
+4. **HiringController** – Hiring manager and job openings endpoints.
+
+All routes are prefixed with `/api` and organized by domain responsibility.
+
+---
+
+# Controller Components
+
+## 1. AutocompleteController
 
 **Base Path:** `/api/autocomplete`
 
-Provides fast lookup endpoints used by frontend autocomplete components.
+Provides autocomplete suggestions for filterable entities such as cities, regions, states, languages, and soccer teams.
 
-### Endpoints
+### Supported Endpoints
 
-| Endpoint | Description |
-|-----------|-------------|
-| `GET /cities` | Autocomplete cities with optional region/state filters |
-| `GET /regions` | Autocomplete regions |
-| `GET /states` | Autocomplete states |
-| `GET /languages` | Autocomplete programming languages |
-| `GET /teams` | Autocomplete soccer teams |
+- `GET /cities`
+- `GET /regions`
+- `GET /states`
+- `GET /languages`
+- `GET /teams`
 
-### Behavior
-
-- All endpoints:
-  - Accept optional `query` parameter
-  - Accept filtering IDs where relevant
-  - Support configurable `maxResults` (default: 50)
-  - Return `ApiResponse<List<Entity>>`
-- Logging captures all query combinations for observability.
-
-### Data Flow
-
-```mermaid
-flowchart LR
-    Request["HTTP Request"] --> Controller["Autocomplete Controller"]
-    Controller --> Service["Domain Service"]
-    Service --> Entities["Model Entities"]
-    Entities --> Response["ApiResponse<List<T>>"]
-```
-
-### Dependencies
-
-- City Service
-- State Service
-- Region Service
-- Language Service
-- Soccer Team Service
-
-These services operate on domain models such as `City`, `State`, `Region`, `Language`, and `SoccerTeam`.
-
----
-
-# Contributor Controller
-
-**Base Path:** `/api/contributors`
-
-This controller powers the core leaderboard functionality of Major League GitHub.
-
-## 1. Search Endpoint
-
-**Endpoint:** `GET /search`
-
-### Parameters
-
-- `cityId`
-- `regionId`
-- `stateId`
-- `teamId`
-- `languageId`
-- `maxResults` (default: 15)
-- `priority` (GitHub API priority level)
-
-### Execution Flow
+### Request Flow
 
 ```mermaid
 flowchart TD
-    Request["Search Request"] --> CacheReady{"Cache Ready?"}
-    CacheReady -->|"No"| Error["Return ApiResponse.error"]
-    CacheReady -->|"Yes"| CacheLookup["Cache Service getHttpResponse()"]
-
-    CacheLookup -->|"Hit"| ReturnCached["Return Cached Contributors"]
-    CacheLookup -->|"Miss"| FetchCities["GitHub Service getTargetCities()"]
-    FetchCities --> SelectLang["Resolve Language"]
-    SelectLang --> FetchContrib["GitHub Service getTopContributorsIn()"]
-    FetchContrib --> StoreCache["Store in Cache"]
-    StoreCache --> ReturnResponse["Return ApiResponse.success"]
-```
-
-### Key Concepts
-
-- **Cache Guard:** If the cache is still populating, search is blocked.
-- **Priority-based GitHub Calls:** Uses `GithubApiPriority` to manage API rate usage.
-- **Language Fallback:** Defaults to configured language if invalid ID provided.
-- **Optional-Based Flow:** Uses `Optional` from cache service to handle failures gracefully.
-
-## 2. CSV Export Endpoint
-
-**Endpoint:** `GET /export`
-
-Generates a downloadable CSV leaderboard file.
-
-### Features
-
-- Builds CSV via Apache Commons CSV
-- Dynamically constructs filename:
-
-```text
-mlg-contributors-{language}-{location}-{yyyy-MM-dd}.csv
-```
-
-- Extracts:
-  - First and last name
-  - City and state
-  - MLG URL
-  - GitHub, email, Twitter, LinkedIn
-
-### Response Type
-
-- `ResponseEntity<String>`
-- `Content-Disposition: attachment`
-- `Content-Type: text/csv`
-
-This endpoint enables data portability for hiring managers, recruiters, or analytics.
-
----
-
-# Entity Controller
-
-**Base Path:** `/api/entities`
-
-Provides lookup-by-ID endpoints for domain entities.
-
-### Endpoints
-
-| Endpoint | Returns |
-|-----------|----------|
-| `/cities/{id}` | City |
-| `/regions/{id}` | Region |
-| `/states/{id}` | State |
-| `/languages/{id}` | Language |
-| `/teams/{id}` | SoccerTeam |
-
-### Pattern
-
-```mermaid
-flowchart LR
-    Request["GET by ID"] --> Controller["Entity Controller"]
-    Controller --> Service["Domain Service"]
-    Service --> Found{"Entity Found?"}
-    Found -->|"No"| Error["ApiResponse.error"]
-    Found -->|"Yes"| Success["ApiResponse.success"]
+    Request["GET /api/autocomplete/*"] --> Controller["AutocompleteController"]
+    Controller --> CityServiceNode["CityService"]
+    Controller --> StateServiceNode["StateService"]
+    Controller --> RegionServiceNode["RegionService"]
+    Controller --> LanguageServiceNode["LanguageService"]
+    Controller --> SoccerTeamServiceNode["SoccerTeamService"]
+    Controller --> ResponseWrap["ApiResponse.success()"]
 ```
 
 ### Characteristics
 
-- Returns standardized `ApiResponse<T>`
-- Logs warnings for missing IDs
-- Ensures consistent frontend error handling
+- All parameters are optional except where default values are provided.
+- Supports contextual filtering (e.g., cities by region or state).
+- Default `maxResults` is 50.
+- Returns a standardized `ApiResponse<List<T>>`.
+
+### Dependencies
+
+- [Backend Services](../backend-services/backend-services.md)
+- [Model Entities](../model-entities/model-entities.md)
 
 ---
 
-# Hiring Controller
+## 2. ContributorController
 
-**Base Path:** `/api/hiring`
+**Base Path:** `/api/contributors`
 
-Exposes hiring-related data used in the platform’s hiring feature.
+This controller drives the core leaderboard functionality of the platform.
 
 ### Endpoints
 
-| Endpoint | Description |
-|-----------|-------------|
-| `/manager` | Hiring manager profile |
-| `/jobs` | Active job openings |
+- `GET /search` – Retrieve ranked contributors.
+- `GET /export` – Export contributor results as CSV.
 
-### Design Notes
+---
 
-- Delegates to Hiring Service
-- Returns lightweight `Map<String, Object>` responses
-- `jobs` endpoint wraps results in:
-  - `status`
-  - `message`
-  - `data`
+### 2.1 Search Endpoint
+
+**Route:** `GET /api/contributors/search`
+
+#### Responsibilities
+
+- Validate cache readiness
+- Resolve geographic filters
+- Determine selected programming language
+- Delegate contributor ranking to `GithubService`
+- Use `CacheServiceAbs` for caching and HTTP response reuse
+
+#### Flow Diagram
 
 ```mermaid
-flowchart LR
-    Request["Hiring Request"] --> HiringCtrl["Hiring Controller"]
-    HiringCtrl --> HiringService["Hiring Service"]
-    HiringService --> JobOpening["JobOpening Model"]
-    JobOpening --> Response["JSON Response"]
+flowchart TD
+    Request["GET /search"] --> CacheCheck["CacheServiceAbs.isCacheReady()"]
+    CacheCheck -->|"not ready"| ErrorResp["ApiResponse.error()"]
+    CacheCheck -->|"ready"| CacheLookup["CacheServiceAbs.getHttpResponse()"]
+    CacheLookup --> GithubServiceNode["GithubService"]
+    GithubServiceNode --> CitiesNode["CityService.getTargetCities()"]
+    GithubServiceNode --> LanguageNode["LanguageService"]
+    GithubServiceNode --> Result["List<Contributor>"]
+    Result --> SuccessResp["ApiResponse.success()"]
 ```
+
+#### Key Features
+
+- Multi-dimensional filtering (city, region, state, team, language)
+- Default result limit: 15
+- Configurable GitHub API priority
+- Cache-backed response generation
+
+#### Cross-Module Dependencies
+
+- [Backend Services](../backend-services/backend-services.md)
+- [Cache Services](../cache-services/cache-services.md)
+- [Rate Management](../rate-management/rate-management.md)
+- [GraphQL Components](../graphql-components/graphql-components.md)
 
 ---
 
-## Response Standardization
+### 2.2 Export Endpoint
 
-Most endpoints return:
+**Route:** `GET /api/contributors/export`
+
+Generates a CSV export of contributor results.
+
+#### Additional Responsibilities
+
+- Builds CSV via Apache Commons CSV
+- Extracts contributor social links
+- Dynamically constructs filename
+- Returns `ResponseEntity<String>` with `text/csv` content type
+
+#### CSV Columns
 
 ```text
-ApiResponse<T>
-  - status
-  - message
-  - data
+Rank, First Name, Last Name, City, State, MLG URL, GitHub URL, Email, Twitter, LinkedIn
 ```
 
-This ensures consistent frontend parsing and type alignment with TypeScript definitions in the frontend.
+#### Notable Behaviors
+
+- Automatically falls back to default language if invalid ID provided.
+- Generates MLG deep-link URLs using base domain.
+- Dynamically builds filename:
+
+```text
+mlg-contributors-{language}-{location}-{date}.csv
+```
+
+This endpoint combines service orchestration, caching, transformation, and response streaming logic.
 
 ---
 
-## Cross-Module Interaction Summary
+## 3. EntityController
 
-The Controllers module depends heavily on:
+**Base Path:** `/api/entities`
 
-- Service Layer (business logic)
-- Cache Services (performance optimization)
-- GraphQL Components (GitHub query construction)
-- Rate Management (token throttling)
-- Model Entities (domain objects)
+Provides direct lookup of individual domain entities by ID.
 
-It does **not** contain business logic — it acts strictly as a routing and orchestration layer.
+### Endpoints
+
+- `GET /cities/{id}`
+- `GET /regions/{id}`
+- `GET /states/{id}`
+- `GET /languages/{id}`
+- `GET /teams/{id}`
+
+### Flow
+
+```mermaid
+flowchart TD
+    Request["GET /api/entities/{type}/{id}"] --> Controller["EntityController"]
+    Controller --> ServiceCall["*Service.getById()"]
+    ServiceCall -->|"null"| ErrorResp["ApiResponse.error()"]
+    ServiceCall -->|"found"| SuccessResp["ApiResponse.success()"]
+```
+
+### Characteristics
+
+- Thin pass-through endpoints.
+- Standardized error logging.
+- Uniform success/error response formatting.
+
+This controller acts as a lightweight read-only gateway to core domain entities.
 
 ---
 
-## Design Principles
+## 4. HiringController
 
-- ✅ Thin controllers
-- ✅ Constructor injection (except legacy Entity Controller)
-- ✅ Clear separation of concerns
-- ✅ Cache-first contributor search
-- ✅ Graceful error handling
-- ✅ CSV export support
-- ✅ Structured logging
+**Base Path:** `/api/hiring`
+
+Supports hiring-related features for the platform.
+
+### Endpoints
+
+- `GET /manager` – Hiring manager profile.
+- `GET /jobs` – Active job openings.
+
+### Flow
+
+```mermaid
+flowchart TD
+    Request["GET /api/hiring/*"] --> HiringControllerNode["HiringController"]
+    HiringControllerNode --> HiringServiceNode["HiringService"]
+    HiringServiceNode --> ResponseMap["Map<String,Object>"]
+    ResponseMap --> Client["Frontend Client"]
+```
+
+### Characteristics
+
+- Delegates to `HiringService`.
+- Returns raw map-based JSON rather than `ApiResponse`.
+- Designed for lightweight content retrieval.
+
+### Dependency
+
+- [Backend Services](../backend-services/backend-services.md)
 
 ---
 
-## Summary
+# Error Handling and Response Strategy
 
-The **Controllers** module is the API façade of the Major League GitHub backend. It:
+Most controllers rely on the `ApiResponse` wrapper defined in the Model Entities module. This provides:
 
-- Powers leaderboard search
-- Provides dynamic filtering
-- Exposes structured domain entities
-- Enables hiring visibility
-- Optimizes performance via caching
+- `success(data, message)`
+- `error(message)`
 
-By cleanly delegating to the Service Layer and Cache Services, the Controllers module ensures scalability, maintainability, and frontend compatibility while preserving separation of concerns within the system architecture.
+Benefits:
+
+- Consistent JSON structure
+- Predictable frontend parsing
+- Clear success/error semantics
+
+Contributor export is an exception, returning `ResponseEntity<String>` for file download semantics.
+
+---
+
+# Design Principles
+
+The Controllers module adheres to the following principles:
+
+1. **Thin Controllers** – Business logic is delegated to services.
+2. **Separation of Concerns** – Controllers only orchestrate.
+3. **Standardized Responses** – Uniform API contract.
+4. **Cache Awareness** – Contributor endpoints respect cache readiness.
+5. **Frontend-Oriented API Design** – Endpoints structured around UI filters and leaderboard needs.
+
+---
+
+# Position Within the System
+
+Within the backend architecture:
+
+- The application entry point is defined in the Application Core module.
+- Controllers define the HTTP boundary.
+- Services implement domain logic.
+- Cache and Rate Management protect GitHub API usage.
+- GraphQL Components build GitHub queries.
+- Model Entities define serializable domain objects.
+
+Together, the Controllers module exposes the public API that powers the Major League GitHub leaderboard and hiring features.

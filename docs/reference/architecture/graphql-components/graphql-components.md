@@ -2,29 +2,28 @@
 
 ## Overview
 
-The **Graphql Components** module is responsible for programmatically constructing and serializing GraphQL queries used to retrieve contributor and repository data from the GitHub GraphQL API.
+The **Graphql Components** module is responsible for programmatically constructing and serializing GitHub GraphQL queries used by the backend services. Instead of relying on hard-coded query strings, this module provides a fluent, type-safe builder API that dynamically assembles complex GraphQL queries for searching users, retrieving repository statistics, and collecting contribution metrics.
 
-Instead of relying on static query strings, this module provides a fluent, object-oriented query builder that:
-
-- Dynamically builds complex GraphQL queries
-- Supports nested fields and inline fragments
-- Adds filters such as location and language
-- Applies sorting and pagination (cursor-based)
-- Serializes queries into valid GraphQL syntax
-
-This module is primarily consumed by the Service Layer (notably `GithubService`) to fetch contributor data that powers the Major League GitHub leaderboard.
+It acts as the query composition layer between the **Backend Services** (notably `GithubService`) and the external GitHub GraphQL API.
 
 ---
 
-## Responsibilities
+## Purpose and Responsibilities
 
-The Graphql Components module provides three major capabilities:
+The Graphql Components module provides:
 
-1. **Structured Field Modeling** – Represent GraphQL fields as hierarchical objects
-2. **GitHub-Specific Query Construction** – Build search queries tailored for GitHub users
-3. **Query Serialization** – Convert field trees into valid GraphQL query strings
+- A fluent query builder for GitHub user search
+- Structured GraphQL field composition with nesting support
+- Automatic query filter construction (location, language, sorting)
+- Pagination support via cursors
+- Query serialization into executable GraphQL strings
 
-Together, these capabilities allow dynamic and extensible query generation without manual string concatenation.
+This abstraction improves:
+
+- Maintainability (no scattered query strings)
+- Reusability (common query structure reused across services)
+- Extensibility (easy to add new fields or filters)
+- Readability (clear tree-based structure of GraphQL fields)
 
 ---
 
@@ -32,294 +31,238 @@ Together, these capabilities allow dynamic and extensible query generation witho
 
 ```mermaid
 flowchart TD
-    ServiceLayer["Service Layer"] -->|"builds query"| GitHubQueryBuilder["GitHubQueryBuilder"]
-    GitHubQueryBuilder -->|"uses"| SearchFieldBuilder["SearchField (Builder)"]
-    GitHubQueryBuilder -->|"composes"| InnerField["Field (Inner Class)"]
-    QuerySerializer["QuerySerializer"] -->|"serializes"| FieldModel["Field (Model)"]
-    GitHubQueryBuilder -->|"produces"| QueryString["GraphQL Query String"]
-    QuerySerializer -->|"produces"| QueryString
+    BackendService["Backend Services"] -->|"build query"| GitHubQueryBuilder["GitHubQueryBuilder"]
+    GitHubQueryBuilder -->|"composes"| SearchFieldBuilder["SearchField (Builder)"]
+    GitHubQueryBuilder -->|"returns string"| GraphQLQuery["GraphQL Query String"]
+    FieldCore["Field (Core Model)"] --> QuerySerializer["QuerySerializer"]
+    QuerySerializer --> SerializedQuery["Formatted GraphQL Query"]
+    GraphQLQuery --> GitHubAPI["GitHub GraphQL API"]
+    SerializedQuery --> GitHubAPI
 ```
 
-The module contains two complementary query-building approaches:
+The module contains two parallel mechanisms for building GraphQL queries:
 
-- A **string-based fluent builder** optimized for GitHub search queries
-- A **tree-based field model** with structured serialization
+1. **GitHubQueryBuilder + nested Field classes** (primary implementation)
+2. **Field + QuerySerializer** (generic GraphQL builder and serializer)
 
 ---
 
 ## Core Components
 
-### 1. Field (Tree Model)
+### 1. Field (Core Graph Model)
 
 **Class:** `cx.flamingo.analysis.graphql.Field`
 
-This class represents a GraphQL field as a node in a hierarchical tree structure.
+This class represents a generic GraphQL field node. It models:
 
-### Key Features
+- Field name
+- Arguments (`Map<String, Object>`)
+- Nested subfields
+- Parent-child relationships
 
-- Maintains:
-  - Field name
-  - Arguments (ordered via `LinkedHashMap`)
-  - Subfields
-  - Parent reference (for fluent traversal)
-- Supports fluent nesting and sibling navigation
+### Key Capabilities
 
-### Example Usage Pattern
+- `addArg(key, value)` – attach GraphQL arguments
+- `addField(name)` – add nested subfields
+- `nest(name)` – descend into nested structure
+- `add(name)` – return to parent level
 
-```java
-Field root = new Field("search")
-    .addArg("type", "USER")
-    .addArg("first", 25);
+This implementation provides a tree-based representation of GraphQL queries.
 
-Field nodes = root.addField("nodes");
-nodes.addField("login");
-nodes.addField("location");
+#### Structural Representation
+
+```mermaid
+flowchart TD
+    Root["Field: search"] --> Args["Arguments"]
+    Root --> Nodes["Subfields"]
+    Nodes --> User["... on User"]
+    User --> Login["login"]
+    User --> Location["location"]
+    User --> Repositories["repositories"]
 ```
-
-### Design Characteristics
-
-- Preserves argument order
-- Supports deep nesting
-- Enables inline fragment usage (e.g., `... on User`)
-- Parent tracking allows returning to upper levels in the tree
-
-This structure is later serialized by `QuerySerializer`.
 
 ---
 
-### 2. SearchField (Tree Extension)
-
-**Class:** `cx.flamingo.analysis.graphql.SearchField`
-
-This class extends the tree-based `Field` model and specializes it for GitHub search queries.
-
-### Key Responsibilities
-
-- Appends query fragments (e.g., location, language)
-- Maintains a combined `query` argument
-- Escapes values properly
-
-### Example
-
-```java
-SearchField search = new SearchField("search")
-    .addArg("type", "USER")
-    .appendQuery("location:\"Texas\"")
-    .appendQuery("language:Java");
-```
-
-This approach is useful when building structured search filters dynamically.
-
----
-
-### 3. GitHubQueryBuilder (Fluent Query Builder)
+### 2. GitHubQueryBuilder
 
 **Class:** `cx.flamingo.analysis.graphql.GitHubQueryBuilder`
 
-This is the primary entry point used by the Service Layer to construct GitHub-specific queries.
+This is the primary high-level builder used by backend services to construct GitHub-specific queries.
 
-Unlike the generic `Field` model, this builder is optimized specifically for GitHub user search.
+It encapsulates:
 
-### Internal Structure
+- Search configuration
+- Sorting logic
+- Filtering logic
+- Pagination support
+- Default field selection
+
+### Typical Usage Flow
 
 ```mermaid
-flowchart TD
-    GitHubQueryBuilder --> SearchFieldInner["SearchField (Inner Class)"]
-    SearchFieldInner --> DefaultFields["Default User Fields"]
-    DefaultFields --> Contributions["Contribution Data"]
-    DefaultFields --> Repositories["Repositories & Stars"]
-    DefaultFields --> SocialAccounts["Social Accounts"]
+sequenceDiagram
+    participant Service as Backend Service
+    participant Builder as GitHubQueryBuilder
+    participant API as GitHub GraphQL API
+
+    Service->>Builder: searchUsers(size)
+    Service->>Builder: location(city)
+    Service->>Builder: language(lang)
+    Service->>Builder: cursor(after)
+    Service->>Builder: build()
+    Builder-->>Service: query string
+    Service->>API: Execute GraphQL query
 ```
 
-### Default Query Structure
+### Search Configuration
 
-When instantiated, `SearchField` (inner class) automatically configures:
+The builder supports:
+
+- `searchUsers(int size)` – defines search type and sorting
+- `location(String location)` – filters by user location
+- `language(String language)` – filters by programming language
+- `cursor(String cursor)` – pagination support
+- `build()` – generates final query string
+
+---
+
+### 3. GitHubQueryBuilder.SearchField (Inner Class)
+
+This is a specialized search node that:
+
+- Defines default query structure
+- Adds sorting rules
+- Appends dynamic search filters
+- Escapes query strings safely
+
+#### Default Query Structure
+
+The builder automatically includes:
 
 - `userCount`
-- `pageInfo { hasNextPage, endCursor }`
-- `nodes { ... on User { ... } }`
-
-For each user:
-
-- Identity fields (login, name, avatar, etc.)
+- `pageInfo` (pagination metadata)
+- `nodes` with `... on User` fragment
 - Social accounts
-- Contributions collection and calendar
-- Starred repositories
-- Repository metadata (stars, forks, primary language)
+- Contribution statistics
+- Repository metadata
+- Primary language information
 
-This ensures consistent data retrieval across leaderboard requests.
-
----
-
-### Fluent API
-
-Example usage:
-
-```java
-String query = new GitHubQueryBuilder()
-    .searchUsers(25)
-    .location("Texas")
-    .language("Java")
-    .cursor("abc123")
-    .build();
-```
-
-This produces:
-
-```text
-query { search(type: USER, first: 25, query: "location:\"Texas\" language:Java sort:repositories-desc sort:stars-desc sort:followers-desc") { ... } }
-```
-
-### Key Builder Methods
-
-- `searchUsers(int size)` – Sets search type and default sorting
-- `location(String location)` – Adds location filter
-- `language(String language)` – Adds language filter
-- `cursor(String cursor)` – Enables pagination
-- `build()` – Returns final GraphQL query string
+This ensures consistent response payloads across the system.
 
 ---
 
-### 4. GitHubQueryBuilder.Field (Inner Class)
-
-This inner class provides a lightweight string-based representation of fields.
-
-Features:
-
-- Field aliasing
-- Argument concatenation
-- Recursive `build()` method
-- Efficient string assembly
-
-This version is optimized for performance and compact query generation.
-
----
-
-### 5. GitHubQueryBuilder.SearchField (Inner Class)
-
-This inner class extends the inner `Field` class and provides:
-
-- GitHub search filter aggregation
-- Sort configuration
-- Query argument rewriting
-- Automatic escaping
-
-It maintains a `queryFilters` string that consolidates:
-
-- Location filters
-- Language filters
-- Sort directives
-
-Each update reconstructs the `query` argument safely.
-
----
-
-### 6. QuerySerializer
+### 4. QuerySerializer
 
 **Class:** `cx.flamingo.analysis.graphql.QuerySerializer`
 
-This class converts a list of tree-based `Field` objects into a formatted GraphQL query string.
+This component serializes a list of `Field` objects into a properly formatted GraphQL query string with indentation.
 
 ### Responsibilities
 
-- Adds indentation for readability
-- Serializes arguments
-- Recursively processes subfields
-- Handles inline fragments (e.g., `... on User`)
+- Traverse the field tree recursively
+- Serialize arguments
+- Maintain indentation levels
+- Handle inline fragments (e.g., `... on User`)
 
-### Serialization Flow
+#### Serialization Flow
 
 ```mermaid
 flowchart TD
-    Start["serialize(fields)"] --> OpenQuery["append 'query {'"]
-    OpenQuery --> Iterate["iterate fields"]
-    Iterate --> SerializeField["serializeField()"]
+    Fields["List of Field"] --> SerializeFields["serializeFields()"]
+    SerializeFields --> SerializeField["serializeField()"]
     SerializeField --> SerializeArgs["serializeArguments()"]
-    SerializeField --> SerializeChildren["process subfields"]
-    SerializeChildren --> CloseBlock["append '}'"]
-    CloseBlock --> End["return string"]
+    SerializeField --> Recurse["Serialize Subfields"]
+    Recurse --> SerializeField
 ```
 
-The serializer is useful when a fully structured query tree is built using the standalone `Field` model.
+This serializer is independent of GitHub-specific logic and can be reused for other GraphQL queries.
 
 ---
 
-## Data Flow Within the System
+### 5. SearchField (Standalone Class)
+
+**Class:** `cx.flamingo.analysis.graphql.SearchField`
+
+This class extends the core `Field` class and provides:
+
+- A query string accumulator
+- Fluent `appendQuery()` method
+- Automatic updating of the `query` argument
+
+It is a lighter alternative to the inner `SearchField` used in `GitHubQueryBuilder`.
+
+---
+
+## End-to-End Query Lifecycle
 
 ```mermaid
 flowchart LR
-    Controller["Controller Layer"] --> Service["GithubService"]
+    Controller["Controller"] --> Service["GithubService"]
     Service --> Builder["GitHubQueryBuilder"]
     Builder --> Query["GraphQL Query String"]
-    Query --> GitHubAPI["GitHub GraphQL API"]
+    Query --> GitHubAPI["GitHub API"]
     GitHubAPI --> Response["JSON Response"]
-    Response --> Service
+    Response --> Model["Model Entities"]
 ```
 
-1. Controller triggers contributor retrieval
-2. Service constructs a query via `GitHubQueryBuilder`
-3. Query is sent to GitHub GraphQL API
-4. Response is mapped into model entities
-5. Data flows back to the frontend
+1. A controller requests contributor data.
+2. The service layer constructs a query using Graphql Components.
+3. The query is sent to GitHub's GraphQL API.
+4. The response is mapped into model entities.
 
 ---
 
-## Design Decisions
+## Design Characteristics
 
-### 1. Programmatic Query Construction
+### Fluent API Design
 
-Avoids brittle string templates and enables:
+The builder pattern allows readable chained calls such as:
 
-- Dynamic filtering
-- Safe nesting
-- Reusable logic
+```text
+searchUsers(50)
+  .location("Austin")
+  .language("Java")
+  .cursor("abc123")
+  .build()
+```
 
-### 2. Separation of Concerns
+### Tree-Based Query Modeling
 
-- `Field` → generic tree modeling
-- `SearchField` → search-specific logic
-- `GitHubQueryBuilder` → GitHub-specific orchestration
-- `QuerySerializer` → formatting and output
+GraphQL’s hierarchical structure is mirrored directly in Java objects.
 
-### 3. GitHub-Optimized Defaults
+### Separation of Concerns
 
-The builder preconfigures common fields required for leaderboard ranking:
+- Query construction logic is isolated from business logic
+- Serialization is separated from query composition
+- Backend services remain unaware of raw query syntax
 
-- Contributions
-- Stars
-- Repository metadata
-- Social accounts
+### Extensibility
 
-This guarantees consistent backend responses.
+To add new GitHub fields:
+
+1. Modify default structure inside `SearchField`
+2. Add new filters or sorting rules
+3. Extend `Field` logic if needed
+
+No controller or service changes are required unless new filtering parameters are exposed.
 
 ---
 
-## Extending the Module
+## Why This Module Matters
 
-To extend functionality:
+The Graphql Components module is a foundational infrastructure layer that enables:
 
-- Add additional filters in `SearchField`
-- Add new nested fields in `setupDefaultFields()`
-- Introduce reusable field fragments using the tree-based `Field` model
-- Extend sorting logic within `addSort()`
+- Accurate GitHub contributor ranking
+- Advanced filtering (language, region, location)
+- Rich contributor profiles (repos, stars, contributions)
+- Pagination support for leaderboard views
 
-When modifying filters, ensure:
-
-- Proper escaping of quotes
-- No duplication of the `query` argument
-- Compatibility with GitHub GraphQL schema
+By abstracting away GraphQL complexity, it keeps backend services clean while ensuring powerful and flexible GitHub data retrieval.
 
 ---
 
 ## Summary
 
-The **Graphql Components** module provides a structured, extensible, and GitHub-optimized way to build GraphQL queries for contributor discovery and ranking.
+The **Graphql Components** module provides a structured, fluent, and extensible way to construct GitHub GraphQL queries. It centralizes query logic, enforces consistency, and integrates seamlessly with backend services and model entities.
 
-It acts as the backbone of data retrieval in Major League GitHub by:
-
-- Constructing dynamic search queries
-- Supporting pagination and filtering
-- Fetching comprehensive contributor statistics
-- Ensuring consistent data shape for downstream services
-
-Without this module, the leaderboard’s data pipeline would rely on fragile string concatenation and duplicated query logic. Instead, Graphql Components centralizes and standardizes query construction across the backend.
+It is the backbone of all GitHub data retrieval in the system.

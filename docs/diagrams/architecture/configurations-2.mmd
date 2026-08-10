@@ -1,10 +1,6 @@
-flowchart TD
-    Start["Application Startup"] --> Mode["Read cache.mode"]
-    Mode --> Impl["Read cache.implementation"]
-
-    Impl --> Decision{"Mode == read-only?"}
-    Decision -->|"Yes"| ReadOnly["Use ReadOnlyCacheService"]
-    Decision -->|"No"| ImplChoice{"Implementation"}
-
-    ImplChoice -->|"redis"| RedisCache["Use RedisCacheService"]
-    ImplChoice -->|"disk"| DiskCache["Use DiskCacheService"]
+flowchart LR
+    Controller["Controller"] --> Service["Backend Service"]
+    Service -->|"Submit Task"| LowPool["Low Priority Executor"]
+    Service -->|"Submit Task"| HighPool["High Priority Executor"]
+    LowPool --> GithubAPI["GitHub API"]
+    HighPool --> GithubAPI

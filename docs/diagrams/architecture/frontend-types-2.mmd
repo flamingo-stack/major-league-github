@@ -1,8 +1,17 @@
-flowchart TD
-    Root["Frontend Types"]
+flowchart LR
+    ApiTypes["api.ts"] --> ContributorType["Contributor (API)"]
+    ApiTypes --> CityType["City"]
+    ApiTypes --> RegionType["Region"]
+    ApiTypes --> StateType["State"]
+    ApiTypes --> TeamType["SoccerTeam"]
+    ApiTypes --> LanguageType["Language"]
 
-    Root --> Api["API Types"]
-    Root --> Contributor["Contributor Projection Types"]
-    Root --> Enhanced["Enhanced Relational Types"]
-    Root --> Hiring["Hiring Domain Types"]
-    Root --> HiringIndex["Hiring Re-exports (Index)"]
+    ContributorDomain["contributor.ts"] --> ContributorUI["Contributor (UI)"]
+
+    EnhancedTypes["enhanced.ts"] --> EnhancedCity["EnhancedCity"]
+    EnhancedTypes --> EnhancedRegion["EnhancedRegion"]
+    EnhancedTypes --> EnhancedState["EnhancedState"]
+
+    HiringTypes["hiring.ts"] --> HiringProfile["HiringManagerProfile"]
+    HiringTypes --> JobOpeningType["JobOpening"]
+    HiringTypes --> SocialLinkType["SocialLink"]

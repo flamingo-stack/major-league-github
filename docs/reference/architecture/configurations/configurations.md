@@ -1,374 +1,330 @@
 # Configurations
 
-The **Configurations** module centralizes all Spring Boot configuration for the Major League GitHub backend. It defines infrastructure beans, environment profiles, caching strategy selection, Redis connectivity, JSON serialization behavior, asynchronous execution, scheduling, and CORS rules.
+The **Configurations** module centralizes all Spring Boot configuration for the Major League GitHub backend. It defines infrastructure beans, environment profiles, cache selection strategies, asynchronous execution pools, Redis integration, JSON serialization behavior, and web-level cross-origin policies.
 
-This module acts as the foundational wiring layer between:
+This module acts as the wiring layer between:
 
-- The Core Application bootstrap
-- The Service Layer
-- The Cache Services
-- The Controllers
-- The Cache Updater microservice
+- [Application Core](../application-core/application-core.md)
+- [Cache Services](../cache-services/cache-services.md)
+- [Backend Services](../backend-services/backend-services.md)
+- [Controllers](../controllers/controllers.md)
+- [Rate Management](../rate-management/rate-management.md)
 
-Rather than containing business logic, the Configurations module defines how components are instantiated, connected, and tuned for different runtime environments.
+Rather than implementing business logic, the Configurations module ensures that all other modules are correctly initialized, connected, and parameterized based on environment and runtime properties.
 
 ---
 
 ## Architectural Overview
 
-The Configurations module provides Spring beans that are consumed across the backend microservices.
-
 ```mermaid
 flowchart TD
-    App["MajorLeagueGithubApplication"] --> Config["Configurations Module"]
+    App["Spring Boot Application"] --> Config["Configurations Module"]
 
     subgraph infra["Infrastructure Beans"]
         Async["AsyncConfig"]
         Cache["CacheConfig"]
         Redis["RedisConfig"]
         Web["WebConfig"]
-        Backend["BackendServiceConfig"]
-        Updater["CacheUpdaterConfig"]
+    end
+
+    subgraph profiles["Profile-Specific"]
+        BackendProfile["BackendServiceConfig"]
+        UpdaterProfile["CacheUpdaterConfig"]
     end
 
     Config --> Async
     Config --> Cache
     Config --> Redis
     Config --> Web
-    Config --> Backend
-    Config --> Updater
+    Config --> BackendProfile
+    Config --> UpdaterProfile
 
-    Cache --> CacheServices["Cache Services"]
-    Redis --> RedisServer[("Redis Server")]
-    Async --> Services["Service Layer"]
-    Web --> Controllers["Controllers"]
-    Updater --> Scheduler["Scheduled Jobs"]
+    Cache --> CacheServices["Cache Services Module"]
+    Async --> BackendServices["Backend Services Module"]
+    Web --> Controllers["Controllers Module"]
+    Redis --> CacheServices
 ```
 
-### Responsibilities
+The Configurations module:
 
-The module is responsible for:
-
-- Selecting and configuring cache implementations
-- Managing Redis connectivity and serialization
-- Defining asynchronous thread pools for GitHub API concurrency
-- Enabling profile-specific configuration for backend and cache-updater services
-- Configuring CORS rules for frontend integration
-- Providing JSON adapters for time-based objects
+- Defines bean lifecycles
+- Selects cache implementation dynamically
+- Provides thread pools for concurrent GitHub API calls
+- Enables scheduling for the cache updater service
+- Configures Redis connectivity and JSON serialization
+- Establishes global CORS policy
 
 ---
 
-## Configuration Classes
+# Core Configuration Areas
 
-The Configurations module consists of the following components:
+## 1. Asynchronous Execution
 
-| Class | Responsibility |
-|--------|----------------|
-| AsyncConfig | Thread pools for concurrent GitHub API calls |
-| CacheConfig | Cache mode and implementation selection |
-| CacheUpdaterConfig | Scheduling and profile config for cache updater service |
-| BackendServiceConfig | Backend-specific profile configuration |
-| RedisConfig | Redis connection, template, and Gson configuration |
-| WebConfig | CORS and web layer configuration |
-| LocalDateTimeAdapter | Gson adapter for LocalDateTime |
-| InstantTypeAdapter | Gson adapter for Instant |
+**Component:** `AsyncConfig`
 
----
+The system performs heavy GitHub API queries and contributor aggregation. To prevent blocking HTTP request threads, the Configurations module provides two dedicated thread pools:
 
-# Async Configuration
+- `contributorsAsyncExecutorLow`
+- `contributorsAsyncExecutorHigh`
 
-## AsyncConfig
+### Thread Pool Characteristics
 
-The AsyncConfig class defines two thread pools used for GitHub contributor data processing.
+- Core pool size configurable via property `github.api.concurrency`
+- Maximum pool size: 100
+- Queue capacity: 1000
+- Graceful shutdown with timeout handling
+- Custom thread name prefixes
 
-### Thread Pools
-
-Two executors are defined:
-
-- contributorsAsyncExecutorLow
-- contributorsAsyncExecutorHigh
-
-Both are instances of ThreadPoolTaskExecutor and are exposed as ThreadPoolExecutor beans.
-
-### Key Properties
-
-| Property | Value Source |
-|-----------|-------------|
-| Core pool size | github.api.concurrency property (default 10) |
-| Max pool size | 100 |
-| Queue capacity | 1000 |
-| Await termination | 60 seconds |
-
-The concurrency level is externally configurable using the property:
-
-```text
-github.api.concurrency=10
-```
-
-### Graceful Shutdown
-
-The class implements a @PreDestroy lifecycle hook to:
-
-- Shut down executors gracefully
-- Wait up to 10 seconds for termination
-- Force shutdown if necessary
-- Preserve interruption status
-
-This ensures safe shutdown during Kubernetes pod termination or service restarts.
-
----
-
-# Cache Configuration
-
-## CacheConfig
-
-The CacheConfig class dynamically selects the active cache implementation and cache mode at runtime.
-
-### Cache Modes
-
-```text
-read-only
-read-write
-force-update
-```
-
-| Mode | Behavior |
-|------|----------|
-| read-only | No writes allowed; serves existing cache only |
-| read-write | Normal cache behavior |
-| force-update | Forces refresh behavior (used by updater) |
-
-### Cache Implementations
-
-```text
-redis
-disk
-```
-
-### Runtime Selection Logic
-
-```mermaid
-flowchart TD
-    Start["Application Startup"] --> Mode["Read cache.mode"]
-    Mode --> Impl["Read cache.implementation"]
-
-    Impl --> Decision{"Mode == read-only?"}
-    Decision -->|"Yes"| ReadOnly["Use ReadOnlyCacheService"]
-    Decision -->|"No"| ImplChoice{"Implementation"}
-
-    ImplChoice -->|"redis"| RedisCache["Use RedisCacheService"]
-    ImplChoice -->|"disk"| DiskCache["Use DiskCacheService"]
-```
-
-The selected implementation is exposed as the primary CacheServiceAbs bean and injected throughout the Service Layer.
-
-This design allows:
-
-- Local development with disk cache
-- Production deployment with Redis
-- Safe read-only mode during maintenance
-- Forced refresh behavior for cache-updater jobs
-
----
-
-# Redis Configuration
-
-## RedisConfig
-
-The RedisConfig class defines Redis connectivity and JSON serialization.
-
-### Connection Factory
-
-Uses:
-
-- RedisStandaloneConfiguration
-- LettuceConnectionFactory
-
-Configured via properties:
-
-```text
-spring.redis.host=localhost
-spring.redis.port=6379
-```
-
-### RedisTemplate
-
-Configured with:
-
-- StringRedisSerializer for keys
-- StringRedisSerializer for values
-- Transaction support enabled
-
-The template is used by RedisCacheService for storing serialized JSON objects.
-
-### Gson Configuration
-
-A custom Gson bean is defined with:
-
-- LocalDateTimeAdapter
-- InstantTypeAdapter
-
-This ensures consistent serialization of time-based values stored in Redis.
+### Execution Model
 
 ```mermaid
 flowchart LR
-    Service["Service Layer"] --> Cache["RedisCacheService"]
-    Cache --> Template["RedisTemplate"]
-    Template --> Redis[("Redis")]
-    Cache --> Gson["Gson with Time Adapters"]
+    Controller["Controller"] --> Service["Backend Service"]
+    Service -->|"Submit Task"| LowPool["Low Priority Executor"]
+    Service -->|"Submit Task"| HighPool["High Priority Executor"]
+    LowPool --> GithubAPI["GitHub API"]
+    HighPool --> GithubAPI
 ```
 
----
+The executors ensure:
 
-# JSON Time Adapters
+- Parallel contributor fetching
+- Controlled GitHub API concurrency
+- Graceful shutdown during service termination
 
-## LocalDateTimeAdapter
-
-Implements:
-
-- JsonSerializer<LocalDateTime>
-- JsonDeserializer<LocalDateTime>
-
-Uses ISO_LOCAL_DATE_TIME format.
-
-Ensures LocalDateTime values are consistently serialized and parsed.
-
-## InstantTypeAdapter
-
-Custom Gson TypeAdapter for Instant.
-
-- Writes Instant as ISO-8601 string
-- Parses string back into Instant
-- Handles null values safely
-
-These adapters prevent timezone inconsistencies and serialization failures when caching or returning API responses.
+Shutdown logic is handled using `@PreDestroy`, guaranteeing proper cleanup of threads.
 
 ---
 
-# Web Configuration
+## 2. Cache Strategy Configuration
 
-## WebConfig
+**Component:** `CacheConfig`
 
-Implements WebMvcConfigurer to configure CORS rules.
+This configuration determines which cache implementation is used at runtime and in what mode.
 
-### Allowed Origins
+### Supported Cache Modes
 
-Development:
+- `read-only`
+- `read-write`
+- `force-update`
 
-- http://localhost:8450
-- http://localhost:3000
+### Supported Implementations
 
-Production:
+- `redis`
+- `disk`
 
-- https://www.mlg.soccer
-- http://www.mlg.soccer
+These map directly to the implementations in the [Cache Services](../cache-services/cache-services.md) module:
 
-### Allowed Methods
+- `RedisCacheService`
+- `DiskCacheService`
+- `ReadOnlyCacheService`
 
-- GET
-- POST
-- PUT
-- DELETE
-- OPTIONS
-
-### Additional Settings
-
-- Allow credentials: true
-- Exposed headers: Access-Control-Allow-Origin
-- Max age: 3600 seconds
-
-This configuration allows the React frontend to safely interact with the backend API in both development and production environments.
-
----
-
-# Profile-Based Configuration
-
-## BackendServiceConfig
-
-Activated under the profile:
-
-```text
-backend-service
-```
-
-Enables:
-
-- Spring MVC
-- Backend-specific configuration extensions
-
-This profile is used when running the main API service.
-
----
-
-## CacheUpdaterConfig
-
-Activated under the profile:
-
-```text
-cache-updater
-```
-
-Enables:
-
-- Scheduling support via @EnableScheduling
-
-This configuration powers the cache updater microservice, which periodically refreshes GitHub data.
+### Selection Flow
 
 ```mermaid
 flowchart TD
-    Profile["cache-updater Profile"] --> Scheduling["EnableScheduling"]
-    Scheduling --> Jobs["Scheduled Cache Refresh Jobs"]
-    Jobs --> Cache["CacheServiceAbs"]
+    Start["Application Startup"] --> ReadProps["Read cache.* Properties"]
+    ReadProps --> Mode{"Cache Mode?"}
+    Mode -->|"read-only"| ReadOnly["ReadOnlyCacheService"]
+    Mode -->|"read-write"| Impl{"Implementation?"}
+    Mode -->|"force-update"| Impl
+    Impl -->|"redis"| RedisImpl["RedisCacheService"]
+    Impl -->|"disk"| DiskImpl["DiskCacheService"]
 ```
+
+### Primary Bean
+
+The `cacheService()` method is marked `@Primary`, ensuring:
+
+- Only one active `CacheServiceAbs` implementation is injected
+- Backend services do not need to know which cache backend is active
+- Switching between Redis and Disk requires only property changes
+
+This design isolates infrastructure concerns from business logic.
 
 ---
 
-# Integration with Other Modules
+## 3. Redis Integration & Serialization
 
-The Configurations module integrates closely with:
+**Component:** `RedisConfig`
 
-- Core Application for application bootstrap
-- Cache Services for implementation selection
-- Service Layer for async execution and caching
-- Controllers for CORS and web configuration
-- Rate Management for concurrency tuning
+Provides:
 
-It ensures both backend-service and cache-updater microservices can share infrastructure while enabling profile-specific behavior.
+- `RedisConnectionFactory`
+- `RedisTemplate<String, Object>`
+- Customized `Gson` bean
+
+### Redis Connection
+
+Configuration is property-driven:
+
+- `spring.redis.host`
+- `spring.redis.port`
+
+Uses:
+
+- `RedisStandaloneConfiguration`
+- `LettuceConnectionFactory`
+
+### RedisTemplate Setup
+
+```mermaid
+flowchart LR
+    RedisConfig["RedisConfig"] --> Factory["RedisConnectionFactory"]
+    Factory --> Template["RedisTemplate"]
+    Template --> CacheService["RedisCacheService"]
+```
+
+- String serializers for keys and values
+- Transaction support enabled
+
+### JSON Time Handling
+
+To ensure consistent serialization of temporal values stored in cache:
+
+- `LocalDateTimeAdapter`
+- `InstantTypeAdapter`
+
+These adapters:
+
+- Serialize to ISO-8601 strings
+- Ensure lossless deserialization
+- Avoid timestamp timezone inconsistencies
+
+The `Gson` bean becomes the shared serializer across cache and services.
 
 ---
 
-# Deployment Considerations
+## 4. Web & CORS Configuration
 
-## Environment Variables and Properties
+**Component:** `WebConfig`
 
-Key configurable properties include:
+Implements `WebMvcConfigurer` to define global CORS policy.
 
-```text
-github.api.concurrency=10
-cache.implementation=redis
-cache.mode=read-write
-spring.redis.host=localhost
-spring.redis.port=6379
-spring.profiles.active=backend-service
+### Allowed Origins
+
+- `http://localhost:8450`
+- `http://localhost:3000`
+- `https://www.mlg.soccer`
+- `http://www.mlg.soccer`
+
+### Enabled For
+
+- All endpoints (`/**`)
+- All standard HTTP methods
+- Credentials allowed
+- 1-hour preflight cache
+
+```mermaid
+flowchart LR
+    Browser["Frontend"] -->|"HTTP Request"| Backend["Backend Service"]
+    Backend -->|"CORS Validation"| WebConfig
+    WebConfig -->|"Allowed Origin"| Response["HTTP Response"]
 ```
 
-Proper tuning of these values is critical for:
+This configuration allows:
 
-- Managing GitHub API rate limits
-- Optimizing Redis performance
-- Preventing thread exhaustion
-- Supporting horizontal scaling in Kubernetes
+- Local development (React frontend on port 3000)
+- Production deployment behind ingress
+- Cross-origin API calls with cookies/credentials
+
+---
+
+## 5. Profile-Based Bootstrapping
+
+The backend runs in two distinct service modes:
+
+### Backend Service Profile
+
+**Component:** `BackendServiceConfig`
+
+- Activated via profile `backend-service`
+- Enables Spring MVC (`@EnableWebMvc`)
+- Hosts REST controllers and API endpoints
+
+### Cache Updater Profile
+
+**Component:** `CacheUpdaterConfig`
+
+- Activated via profile `cache-updater`
+- Enables scheduling (`@EnableScheduling`)
+- Extends Web MVC auto configuration
+- Drives background refresh and pre-cache jobs
+
+```mermaid
+flowchart TD
+    Startup["Application Startup"] --> Profile{"Active Profile"}
+    Profile -->|"backend-service"| BackendMode["REST API Mode"]
+    Profile -->|"cache-updater"| UpdaterMode["Scheduled Refresh Mode"]
+```
+
+This separation allows:
+
+- Horizontal scaling of API nodes
+- Independent scaling of background cache updater
+- Cleaner infrastructure boundaries in Kubernetes
+
+---
+
+# Cross-Module Relationships
+
+The Configurations module connects directly to:
+
+- [Cache Services](../cache-services/cache-services.md) – selects and configures cache backend
+- [Backend Services](../backend-services/backend-services.md) – provides executors and cache beans
+- [Controllers](../controllers/controllers.md) – enables web layer & CORS
+- [Rate Management](../rate-management/rate-management.md) – indirectly influences GitHub API concurrency
+- [Application Core](../application-core/application-core.md) – loaded at application startup
+
+It does **not** contain business rules. Instead, it defines the runtime environment that allows the rest of the system to function predictably across development, staging, and production.
 
 ---
 
 # Design Principles
 
-The Configurations module follows these principles:
+## Environment-Driven Behavior
 
-1. Separation of infrastructure from business logic
-2. Environment-driven behavior via profiles
-3. Externalized configuration via properties
-4. Pluggable cache implementations
-5. Safe concurrency and graceful shutdown
+All major behavior changes are controlled via properties:
 
-By centralizing infrastructure configuration, the backend remains modular, flexible, and production-ready for both API serving and background cache update workloads.
+- Cache implementation
+- Cache mode
+- GitHub API concurrency
+- Redis host/port
+- Active profile
+
+This enables deployment flexibility without code modification.
+
+## Infrastructure Isolation
+
+- Business services depend only on abstractions (`CacheServiceAbs`)
+- Cache implementation is selected centrally
+- Async execution is abstracted behind named executors
+
+## Safe Shutdown
+
+- Thread pools are explicitly shut down
+- Executors wait for task completion
+- Forced termination fallback exists
+
+This prevents:
+
+- Orphaned threads
+- Partial writes
+- Corrupted cache states
+
+---
+
+# Summary
+
+The **Configurations** module is the infrastructure backbone of the Major League GitHub backend.
+
+It provides:
+
+- Dynamic cache selection
+- Redis connectivity
+- Controlled asynchronous execution
+- JSON time serialization
+- CORS configuration
+- Profile-driven runtime behavior
+
+By separating infrastructure configuration from business logic, the system remains modular, environment-aware, and production-ready.

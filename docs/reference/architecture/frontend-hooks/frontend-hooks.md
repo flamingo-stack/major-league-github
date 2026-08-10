@@ -1,267 +1,303 @@
 # Frontend Hooks
 
-The **Frontend Hooks** module encapsulates reusable React hooks that manage browser-driven state and location-aware behavior in the Major League GitHub frontend. These hooks act as the bridge between:
+The **Frontend Hooks** module encapsulates reusable React hooks that manage client-side state derived from the browser environment and URL. These hooks provide:
 
-- The browser environment (URL, geolocation API)
-- React Router state
-- UI components in the Frontend Components module
-- API-driven filtering logic in the Frontend Services module
+- Geolocation-based region detection
+- URL-driven filter state management
+- Validation and synchronization between UI state and query parameters
 
-By centralizing URL synchronization and geolocation logic, this module ensures consistent filtering, shareable URLs, and location-based personalization across the application.
+This module acts as a bridge between:
 
----
+- **Frontend Components** (UI layer)
+- **Frontend Services** (API requests)
+- **Frontend Types** (shared TypeScript models)
 
-## Module Responsibilities
-
-The Frontend Hooks module provides:
-
-1. **URL State Management** – Synchronizes filter state (city, region, language, team, state) with query parameters.
-2. **Validation & Debouncing** – Ensures URL parameters are valid and updates are optimized.
-3. **Geolocation-Based Region Detection** – Determines the nearest region using the Haversine formula.
-4. **Derived State Utilities** – Exposes helper signals such as `hasStateChanged` and `isStateEmpty`.
+By centralizing cross-cutting concerns (URL parsing, validation, geolocation), the Frontend Hooks module keeps components clean, declarative, and predictable.
 
 ---
 
-## High-Level Architecture
+## Architectural Overview
 
 ```mermaid
 flowchart TD
-    Browser["Browser Environment"] -->|"query params"| Router["React Router"]
-    Browser -->|"Geolocation API"| NearestRegionHook["useNearestRegion Hook"]
-
-    Router --> UrlStateHook["useUrlState Hook"]
-
-    UrlStateHook --> Components["Frontend Components"]
-    NearestRegionHook --> Components
-
-    Components --> Services["Frontend Services"]
-    Services --> Backend["Backend Service API"]
+    UI["Frontend Components"] -->|"uses"| Hooks["Frontend Hooks"]
+    Hooks -->|"reads/writes"| Router["React Router Search Params"]
+    Hooks -->|"consumes"| Types["Frontend Types"]
+    Hooks -->|"drives filters"| Services["Frontend Services"]
+    Services -->|"calls"| Backend["Backend API"]
 ```
 
-### Explanation
+### Responsibilities
 
-- **React Router** provides access to query parameters.
-- **useUrlState** parses, validates, and updates URL parameters.
-- **useNearestRegion** interacts with the browser geolocation API.
-- **Frontend Components** consume derived state to render filters and tables.
-- **Frontend Services** use the URL-derived state to fetch filtered contributor data.
+| Hook | Responsibility |
+|------|---------------|
+| `useNearestRegion` | Determines the closest MLS region based on browser geolocation |
+| `useUrlState` | Synchronizes filter state with URL query parameters |
 
 ---
 
-## Core Hooks Overview
+# 1. useNearestRegion
 
-### 1. useUrlState (Advanced Implementation)
+**Source:** `frontend/src/hooks/useNearestRegion.ts`  
+**Core Component:** `Coordinates`
 
-**File:** `frontend/src/hooks/useUrlState.ts`
+## Purpose
 
-This is the primary URL state management hook. It provides:
+`useNearestRegion` determines the closest region to the user using the browser's Geolocation API and the Haversine formula. It enhances UX by automatically suggesting or pre-selecting the geographically nearest MLS region.
 
-- Strongly typed `UrlState`
-- Centralized parameter configuration (`URL_PARAMS`)
-- Validation via regex rules
-- Transformation support
-- Debounced updates
-- Error handling via `UrlStateError`
-- Change detection (`hasStateChanged`)
-- Reset capability
+## Key Concepts
 
-#### URL State Model
+### Coordinates Interface
+
+```typescript
+interface Coordinates {
+    latitude: number;
+    longitude: number;
+}
+```
+
+Represents a geographic point in decimal degrees.
+
+### Haversine Distance Formula
+
+The hook uses the Haversine formula to compute great-circle distance between two geographic coordinates:
 
 ```text
-UrlState
-├── selectedCityId
-├── selectedRegionId
-├── stateId
-├── languageId
-└── teamId
+Distance = 2R * arcsin(
+  sqrt(
+    sin²((Δlat)/2) +
+    cos(lat1) * cos(lat2) * sin²((Δlon)/2)
+  )
+)
 ```
 
-Each property maps to a query parameter:
+Where:
+- `R` = Earth radius (6371 km)
+- `Δlat`, `Δlon` = differences in radians
 
-| State Field         | Query Param |
-|--------------------|------------|
-| selectedCityId     | cityId     |
-| selectedRegionId   | regionId   |
-| stateId            | stateId    |
-| languageId         | languageId |
-| teamId             | teamId     |
+---
 
-#### Internal Processing Flow
+## Execution Flow
 
 ```mermaid
 flowchart TD
-    Start["Component Mount"] --> ReadParams["Read searchParams"]
-    ReadParams --> Parse["parseUrlValue()"]
-    Parse --> Validate["validateValue()"]
-    Validate --> BuildState["Construct UrlState"]
-    BuildState --> Memoize["useMemo"]
-    Memoize --> ReturnState["Return Hook API"]
-```
-
-#### Update Flow with Debouncing
-
-```mermaid
-flowchart TD
-    UpdateCall["updateUrlState(newState)"] --> Compare["Compare with current params"]
-    Compare --> HasChanges{"Changes?"}
-    HasChanges -->|"No"| Exit["Skip Update"]
-    HasChanges -->|"Yes"| DebounceCheck{"Debounce?"}
-    DebounceCheck -->|"Immediate"| Apply["setSearchParams()"]
-    DebounceCheck -->|"Delayed"| Timeout["setTimeout()"]
-    Timeout --> Apply
-    Apply --> EndNode["URL Updated"]
-```
-
-#### Key Design Decisions
-
-- **Central Param Registry:** All query parameter behavior is defined in `URL_PARAMS`.
-- **Regex Validation:** Prevents malformed IDs from entering application state.
-- **Safe Parsing:** Invalid values fall back to defaults.
-- **Replace Mode Updates:** Avoids polluting browser history.
-- **Derived Flags:** `hasStateChanged` enables optimized re-fetching.
-
----
-
-### 2. useUrlState (Lightweight Variant)
-
-**File:** `frontend/src/hooks/useUrlState/index.ts`
-
-This simplified version:
-
-- Directly maps query params to state
-- Provides basic update capability
-- Does not include validation or debouncing
-
-It is suitable for simpler routing scenarios but lacks the advanced protections of the main implementation.
-
----
-
-### 3. useNearestRegion
-
-**File:** `frontend/src/hooks/useNearestRegion.ts`
-
-This hook determines the nearest `Region` based on user geolocation.
-
-#### Responsibilities
-
-- Access browser geolocation API
-- Compute distances using the Haversine formula
-- Select the nearest region with valid coordinates
-- Return `{ nearestRegion, error }`
-
-#### Distance Calculation
-
-The hook uses the Haversine formula to compute spherical distance between two latitude/longitude pairs.
-
-```mermaid
-flowchart TD
-    Start["Regions Provided"] --> GeoCheck{"Geolocation Supported?"}
-    GeoCheck -->|"No"| ErrorNode["Set Error"]
-    GeoCheck -->|"Yes"| GetPos["getCurrentPosition()"]
-    GetPos --> Loop["Iterate Regions"]
-    Loop --> Compute["getDistance()"]
-    Compute --> Compare["Track Minimum Distance"]
-    Compare --> Select["Select Nearest Region"]
-    Select --> ReturnNode["Return nearestRegion"]
-```
-
-#### Coordinates Interface
-
-```text
-Coordinates
-├── latitude: number
-└── longitude: number
-```
-
-#### Edge Case Handling
-
-- Geolocation unsupported
-- Permission denied
-- No regions with valid coordinates
-- Empty region list
-
----
-
-## Interaction with Other Modules
-
-The Frontend Hooks module does not operate in isolation. It integrates with the following modules:
-
-- **Frontend Components** – Components such as tables, filters, and autocompletes consume `urlState` and `nearestRegion`.
-- **Frontend Services** – Query parameters derived from `urlState` are passed to API request builders.
-- **Frontend Types** – Uses strongly typed models such as `Region` and API response types.
-
-Typical interaction flow:
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Component as "Filter Component"
-    participant Hook as "useUrlState"
-    participant Service as "API Service"
-
-    User->>Component: Select language
-    Component->>Hook: updateUrlState({ languageId })
-    Hook->>Component: Updated urlState
-    Component->>Service: Fetch contributors with filters
-    Service->>Component: Return filtered data
+    Start["Hook Initialized"] --> CheckRegions{"Regions Provided?"}
+    CheckRegions -->|"No"| EndA["Return null"]
+    CheckRegions -->|"Yes"| CheckGeo{"Geolocation Supported?"}
+    CheckGeo -->|"No"| ErrorA["Set Error: Not Supported"]
+    CheckGeo -->|"Yes"| GetPosition["navigator.geolocation.getCurrentPosition()"]
+    GetPosition --> Calc["Calculate Distance to Each Region"]
+    Calc --> FindMin["Find Minimum Distance"]
+    FindMin --> SetRegion["Set nearestRegion"]
+    SetRegion --> EndB["Return { nearestRegion, error }"]
 ```
 
 ---
 
-## Error Handling Strategy
+## Return Value
 
-### URL Validation Errors
+```typescript
+{
+  nearestRegion: Region | null,
+  error: string | null
+}
+```
 
-- Invalid values trigger `UrlStateError`
-- Fallback to default values
-- Optional `onError` callback allows centralized logging
+## Integration Points
 
-### Geolocation Errors
-
-- Browser not supported
-- Permission denied
-- Retrieval failure
-
-All errors are surfaced as string messages, allowing components to render appropriate UI feedback.
-
----
-
-## Performance Considerations
-
-- **useMemo** prevents unnecessary recomputation of parsed state.
-- **useCallback** ensures stable function references.
-- **Debouncing** reduces excessive URL updates.
-- **Change detection** avoids redundant fetch operations.
+- Consumes `Region` from **Frontend Types**
+- Typically used inside location-aware pages
+- Can prefill region filters managed by `useUrlState`
 
 ---
 
-## Extending the Module
+# 2. useUrlState (Validated & Debounced Version)
 
-To add a new URL parameter:
+**Source:** `frontend/src/hooks/useUrlState.ts`
 
-1. Extend the `UrlState` interface.
-2. Add a new entry in `URL_PARAMS`.
-3. Define validation and default behavior.
-4. Ensure consuming components use the new state key.
+## Purpose
 
-To enhance geolocation logic:
-
-- Add radius thresholds.
-- Introduce fallback region logic.
-- Cache last-known region in local storage.
-
----
-
-## Summary
-
-The **Frontend Hooks** module provides the state synchronization and location intelligence that powers the filtering experience of Major League GitHub.
+`useUrlState` provides a structured and validated interface for synchronizing UI filter state with URL query parameters.
 
 It ensures:
 
-- Shareable and bookmarkable filter states
-- Validated and controlled query parameters
-- Optimized URL updates
-- Location-aware region selection
-- Clear separation between UI, routing, and API layers
+- Strong validation of URL parameters
+- Controlled debounced updates
+- Graceful fallback to defaults
+- Change detection
 
-By isolating browser-specific logic inside reusable hooks, the application remains modular, testable, and scalable.
+---
+
+## URL State Model
+
+```typescript
+export interface UrlState {
+    selectedCityId: string | null;
+    selectedRegionId: string | null;
+    stateId: string | null;
+    languageId: string | null;
+    teamId: string | null;
+}
+```
+
+Each property maps to a URL parameter:
+
+| State Key | URL Param |
+|-----------|-----------|
+| selectedCityId | cityId |
+| selectedRegionId | regionId |
+| stateId | stateId |
+| languageId | languageId |
+| teamId | teamId |
+
+---
+
+## Validation & Parsing Pipeline
+
+```mermaid
+flowchart TD
+    URL["URLSearchParams"] --> Parse["parseUrlValue()"]
+    Parse --> Validate{"Valid?"}
+    Validate -->|"Yes"| State["Populate UrlState"]
+    Validate -->|"No"| Default["Use defaultValue"]
+```
+
+### Validation Rules
+
+- Regex validation: `^[a-zA-Z0-9-]+$`
+- Optional transform step
+- Default fallback on failure
+- Custom error hook support via `onError`
+
+---
+
+## Debounced Updates
+
+To prevent excessive URL updates (e.g., typing filters):
+
+- Immediate updates for input clearing
+- Optional `debounceMs` for delayed synchronization
+- Automatic cleanup on unmount
+
+```mermaid
+sequenceDiagram
+    participant UI
+    participant Hook as "useUrlState"
+    participant Router as "React Router"
+
+    UI->>Hook: updateUrlState(newState)
+    Hook->>Hook: debounce if configured
+    Hook->>Router: setSearchParams()
+    Router->>Hook: searchParams updated
+    Hook->>UI: new urlState
+```
+
+---
+
+## Returned API
+
+```typescript
+{
+  urlState,
+  updateUrlState,
+  resetUrlState,
+  hasStateChanged,
+  isStateEmpty
+}
+```
+
+### Key Features
+
+- `updateUrlState(partialState)` — partial updates
+- `resetUrlState()` — clears all filters
+- `hasStateChanged` — shallow comparison with previous state
+- `isStateEmpty` — convenience flag
+
+---
+
+# 3. useUrlState (Lightweight Index Version)
+
+**Source:** `frontend/src/hooks/useUrlState/index.ts`
+
+This version provides a simplified URL synchronization mechanism without:
+
+- Validation
+- Debouncing
+- Change tracking
+
+## Characteristics
+
+- Direct mapping between URL params and state
+- Immediate updates
+- Minimal abstraction
+
+```mermaid
+flowchart LR
+    URL["URL Params"] --> State["urlState Object"]
+    State --> Update["updateUrlState()"]
+    Update --> URL
+```
+
+This lightweight version may be used for:
+
+- Simpler pages
+- Legacy compatibility
+- Controlled environments
+
+---
+
+# Cross-Module Integration
+
+```mermaid
+flowchart TD
+    Hooks["Frontend Hooks"] --> Components["Frontend Components"]
+    Components --> Services["Frontend Services"]
+    Services --> Backend["Backend Services"]
+
+    Hooks --> Types["Frontend Types"]
+```
+
+### Relationships
+
+- **Frontend Components** depend on these hooks for filter and location state
+- **Frontend Services** consume values from `urlState` to build API requests
+- **Frontend Types** provide shared models (`Region`, `Contributor`, etc.)
+
+---
+
+# Design Principles
+
+## 1. Separation of Concerns
+
+Components focus on rendering.
+Hooks manage state logic and browser APIs.
+
+## 2. Deterministic URL State
+
+The URL is the single source of truth for filter state.
+This enables:
+
+- Shareable links
+- Deep linking
+- Back/forward navigation compatibility
+
+## 3. Progressive Enhancement
+
+- Geolocation is optional
+- Validation failures degrade gracefully
+- Browser support is checked explicitly
+
+---
+
+# Summary
+
+The **Frontend Hooks** module provides the foundational state logic that powers the interactive behavior of Major League GitHub's frontend.
+
+It enables:
+
+- Location-aware experiences
+- Clean URL-driven filtering
+- Predictable navigation state
+- Improved user experience through validation and debouncing
+
+By abstracting browser APIs and URL synchronization into dedicated hooks, the module ensures maintainability, composability, and scalability across the frontend application.

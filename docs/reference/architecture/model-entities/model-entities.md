@@ -1,175 +1,173 @@
 # Model Entities
 
-The **Model Entities** module defines the core domain model for the Major League GitHub backend. It contains the immutable and mutable data structures that represent contributors, hiring managers, geographic hierarchies, soccer teams, programming languages, job openings, and standardized API responses.
+The **Model Entities** module defines the core domain objects used by the Major League GitHub backend service. These entities represent contributors, geographic structures, hiring profiles, soccer teams, and standardized API responses.
 
-This module is the foundation of the backend architecture. All higher-level layers—controllers, services, caching, and GraphQL integrations—operate on these entities to produce API responses consumed by the frontend.
+This module acts as the **central data contract layer** between:
 
----
+- Controllers (REST endpoints)
+- Backend services (business logic)
+- Cache services (Redis/Disk)
+- Frontend API consumers
 
-## 1. Purpose and Responsibilities
-
-The Model Entities module is responsible for:
-
-- Defining domain objects shared across the backend
-- Modeling relationships between geography, contributors, and soccer teams
-- Representing GitHub statistics and hiring metadata
-- Providing a consistent API response wrapper
-- Enabling serialization/deserialization via Jackson
-- Supporting builder-style object creation via Lombok
-
-These entities are intentionally lightweight and primarily serve as data carriers (POJOs) with minimal business logic.
+All higher-level modules depend on the data structures defined here.
 
 ---
 
-## 2. High-Level Architecture
+## 1. Architectural Role
 
-The Model Entities module sits at the core of the backend service layer.
+The Model Entities module provides:
+
+- ✅ Domain models for contributors and hiring managers  
+- ✅ Geographic hierarchy (Region → State → City)  
+- ✅ Soccer team metadata for proximity-based ranking  
+- ✅ Standardized API response wrapper  
+- ✅ Shared objects reused across backend and frontend type systems  
+
+### High-Level Architecture Context
 
 ```mermaid
 flowchart TD
-    Controllers["REST Controllers"] -->|"return"| ApiResponse["ApiResponse<T>"]
-    Controllers -->|"use"| Services["Service Layer"]
-    Services -->|"construct"| Contributor["Contributor"]
-    Services -->|"construct"| Geography["City / State / Region"]
-    Services -->|"construct"| SoccerTeam["SoccerTeam"]
-    Services -->|"construct"| Language["Language"]
-    Services -->|"construct"| Hiring["HiringManagerProfile / JobOpening"]
-    Contributor -->|"references"| Geography
-    Geography -->|"links to"| SoccerTeam
+    Controllers["Controllers"] -->|"return ApiResponse<T>"| ApiResponse["ApiResponse"]
+    Controllers --> Services["Backend Services"]
+    Services --> Models["Model Entities"]
+    Services --> Cache["Cache Services"]
+    Cache --> Models
+    Models --> Frontend["Frontend (TypeScript Types)"]
 ```
 
-### Key Design Characteristics
+The Model Entities module is a **pure data layer**:
 
-- **Separation of concerns**: Entities contain no service or persistence logic.
-- **Bidirectional enrichment**: Many entities include both ID references and optional embedded reference objects.
-- **Serialization control**: `@JsonInclude(JsonInclude.Include.NON_NULL)` prevents unnecessary payload bloat.
-- **Builder pattern**: All mutable entities use Lombok `@Builder` for safe and readable construction.
+- No persistence logic
+- No HTTP logic
+- No infrastructure logic
+- Only structured, serializable domain objects
 
 ---
 
-## 3. Core Entity Groups
+# 2. Core Entity Groups
 
-The Model Entities module can be logically divided into the following groups:
+The module can be logically divided into the following groups:
 
 1. API Wrapper
 2. Contributor & Hiring Domain
 3. Geographic Hierarchy
 4. Soccer Team Domain
 5. Language Domain
-6. Social & Job Metadata
-
-Each group is described below.
 
 ---
 
-# 4. API Wrapper
+# 3. API Wrapper
 
-## ApiResponse<T>
+## ApiResponse
 
 **Class:** `ApiResponse<T>`  
-**Purpose:** Standardized API response envelope used by controllers.
+
+A generic response wrapper used by all REST endpoints.
 
 ### Structure
 
-```text
-ApiResponse<T>
- ├─ status   : "success" | "error"
- ├─ message  : optional message
- └─ data     : generic payload
+```java
+public class ApiResponse<T> {
+    private String status;
+    private String message;
+    private T data;
+}
 ```
 
-### Static Factory Methods
+### Factory Methods
 
-- `success(T data)`
-- `success(T data, String message)`
-- `error(String message)`
+- `success(data)`
+- `success(data, message)`
+- `error(message)`
 
-### Why This Matters
+### Purpose
 
-- Ensures consistent JSON response structure
-- Simplifies frontend parsing
-- Centralizes success/error semantics
-- Enables strong typing with generics
+- Standardizes all API responses
+- Simplifies frontend error handling
+- Enforces consistent JSON shape
+
+### Response Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+
+    Client->>Controller: HTTP Request
+    Controller->>Service: Execute logic
+    Service->>Controller: Domain Model
+    Controller->>Client: ApiResponse<DomainObject>
+```
 
 ---
 
-# 5. Contributor & Hiring Domain
+# 4. Contributor & Hiring Domain
 
-## 5.1 Contributor
+This domain models GitHub contributors and hiring managers.
+
+## 4.1 Contributor
 
 **Class:** `Contributor`
 
-This is the most central entity in the system. It models both:
+Represents either:
 
-- GitHub contributors
-- Hiring managers
+- A ranked GitHub contributor
+- A hiring manager profile
 
-### Role Enum
+### Key Design Feature
 
-```text
-Role
- ├─ CONTRIBUTOR
- └─ HIRING_MANAGER
-```
+The `Role` enum differentiates between:
 
-### Core Identity Fields
+- `CONTRIBUTOR`
+- `HIRING_MANAGER`
+
+### Core Fields
+
+Common fields:
 
 - `login`
 - `name`
 - `avatarUrl`
-- `url`
-- `email`
 - `role` (job title)
 - `bio`
-- `type` (Role enum)
-
-### Location & Team Association
-
+- `socialLinks`
 - `cityId`
 - `nearestTeamId`
-- `city` (optional reference)
-- `nearestTeam` (optional reference)
+- `lastActive`
 
-### GitHub Statistics
+Statistics:
 
-There are two storage patterns:
-
-#### A. Contributor (CONTRIBUTOR role)
-
-Individual numeric fields:
-
+- `score`
 - `totalCommits`
-- `javaRepos`
 - `starsReceived`
 - `forksReceived`
 - `starsGiven`
 - `forksGiven`
-- `score`
+- `javaRepos`
 
-#### B. Hiring Manager (HIRING_MANAGER role)
+### Dynamic Stats Mapping
 
-- `githubStats` (Map<String, Integer>)
+For contributors, `getGithubStats()` converts individual numeric fields into a map structure for uniform serialization.
 
-### Unified Stats Access
+```mermaid
+flowchart TD
+    Contributor["Contributor"] --> RoleCheck{{"Role?"}}
+    RoleCheck -->|"CONTRIBUTOR"| BuildMap["Build stats map from fields"]
+    RoleCheck -->|"HIRING_MANAGER"| UseStored["Use githubStats field"]
+```
 
-`getGithubStats()` normalizes both representations:
-
-- If role is `CONTRIBUTOR`, it dynamically converts individual fields into a map
-- If role is `HIRING_MANAGER`, it returns the stored map
-
-This ensures API consumers always receive consistent stat structures.
-
-### Activity Tracking
-
-- `lastActive : Instant`
+This ensures frontend consumers always receive a consistent stats structure.
 
 ---
 
-## 5.2 HiringManagerProfile
+## 4.2 HiringManagerProfile
 
-A specialized profile structure for hiring managers.
+**Class:** `HiringManagerProfile`
 
-### Fields
+A simplified representation of a hiring manager.
+
+Contains:
 
 - `name`
 - `avatarUrl`
@@ -179,83 +177,96 @@ A specialized profile structure for hiring managers.
 - `githubStats`
 - `lastActive`
 
-This is a simplified representation used in hiring-specific flows.
+This object is optimized for hiring-specific views rather than leaderboard ranking.
 
 ---
 
-## 5.3 JobOpening
+## 4.3 JobOpening
 
-Represents a job posting linked to a hiring manager.
+**Class:** `JobOpening`
 
-### Fields
+Represents a job listing attached to hiring profiles.
+
+Fields:
 
 - `id`
 - `title`
 - `location`
 - `url`
 
-Designed to be lightweight and embeddable within hiring workflows.
+This entity supports hiring-focused features in the application.
 
 ---
 
-## 5.4 SocialLink
+## 4.4 SocialLink
 
-Represents external platform links.
+**Class:** `SocialLink`
 
-### Fields
+Encapsulates external profile links.
+
+Fields:
 
 - `platform`
 - `url`
 
-Used in:
-
-- `Contributor`
-- `HiringManagerProfile`
+Used by both Contributor and HiringManagerProfile.
 
 ---
 
-# 6. Geographic Hierarchy
+# 5. Geographic Hierarchy
 
-The geographic model is hierarchical and relational.
+The application ranks contributors geographically and by proximity to MLS stadiums.
+
+This module models a strict geographic hierarchy:
 
 ```mermaid
 flowchart TD
-    Region["Region"] -->|"contains"| State["State"]
-    State -->|"contains"| City["City"]
-    City -->|"near"| SoccerTeam["SoccerTeam"]
+    Region["Region"] --> State["State"]
+    State --> City["City"]
+    City --> Contributor["Contributor"]
 ```
-
-## 6.1 Region
-
-**Immutable Value Object** using Lombok `@Value`.
-
-### Fields
-
-- `id`
-- `name` (internal identifier)
-- `displayName` (human-readable)
-- `geo : GeoCoordinates`
-- `stateIds`
-- `states` (optional reference set)
-- `cities` (optional reference set)
-
-### Nested Class: GeoCoordinates
-
-```text
-GeoCoordinates
- ├─ latitude
- └─ longitude
-```
-
-Represents the geographic center of a region.
 
 ---
 
-## 6.2 State
+## 5.1 Region
+
+**Class:** `Region`
+
+Immutable (`@Value`) object representing a geographic region.
+
+Fields:
+
+- `id`
+- `name` (internal slug)
+- `displayName`
+- `GeoCoordinates geo`
+- `stateIds`
+
+Reference objects:
+
+- `Set<State> states`
+- `Set<City> cities`
+
+### GeoCoordinates (Nested Class)
+
+```java
+public static class GeoCoordinates {
+    double latitude;
+    double longitude;
+}
+```
+
+Used for geographic center calculations and proximity logic.
+
+---
+
+## 5.2 State
+
+**Class:** `State`
 
 Represents a U.S. state.
 
-### Fields
+Fields:
 
 - `id`
 - `name`
@@ -263,18 +274,21 @@ Represents a U.S. state.
 - `displayName`
 - `iconUrl`
 - `regionIds`
-- `regions` (optional reference)
-- `cities` (optional reference)
 
-Uses `@JsonInclude(NON_NULL)` to prevent null reference collections from appearing in API responses.
+Reference objects:
+
+- `regions`
+- `cities`
 
 ---
 
-## 6.3 City
+## 5.3 City
 
-Represents a city within a state.
+**Class:** `City`
 
-### Fields
+Represents a city tied to contributor location.
+
+Fields:
 
 - `id`
 - `name`
@@ -285,26 +299,25 @@ Represents a city within a state.
 - `regionIds`
 - `nearestTeamId`
 
-### Reference Objects
+Reference objects:
 
 - `state`
 - `regions`
 - `nearestTeam`
 
-This dual design (IDs + references) allows:
-
-- Lightweight responses when only IDs are needed
-- Fully enriched responses when deep object graphs are required
+Cities are central to proximity-based ranking logic.
 
 ---
 
-# 7. Soccer Team Domain
+# 6. Soccer Team Domain
 
 ## SoccerTeam
 
-Represents a professional soccer team used to gamify contributor rankings.
+**Class:** `SoccerTeam`
 
-### Fields
+Represents a professional soccer team used for geographic comparison.
+
+Key fields:
 
 - `id`
 - `name`
@@ -312,119 +325,111 @@ Represents a professional soccer team used to gamify contributor rankings.
 - `state`
 - `latitude`
 - `longitude`
-- `league`
 - `stadium`
 - `stadiumCapacity`
-- `joinedYear`
+- `league`
 - `headCoach`
 - `teamUrl`
-- `wikipediaUrl`
 - `logoUrl`
 
-### Role in the System
+### Proximity Flow
 
-- Used to associate contributors with their nearest MLS team
-- Supports geographic ranking views
-- Enables stadium proximity filtering
+```mermaid
+flowchart TD
+    Contributor["Contributor"] --> City["City"]
+    City --> TeamLookup["Find nearest team"]
+    TeamLookup --> SoccerTeam["SoccerTeam"]
+```
+
+This supports MLS-style leaderboard segmentation.
 
 ---
 
-# 8. Language Domain
+# 7. Language Domain
 
 ## Language
 
-Represents a programming language used for filtering and ranking.
+**Class:** `Language`
 
-### Fields
+Represents programming languages used for leaderboard filtering.
+
+Fields:
 
 - `id`
 - `name`
 - `displayName`
 - `iconUrl`
 
-Used in:
+Languages are used in:
 
-- Autocomplete flows
-- Filtering contributor leaderboards
-- Frontend language badges
+- Contributor ranking filters
+- Autocomplete features
+- UI filtering
 
 ---
 
-# 9. Entity Relationship Overview
+# 8. Cross-Module Interaction Summary
 
-Below is a consolidated view of relationships across the domain model:
+The Model Entities module integrates across the system as follows:
 
 ```mermaid
 flowchart LR
-    Contributor["Contributor"] -->|"located in"| City["City"]
-    City -->|"belongs to"| State["State"]
-    State -->|"part of"| Region["Region"]
-    City -->|"nearest"| SoccerTeam["SoccerTeam"]
-    Contributor -->|"links"| SocialLink["SocialLink"]
-    Contributor -->|"stats"| Stats["GitHub Stats"]
-    HiringProfile["HiringManagerProfile"] -->|"links"| SocialLink
-    HiringProfile -->|"stats"| Stats
+    GitHubService["GitHub Service"] --> Contributor
+    CityService["City Service"] --> City
+    RegionService["Region Service"] --> Region
+    SoccerTeamService["Soccer Team Service"] --> SoccerTeam
+    HiringService["Hiring Service"] --> HiringManagerProfile
+    Controllers["Controllers"] --> ApiResponse
 ```
 
----
+### Key Observations
 
-# 10. Serialization & Design Decisions
-
-## 10.1 Lombok Usage
-
-The module relies heavily on:
-
-- `@Data`
-- `@Builder`
-- `@NoArgsConstructor`
-- `@AllArgsConstructor`
-- `@Value`
-
-This minimizes boilerplate and keeps entities readable.
-
-## 10.2 JSON Behavior
-
-- `@JsonInclude(JsonInclude.Include.NON_NULL)` avoids null fields in API responses.
-- Nested reference objects are optional and populated only when needed.
-
-## 10.3 Immutability vs Mutability
-
-- `Region` is immutable (`@Value`)
-- Most other entities are mutable via Lombok-generated setters
-
-This hybrid approach balances safety and flexibility.
+- Services construct these entities
+- Controllers wrap them in `ApiResponse`
+- Cache services serialize and store them
+- Frontend mirrors them with TypeScript types
 
 ---
 
-# 11. How This Module Fits Into the System
+# 9. Design Characteristics
 
-Within the backend architecture:
+### ✅ Immutability Where Needed
 
-- **Controllers** return `ApiResponse<T>` wrapping model entities.
-- **Services** construct and enrich entities.
-- **Cache layer** stores serialized entities.
-- **GraphQL components** transform remote GitHub data into these entities.
-- **Frontend** consumes serialized versions of these models.
+- `Region` uses `@Value`
 
-The Model Entities module therefore acts as:
+### ✅ Builder Pattern
 
-- The canonical domain contract of the backend
-- The shared language between services and controllers
-- The schema foundation for frontend integration
+- Most models use `@Builder`
+- Improves readability in service layer construction
+
+### ✅ JSON Optimization
+
+- `@JsonInclude(JsonInclude.Include.NON_NULL)` reduces payload size
+
+### ✅ Reference Expansion Pattern
+
+Entities include both:
+
+- ID references (`stateId`, `regionIds`, `nearestTeamId`)
+- Fully resolved reference objects (`state`, `regions`, `nearestTeam`)
+
+This enables:
+
+- Lightweight responses (IDs only)
+- Fully hydrated responses (expanded objects)
 
 ---
 
-# 12. Summary
+# 10. Summary
 
-The **Model Entities** module defines the structural backbone of Major League GitHub.
+The **Model Entities** module forms the backbone of the Major League GitHub domain model.
 
-It models:
+It provides:
 
-- Contributors and hiring managers
-- Geographic hierarchies
-- Soccer teams and proximity relationships
-- Programming languages
-- Job openings and social links
+- A unified contributor representation
+- Geographic hierarchy modeling
+- Soccer team metadata
+- Hiring ecosystem structures
 - Standardized API responses
 
-By centralizing domain definitions in a clean, well-structured module, the system maintains consistency across services, caching, APIs, and frontend integration.
+Every service, controller, and frontend feature ultimately depends on these data structures. As such, this module defines the authoritative shape of the system’s data contracts.

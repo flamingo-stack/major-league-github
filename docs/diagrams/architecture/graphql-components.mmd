@@ -1,7 +1,8 @@
 flowchart TD
-    ServiceLayer["Service Layer"] -->|"builds query"| GitHubQueryBuilder["GitHubQueryBuilder"]
-    GitHubQueryBuilder -->|"uses"| SearchFieldBuilder["SearchField (Builder)"]
-    GitHubQueryBuilder -->|"composes"| InnerField["Field (Inner Class)"]
-    QuerySerializer["QuerySerializer"] -->|"serializes"| FieldModel["Field (Model)"]
-    GitHubQueryBuilder -->|"produces"| QueryString["GraphQL Query String"]
-    QuerySerializer -->|"produces"| QueryString
+    BackendService["Backend Services"] -->|"build query"| GitHubQueryBuilder["GitHubQueryBuilder"]
+    GitHubQueryBuilder -->|"composes"| SearchFieldBuilder["SearchField (Builder)"]
+    GitHubQueryBuilder -->|"returns string"| GraphQLQuery["GraphQL Query String"]
+    FieldCore["Field (Core Model)"] --> QuerySerializer["QuerySerializer"]
+    QuerySerializer --> SerializedQuery["Formatted GraphQL Query"]
+    GraphQLQuery --> GitHubAPI["GitHub GraphQL API"]
+    SerializedQuery --> GitHubAPI

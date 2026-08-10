@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant JVM as JVM
+    participant Spring as SpringApplication
+    participant Context as ApplicationContext
+    participant Config as Configuration Beans
+    participant Services as Service Beans
+    participant Controllers as Controller Beans
+
+    JVM->>Spring: main(args)
+    Spring->>Context: Create ApplicationContext
+    Context->>Config: Initialize configuration classes
+    Context->>Services: Instantiate service beans
+    Context->>Controllers: Instantiate controllers
+    Context-->>Spring: Application Ready

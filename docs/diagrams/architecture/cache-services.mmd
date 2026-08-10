@@ -1,10 +1,11 @@
-flowchart TD
-    Controller["Controllers"] --> ServiceLayer["Service Layer"]
-    ServiceLayer --> CacheService["CacheServiceAbs"]
+flowchart LR
+    Controllers["Controllers"] --> Services["Backend Services"]
+    Services --> CacheAbs["CacheServiceAbs (Abstract)"]
 
-    CacheService --> DiskCache["Disk Cache Service"]
-    CacheService --> RedisCache["Redis Cache Service"]
-    RedisCache --> ReadOnlyCache["Read Only Cache Service"]
+    CacheAbs --> Disk["DiskCacheService"]
+    CacheAbs --> Redis["RedisCacheService"]
+    Redis --> ReadOnly["ReadOnlyCacheService"]
 
-    DiskCache --> FileSystem[("File System")]
-    RedisCache --> Redis[("Redis")]
+    Disk --> FS[("File System")]
+    Redis --> RedisDB[("Redis")]
+    Services --> GitHub[("GitHub API")]

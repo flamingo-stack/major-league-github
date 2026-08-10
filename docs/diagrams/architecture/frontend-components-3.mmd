@@ -1,7 +1,6 @@
 flowchart TD
-    UserInput["User Types Language"] --> QueryKey["Query Key: ['languages', inputValue]"]
-    QueryKey --> ReactQuery["useQuery()"]
+    UserInput["User Types Language"] --> ReactQuery["useQuery"]
     ReactQuery --> ApiCall["autocompleteLanguages(inputValue)"]
-    ApiCall --> Backend["Backend Controller"]
-    Backend --> ApiResponse["Language[]"]
-    ApiResponse --> BaseAuto["BaseAutocomplete<Language>"]
+    ApiCall --> Backend["Backend Language Endpoint"]
+    Backend --> Response["Language[]"]
+    Response --> Autocomplete["BaseAutocomplete"]

@@ -1,7 +1,3 @@
 flowchart TD
-    Contributor["Contributor (API)"]
-
-    Contributor -->|"belongs to"| City["City"]
-    Contributor -->|"nearest"| Team["SoccerTeam"]
-    Contributor -->|"contains"| Stats["githubStats"]
-    Contributor -->|"contains"| Social["SocialLink[]"]
+    ApiContributor["Contributor (API)"] --> Transform["Transform / Map"]
+    Transform --> UIContributor["Contributor (UI)"]

@@ -1,7 +1,10 @@
 flowchart TD
-    Start["Component Mount"] --> ReadParams["Read searchParams"]
-    ReadParams --> Parse["parseUrlValue()"]
-    Parse --> Validate["validateValue()"]
-    Validate --> BuildState["Construct UrlState"]
-    BuildState --> Memoize["useMemo"]
-    Memoize --> ReturnState["Return Hook API"]
+    Start["Hook Initialized"] --> CheckRegions{"Regions Provided?"}
+    CheckRegions -->|"No"| EndA["Return null"]
+    CheckRegions -->|"Yes"| CheckGeo{"Geolocation Supported?"}
+    CheckGeo -->|"No"| ErrorA["Set Error: Not Supported"]
+    CheckGeo -->|"Yes"| GetPosition["navigator.geolocation.getCurrentPosition()"]
+    GetPosition --> Calc["Calculate Distance to Each Region"]
+    Calc --> FindMin["Find Minimum Distance"]
+    FindMin --> SetRegion["Set nearestRegion"]
+    SetRegion --> EndB["Return { nearestRegion, error }"]

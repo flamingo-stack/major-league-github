@@ -1,214 +1,210 @@
-# Security Best Practices
+# Security Guidelines
 
-This document describes the security patterns used in Major League GitHub and provides guidelines for keeping the application and its data safe during development and deployment.
+This document covers security best practices for developing, configuring, and deploying Major League GitHub. Following these guidelines protects GitHub API credentials, user data, and the application's integrity.
 
 ---
 
 ## Authentication and Authorization
 
-Major League GitHub does not implement user authentication for the public leaderboard — the API is intentionally read-only and publicly accessible. However, several integration points require credential management:
-
 ### GitHub API Tokens
 
-The backend authenticates to the GitHub GraphQL API using Personal Access Tokens (PATs). These are managed by the `GithubTokenRateManager` service.
+Major League GitHub uses GitHub Personal Access Tokens (PATs) to authenticate with the GitHub GraphQL API. These tokens are the most security-sensitive credentials in the system.
 
-**Token handling rules:**
-- Tokens are read from the `GITHUB_TOKENS` environment variable at startup
-- Each token is stored in memory as a `GithubToken` state object
-- Tokens are never logged, exposed via API responses, or written to cache
-- Multiple tokens are supported (comma-separated) for throughput resilience
+**Required scopes (minimum):**
+- `read:user` — read public user data
+- `public_repo` — access public repository data
 
-```text
-GITHUB_TOKENS=ghp_token1,ghp_token2,ghp_token3
-```
+**Do not grant:**
+- `repo` (private repository access — not needed)
+- `write:*` (any write permission — not needed)
+- `admin:*` (any admin permission — not needed)
+- `delete_repo` or `gist` — not needed
 
-**Required scopes** (minimum):
-- `read:user` — to access contributor profile data
-- `repo` — to access star counts on repositories
+### Token Storage Rules
 
-> **Principle of least privilege:** Only request the scopes your tokens actually need. Avoid `write:*` scopes entirely.
+| Environment | Storage Method |
+|-------------|----------------|
+| Local development | Shell environment variable (`export GITHUB_TOKENS=...`) |
+| CI/CD (GitHub Actions) | GitHub Secrets (never hardcoded in YAML) |
+| Kubernetes (production) | Kubernetes Secrets mounted as environment variables |
 
-### LinkedIn API (Optional)
+**Never:**
+- Commit tokens to source control
+- Log token values (the `GithubTokenRateManager` logs token metadata, not raw token strings)
+- Store tokens in `application.properties` committed to Git
+- Embed tokens in Docker images
 
-LinkedIn OAuth2 client credentials are used only if the hiring section is enabled. If not configured, the system falls back to static job entries — no error is thrown.
+### LinkedIn API Credentials (Optional)
 
-Credentials are stored exclusively in environment variables:
+The LinkedIn integration uses OAuth 2.0 client credentials flow. If configured:
 
-```text
-LINKEDIN_CLIENT_ID=...
-LINKEDIN_CLIENT_SECRET=...
-LINKEDIN_ORGANIZATION_ID=...
-```
+- Store `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` as Kubernetes Secrets or GitHub Actions Secrets
+- Never hardcode credentials in source code or configuration files
 
 ---
 
 ## Secrets Management
 
-### Development
+### Local Development
 
-In local development, set secrets as shell environment variables or in a `.env.local` file that is **never committed to Git**:
+Use shell environment variables, never application config files:
 
 ```bash
-# Add to .gitignore
-echo ".env.local" >> .gitignore
-
-# Create local env file
-cat > backend/.env.local << 'EOF'
-GITHUB_TOKENS=ghp_yourDevToken
-SPRING_REDIS_HOST=localhost
-SPRING_REDIS_PORT=6379
-EOF
+export GITHUB_TOKENS="ghp_your_token_here"
+export LINKEDIN_CLIENT_ID="your_client_id"
+export LINKEDIN_CLIENT_SECRET="your_client_secret"
 ```
 
-### Production (Kubernetes)
+Add sensitive variable names to `.gitignore` if you use `.env` files:
 
-In production on GKE, secrets should be stored as Kubernetes Secrets and injected as environment variables into pod containers — never hardcoded in Docker images, Kubernetes manifests committed to the repository, or application properties files.
+```text
+.env
+.env.local
+.env.production
+```
+
+### GitHub Actions CI/CD
+
+Store secrets in **GitHub Repository Settings → Secrets and Variables → Actions**:
+
+- `GITHUB_TOKENS`
+- `LINKEDIN_CLIENT_ID`
+- `LINKEDIN_CLIENT_SECRET`
+
+Reference them in workflow YAML:
+
+```yaml
+env:
+  GITHUB_TOKENS: ${{ secrets.GITHUB_TOKENS }}
+```
+
+**Do not** echo secrets in workflow steps or store them in workflow artifacts.
+
+### Kubernetes (Production)
+
+Create Kubernetes Secrets for sensitive values:
 
 ```bash
 kubectl create secret generic mlg-secrets \
   --from-literal=GITHUB_TOKENS="ghp_token1,ghp_token2" \
-  --from-literal=LINKEDIN_CLIENT_SECRET="..."
+  --from-literal=LINKEDIN_CLIENT_SECRET="your_secret"
 ```
 
-Reference secrets in pod specs:
+Reference them in pod specs as environment variables. Avoid base64-encoding secrets manually and storing them in version-controlled YAML files.
 
-```yaml
-env:
-  - name: GITHUB_TOKENS
-    valueFrom:
-      secretKeyRef:
-        name: mlg-secrets
-        key: GITHUB_TOKENS
-```
+---
 
-### CI/CD (GitHub Actions)
+## Data Encryption
 
-Store sensitive values as **GitHub Actions Secrets** in the repository settings. Never interpolate secrets directly into workflow YAML files — use the `secrets` context:
+### Data at Rest
 
-```yaml
-- name: Deploy
-  env:
-    GITHUB_TOKENS: ${{ secrets.GITHUB_TOKENS }}
-```
+- **Redis:** All data cached in Redis is GitHub contributor data (public information). Redis should still be placed on a private network and not exposed publicly.
+- **Disk cache:** JSON files on the filesystem contain public GitHub data. Ensure appropriate file system permissions.
+- No personally identifiable information (PII) beyond public GitHub profiles is stored.
+
+### Data in Transit
+
+- All production traffic is served over **HTTPS** at `https://www.mlg.soccer`
+- Backend-to-Redis communication should use a private network (within the Kubernetes cluster)
+- Frontend-to-backend communication is over HTTPS in production
 
 ---
 
 ## Input Validation and Sanitization
 
-### Backend (Spring Boot)
+### Backend
 
-All request parameters accepted by the REST controllers are primitives or strings with well-defined domains:
+The backend validates request parameters in controllers. Key practices:
 
-- `cityId`, `regionId`, `stateId`, `teamId`, `languageId` — filtered against in-memory reference data (CSV-loaded IDs); if an ID doesn't match a known entity, a warning is logged and the request proceeds with default values
-- `maxResults` — bounded by an integer with a default value; no upper limit is enforced in code, but pagination constraints limit result size
-- No request body deserialization occurs on public endpoints; all input arrives as URL query parameters
+**ID parameters** — Only alphanumeric IDs are accepted. The `useUrlState` frontend hook validates URL parameters with the regex `^[a-zA-Z0-9-]+$` before sending them to the API.
 
-### Frontend (TypeScript)
+**Query strings** — Autocomplete queries are passed to GitHub's search API after the backend assembles safe GraphQL queries using the `GitHubQueryBuilder`. The builder uses structured arguments rather than string interpolation, preventing injection.
 
-URL parameter validation is enforced by the `useUrlState` hook before values are passed to the API service:
+**No SQL** — The application does not use a SQL database. Geographic data comes from static CSV files loaded at startup, so SQL injection is not applicable.
 
-```typescript
-// Only alphanumeric characters and dashes are accepted
-validate: (value: string) => /^[a-zA-Z0-9-]+$/.test(value)
-```
+**Rate limit exceptions** — `GithubRateLimitException`, `GithubTimeoutException`, `GithubGeneralException`, and `GithubTooFastException` are handled by `GlobalExceptionHandler`, which returns structured `ApiError` responses without exposing internal stack traces.
 
-Parameters that fail validation are silently dropped and replaced with `null` (the default), preventing malformed values from reaching the backend.
+### Frontend
+
+**URL parameter validation** — The `useUrlState` hook validates all URL-driven filter values against `^[a-zA-Z0-9-]+$` before use. Invalid values fall back to defaults.
+
+**No user-generated content rendered as HTML** — All contributor data (names, locations) is rendered through React's JSX, which escapes HTML by default.
 
 ---
 
 ## CORS Configuration
 
-CORS is configured in `WebConfig` and restricts API access to known origins:
-
-| Allowed Origin | Purpose |
-|----------------|---------|
-| `http://localhost:8450` | Local development |
-| `http://localhost:3000` | Alternative local dev port |
-| `https://www.mlg.soccer` | Production frontend |
-| `http://www.mlg.soccer` | Production frontend (HTTP redirect) |
-
-Allowed HTTP methods: `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`.
-
-> When adding a new deployment environment (e.g., a staging domain), update `WebConfig` to include the staging origin.
-
----
-
-## API Surface Security
-
-The REST API is **read-only by design** — no authenticated write endpoints exist on the public-facing Backend Service:
-
-- `GET /api/contributors/search` — read only
-- `GET /api/contributors/export` — read only (triggers CSV download)
-- `GET /api/autocomplete/*` — read only
-- `GET /api/entities/*` — read only
-- `GET /api/hiring/*` — read only
-
-The Cache Updater service (port 8451) does not expose a public HTTP API. Its scheduled jobs run internally and communicate only with Redis.
-
-**The `/api/` path is disallowed for search engine indexing** via the generated `robots.txt`:
+The backend's CORS policy (configured in `WebConfig`) restricts cross-origin requests to known origins:
 
 ```text
-Disallow: /api/
+http://localhost:8450
+http://localhost:3000
+https://www.mlg.soccer
+http://www.mlg.soccer
 ```
+
+When deploying to a new environment, add its origin to the CORS allowlist rather than using wildcard (`*`) origins. Avoid `allowedOrigins("*")` in any environment that uses credentials.
 
 ---
 
-## Dependency Security
+## Common Security Vulnerabilities and Mitigations
 
-### Backend
+| Vulnerability | Mitigation |
+|---------------|-----------|
+| **Token leakage** | Environment variables only; never commit to Git |
+| **Rate limit exhaustion** | `GithubTokenRateManager` handles primary + secondary limits |
+| **Denial of service via cache miss flood** | Redis cache with read-only mode and async refresh |
+| **Injection via URL parameters** | Regex validation in `useUrlState`; structured GraphQL builder |
+| **Exposed internal errors** | `GlobalExceptionHandler` returns `ApiError` without stack traces |
+| **CORS bypass** | Explicit origin allowlist in `WebConfig` |
+| **Sensitive data in logs** | Token values are not logged; rate metadata only |
 
-- Use `mvn dependency:analyze` periodically to identify unused or missing dependencies
-- Review the [GitHub Dependabot alerts](https://github.com/flamingo-stack/major-league-github/security/dependabot) for known CVEs in Maven dependencies
-- The `spring-boot-starter-parent` version (`3.4.1`) manages most transitive dependency versions — keep the parent version up to date
+---
+
+## Security Testing and Code Review Guidelines
+
+### Before Committing
+
+- [ ] No secrets, tokens, or passwords committed
+- [ ] No wildcard CORS (`allowedOrigins("*")`) added
+- [ ] No raw user input passed to external APIs without validation
+- [ ] Exception handlers return clean `ApiError` responses, not raw stack traces
+
+### For Code Reviews
+
+- Check that new environment variables are documented and not hardcoded
+- Verify that any new endpoints validate their inputs
+- Confirm that new external API integrations handle rate limits and timeouts
+- Ensure new configuration properties have safe defaults
+
+### Dependency Security
+
+Regularly audit dependencies for known CVEs:
+
+**Backend (Maven):**
 
 ```bash
-# Check for dependency updates
 cd backend
-mvn versions:display-dependency-updates
+mvn dependency:resolve
 ```
 
-### Frontend
+Consider using [OWASP Dependency-Check Maven Plugin](https://owasp.org/www-project-dependency-check/) for automated CVE scanning.
 
-- Run `npm audit` regularly to scan for known vulnerabilities in npm packages
-- Address `npm audit fix` suggestions promptly for high/critical severity issues
+**Frontend (npm):**
 
 ```bash
 cd frontend
 npm audit
-npm audit fix
 ```
 
----
-
-## Sensitive Data in Logs
-
-Spring Boot uses SLF4J + Logback. By default, the project logs:
-- Incoming request parameters (city, language, state filters) — these are safe public values
-- GitHub API rate limit status — safe to log
-- Cache readiness state — safe to log
-
-**Never log:**
-- `GITHUB_TOKENS` values
-- LinkedIn client secrets
-- Full GitHub API responses (they may contain private email addresses)
-
-If adding new log statements, apply this rule: log only IDs and counts, never raw token values or personal data.
-
----
-
-## Security Testing Guidelines
-
-Before submitting a PR that touches authentication, configuration, or API layers, verify:
-
-- [ ] No secrets or tokens appear in code, config files, or test fixtures
-- [ ] New environment variables are documented and have empty defaults
-- [ ] CORS origins list is not expanded unnecessarily
-- [ ] Any new URL parameters pass through the `useUrlState` validation pattern
-- [ ] Rate limiting behavior is preserved (do not bypass `GithubTokenRateManager`)
-- [ ] No new external API endpoints are called without error handling and fallback behavior
+Fix moderate and high-severity findings before merging.
 
 ---
 
 ## Reporting Security Issues
 
-If you discover a security vulnerability, please report it responsibly via [GitHub Security Advisories](https://github.com/flamingo-stack/major-league-github/security/advisories) rather than opening a public issue.
+If you discover a security vulnerability in Major League GitHub, please report it via GitHub Issues:
+
+[https://github.com/flamingo-stack/major-league-github/issues](https://github.com/flamingo-stack/major-league-github/issues)
+
+For sensitive disclosures, open a private security advisory via GitHub's **Security → Advisories** feature in the repository.

@@ -1,6 +1,5 @@
-flowchart LR
-    Request["GET by ID"] --> Controller["Entity Controller"]
-    Controller --> Service["Domain Service"]
-    Service --> Found{"Entity Found?"}
-    Found -->|"No"| Error["ApiResponse.error"]
-    Found -->|"Yes"| Success["ApiResponse.success"]
+flowchart TD
+    Request["GET /api/entities/{type}/{id}"] --> Controller["EntityController"]
+    Controller --> ServiceCall["*Service.getById()"]
+    ServiceCall -->|"null"| ErrorResp["ApiResponse.error()"]
+    ServiceCall -->|"found"| SuccessResp["ApiResponse.success()"]

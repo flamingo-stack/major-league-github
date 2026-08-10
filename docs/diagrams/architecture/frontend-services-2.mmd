@@ -1,12 +1,11 @@
 sequenceDiagram
-    participant UI as React Component
-    participant Hook as Custom Hook
+    participant UI as React UI
     participant Service as Frontend Services
-    participant Backend as Backend Controller
+    participant API as Backend API
 
-    UI->>Hook: Trigger search
-    Hook->>Service: getContributors(params)
-    Service->>Backend: GET /api/contributors/search
-    Backend-->>Service: ApiResponse<Contributor[]>
-    Service-->>Hook: Contributor[]
-    Hook-->>UI: Render table
+    UI->>Service: getContributors(filters)
+    Service->>Service: Build URLSearchParams
+    Service->>API: GET /api/contributors/search
+    API-->>Service: ApiResponse<Contributor[]>
+    Service->>Service: Validate status === "success"
+    Service-->>UI: Contributor[]

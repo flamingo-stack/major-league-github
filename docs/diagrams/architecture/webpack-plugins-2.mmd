@@ -1,8 +1,18 @@
-flowchart LR
-    Compiler["Webpack Compiler"] --> BeforeRun["beforeRun Hook"]
-    Compiler --> WatchRun["watchRun Hook"]
-    Compiler --> Emit["emit Hook"]
+flowchart TD
+    Start["Webpack Build Starts"] --> Hook1["beforeRun Hook"]
+    Start --> Hook2["watchRun Hook"]
 
-    BeforeRun --> FaviconPlugin["FaviconGeneratorPlugin"]
-    WatchRun --> FaviconPlugin
-    Emit --> SeoPlugin["SeoFilesPlugin"]
+    Hook1 --> Generate["generateFavicon()"]
+    Hook2 --> Generate
+
+    Generate --> CheckSVG{"SVG Exists?"}
+    CheckSVG -->|"No"| Warn["Log Warning"]
+    CheckSVG -->|"Yes"| CheckTime{"ICO Newer?"}
+
+    CheckTime -->|"Yes"| Skip["Skip Generation"]
+    CheckTime -->|"No"| Convert["Convert SVG → PNG → ICO"]
+
+    Convert --> Save["Write favicon.ico"]
+    Save --> End["Continue Build"]
+    Skip --> End
+    Warn --> End

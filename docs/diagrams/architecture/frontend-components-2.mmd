@@ -1,8 +1,6 @@
 flowchart TD
-    Input["User Types"] --> InputChange["onInputChange"]
-    InputChange --> ParentState["Parent State Update"]
-    ParentState --> OptionsUpdate["Options Prop Updated"]
-    OptionsUpdate --> AutocompleteRender["Autocomplete Renders Options"]
-
-    Select["User Selects Option"] --> OnChange["onChange Handler"]
-    OnChange --> ParentSelection["Parent Updates Selected Value"]
+    Input["User Types"] --> QueryState["inputValue Updated"]
+    QueryState --> Options["Options Provided"]
+    Options --> Select["User Selects Option"]
+    Select --> OnChange["onChange(value)"]
+    OnChange --> Sync["Input Normalized on Blur"]

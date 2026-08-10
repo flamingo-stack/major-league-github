@@ -1,10 +1,7 @@
 flowchart TD
-    Controllers["REST Controllers"] -->|"return"| ApiResponse["ApiResponse<T>"]
-    Controllers -->|"use"| Services["Service Layer"]
-    Services -->|"construct"| Contributor["Contributor"]
-    Services -->|"construct"| Geography["City / State / Region"]
-    Services -->|"construct"| SoccerTeam["SoccerTeam"]
-    Services -->|"construct"| Language["Language"]
-    Services -->|"construct"| Hiring["HiringManagerProfile / JobOpening"]
-    Contributor -->|"references"| Geography
-    Geography -->|"links to"| SoccerTeam
+    Controllers["Controllers"] -->|"return ApiResponse<T>"| ApiResponse["ApiResponse"]
+    Controllers --> Services["Backend Services"]
+    Services --> Models["Model Entities"]
+    Services --> Cache["Cache Services"]
+    Cache --> Models
+    Models --> Frontend["Frontend (TypeScript Types)"]

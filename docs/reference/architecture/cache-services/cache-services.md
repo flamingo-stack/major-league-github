@@ -1,293 +1,357 @@
 # Cache Services
 
-The **Cache Services** module provides a unified, extensible caching abstraction for the Major League GitHub backend. It centralizes cache key generation, staleness detection, refresh strategies, and storage implementations (Disk, Redis, and Read-Only Redis).
+The **Cache Services** module provides a pluggable, environment-aware caching abstraction for the Major League GitHub backend. It is responsible for:
 
-This module plays a critical role in:
+- Reducing load on the GitHub GraphQL API
+- Minimizing repeated HTTP computations for contributor queries
+- Supporting multiple cache backends (Disk and Redis)
+- Enabling read-only and force-update operational modes
+- Managing cache freshness and asynchronous refresh
 
-- Reducing GitHub API calls
-- Improving HTTP response times
-- Supporting pre-warmed production caches
-- Enabling environment-specific cache modes (read-write, force update, read-only)
-
-Cache Services is primarily consumed by the Service Layer (e.g., `GithubService`, `PreCacheService`) and indirectly supports Controllers and frontend requests.
-
----
-
-## Architectural Overview
-
-```mermaid
-flowchart TD
-    Controller["Controllers"] --> ServiceLayer["Service Layer"]
-    ServiceLayer --> CacheService["CacheServiceAbs"]
-
-    CacheService --> DiskCache["Disk Cache Service"]
-    CacheService --> RedisCache["Redis Cache Service"]
-    RedisCache --> ReadOnlyCache["Read Only Cache Service"]
-
-    DiskCache --> FileSystem[("File System")]
-    RedisCache --> Redis[("Redis")]
-```
-
-### Design Principles
-
-1. **Abstraction First** – `CacheServiceAbs` defines the contract and refresh semantics.
-2. **Storage Agnostic** – Implementations can store data in disk or Redis.
-3. **Asynchronous Refresh** – Stale entries are refreshed in the background.
-4. **Environment-Aware** – Read-only mode prevents accidental cache mutation.
-5. **Key Normalization** – Deterministic composite keys ensure consistent cache hits.
+This module sits between the **Backend Services** layer and external systems (GitHub API, Redis, filesystem), acting as a performance and resilience layer.
 
 ---
 
-## Core Abstraction: CacheServiceAbs
+## 1. Architectural Overview
 
-The backbone of the module is:
+At a high level, Cache Services defines a common abstraction (`CacheServiceAbs`) and multiple concrete implementations:
 
-- `CacheServiceAbs`
-- `CachedResponse`
-
-This abstract class defines:
-
-- Cache read/write contract
-- Staleness detection
-- Cache key generation
-- GitHub-specific caching strategy
-- HTTP query result caching
-- Async refresh handling
-- Cache readiness state
-- Cache mode (READ_WRITE, FORCE_UPDATE)
-
-### High-Level Responsibilities
+- `DiskCacheService` – File-based caching
+- `RedisCacheService` – Distributed Redis-based caching
+- `ReadOnlyCacheService` – Redis-backed, read-only variant
 
 ```mermaid
 flowchart LR
-    Request["Incoming Request"] --> KeyGen["Key Generation"]
-    KeyGen --> CacheLookup["Cache Lookup"]
-    CacheLookup -->|"Hit"| ReturnCached["Return Cached Data"]
-    CacheLookup -->|"Miss"| Supplier["Execute Supplier"]
-    Supplier --> Store["Store in Cache"]
-    Store --> ReturnFresh["Return Fresh Data"]
+    Controllers["Controllers"] --> Services["Backend Services"]
+    Services --> CacheAbs["CacheServiceAbs (Abstract)"]
 
-    CacheLookup -->|"Stale"| AsyncRefresh["Async Refresh"]
+    CacheAbs --> Disk["DiskCacheService"]
+    CacheAbs --> Redis["RedisCacheService"]
+    Redis --> ReadOnly["ReadOnlyCacheService"]
+
+    Disk --> FS[("File System")]
+    Redis --> RedisDB[("Redis")]
+    Services --> GitHub[("GitHub API")]
 ```
 
-### Key Features
+### Key Responsibilities
 
-#### 1. Deterministic Cache Key Generation
+| Layer | Responsibility |
+|-------|----------------|
+| CacheServiceAbs | Core caching workflow, key generation, staleness logic |
+| DiskCacheService | Persistent JSON file-based storage |
+| RedisCacheService | Distributed cache using Redis |
+| ReadOnlyCacheService | Safe read-only cache access (e.g., web profile) |
 
-Composite keys are built from filtering dimensions:
+---
 
-- City
-- Region
-- State
-- Team
-- Language
-- Page number or max results
+## 2. Core Abstraction: CacheServiceAbs
 
-Each implementation defines its own delimiter:
+**Core Component:**  
+`major-league-github.backend.src.main.java.cx.flamingo.analysis.cache.CacheServiceAbs.CacheServiceAbs`
 
-- Disk: `/`
-- Redis: `:`
+This abstract class defines:
+
+- Cache key generation
+- Staleness detection
+- Async refresh workflow
+- GitHub API–specific caching
+- HTTP response caching for contributor queries
+- Cache readiness checks
+- Cache mode switching (READ_WRITE vs FORCE_UPDATE)
+
+### 2.1 Caching Workflow
+
+```mermaid
+flowchart TD
+    Request["Incoming Request"] --> CheckMode{"FORCE_UPDATE?"}
+    CheckMode -->|"No"| TryCache["Attempt Cache Read"]
+    CheckMode -->|"Yes"| Fetch
+
+    TryCache --> Hit{"Cache Hit?"}
+    Hit -->|"Yes"| Stale{"Stale?"}
+    Hit -->|"No"| Fetch
+
+    Stale -->|"Yes"| AsyncRefresh["Async Refresh"]
+    Stale -->|"No"| ReturnCached["Return Cached Value"]
+
+    AsyncRefresh --> ReturnCached
+
+    Fetch["Execute Supplier (HTTP/GitHub)"] --> Store["Put in Cache"]
+    Store --> ReturnFresh["Return Fresh Value"]
+```
+
+### 2.2 Key Concepts
+
+#### 1. Supplier-Based Execution
+Cache retrieval methods accept a `Supplier<T>`:
+
+- If cache hit → return cached value
+- If cache miss → execute supplier
+- Store result in cache
+- Return fresh data
+
+This pattern ensures backend services remain cache-agnostic.
 
 #### 2. Staleness Detection
+Each entry stores an insertion timestamp (backend-dependent).  
+Staleness is determined by comparing:
 
-Cache entries are evaluated against configurable intervals:
+- `System.currentTimeMillis()`
+- Insert timestamp
+- Configured refresh interval
+
+If stale:
+- Return current cached value
+- Trigger asynchronous refresh
+
+This enables **non-blocking refresh** behavior.
+
+#### 3. Specialized Cache Methods
+
+Two primary entry points:
+
+- `getGitHubApiResponse(...)`
+- `getHttpResponse(...)`
+
+They differ in:
+
+| Method | Cached Data | Key Composition |
+|--------|------------|----------------|
+| GitHub API | Raw `JsonObject` | City + Language + Page |
+| HTTP Response | `List<Contributor>` | City + Region + State + Team + Language + MaxResults |
+
+---
+
+## 3. DiskCacheService
+
+**Core Component:**  
+`major-league-github.backend.src.main.java.cx.flamingo.analysis.cache.impl.DiskCacheService.DiskCacheService`
+
+Provides filesystem-based caching using JSON files.
+
+### 3.1 Storage Model
+
+- Each cache entry → `<cachePath>/<key>.json`
+- Insert time derived from file last-modified timestamp
+- Directories auto-created at startup
+
+```mermaid
+flowchart TD
+    Put["put(cachePath, key, value)"] --> Serialize["Serialize to JSON"]
+    Serialize --> WriteFile["Write <key>.json"]
+
+    Get["get(cachePath, key)"] --> Exists{"File Exists?"}
+    Exists -->|"No"| Miss["Cache Miss"]
+    Exists -->|"Yes"| Stale{"Stale?"}
+
+    Stale -->|"Yes"| Delete["Delete File"]
+    Delete --> Miss
+
+    Stale -->|"No"| Read["Read JSON"]
+    Read --> Deserialize["Gson.fromJson"]
+    Deserialize --> Hit["Return Value"]
+```
+
+### 3.2 Characteristics
+
+✅ Simple and transparent  
+✅ Good for local development  
+✅ Persistent across restarts  
+❌ Not distributed  
+❌ Slower than Redis under load  
+
+---
+
+## 4. RedisCacheService
+
+**Core Component:**  
+`major-league-github.backend.src.main.java.cx.flamingo.analysis.cache.impl.RedisCacheService.RedisCacheService`
+
+Provides distributed caching using Redis.
+
+### 4.1 Key Structure
+
+Keys are structured as:
+
+```
+<cachePath>:<key>
+```
+
+An additional expiration key is stored:
+
+```
+<cachePath>:<key>:expiration
+```
+
+The expiration key stores a serialized `Expiration` object containing:
+
+- `timestamp`
+
+### 4.2 Storage Workflow
+
+```mermaid
+flowchart LR
+    Put["put(cachePath, key)"] --> BuildKey["Build Redis Key"]
+    BuildKey --> StoreValue["SET key -> JSON"]
+    StoreValue --> StoreMeta["SET key:expiration -> timestamp"]
+
+    Get["get(cachePath, key)"] --> Fetch["GET key"]
+    Fetch --> Deserialize["Gson.fromJson"]
+    Deserialize --> Return
+```
+
+### 4.3 Characteristics
+
+✅ Distributed and scalable  
+✅ Fast read/write  
+✅ Suitable for production  
+❌ Requires external Redis instance  
+
+---
+
+## 5. ReadOnlyCacheService
+
+**Core Component:**  
+`major-league-github.backend.src.main.java.cx.flamingo.analysis.cache.impl.ReadOnlyCacheService.ReadOnlyCacheService`
+
+Extends `RedisCacheService` but disables all write operations.
+
+### 5.1 Behavior Changes
+
+| Operation | Behavior |
+|-----------|----------|
+| `put()` | Ignored |
+| `invalidate()` | Ignored |
+| `get()` | Returns value regardless of refresh interval |
+
+### 5.2 Use Case
+
+Designed for:
+
+- Web profile deployments
+- Read-only production replicas
+- Environments where cache mutation is restricted
+
+This ensures:
+
+- No accidental writes
+- No cache invalidation
+- Safe consumption of pre-populated cache
+
+---
+
+## 6. Cache Modes
+
+Cache mode is defined via `CacheConfig.CacheMode`.
+
+Supported modes:
+
+- `READ_WRITE` (default)
+- `FORCE_UPDATE`
+
+### FORCE_UPDATE Mode
+
+If enabled:
+
+- Cache is bypassed
+- Supplier always executes
+- Cache entry is replaced
+
+```mermaid
+flowchart TD
+    Request --> Mode{"Mode == FORCE_UPDATE?"}
+    Mode -->|"Yes"| Execute["Execute Supplier"]
+    Execute --> Store
+    Store --> Return
+
+    Mode -->|"No"| Normal["Normal Cache Flow"]
+```
+
+This is useful for:
+
+- Manual cache refresh
+- Batch pre-caching jobs
+- Operational recovery
+
+---
+
+## 7. Cache Readiness Flag
+
+Cache Services supports a readiness mechanism:
+
+- Path: `cache_is_ready`
+- Key: `cache_is_ready`
+
+If `cache.should.be.ready=true`:
+
+- Application checks readiness before serving traffic
+- Useful for pre-warmed production environments
+
+---
+
+## 8. Interaction with Other Modules
+
+### Backend Services
+
+Backend Services use Cache Services indirectly via supplier-based calls:
+
+- `GithubService` → uses GitHub API cache
+- Contributor queries → use HTTP response cache
+
+Cache Services ensures that business logic remains clean and does not directly depend on Redis or filesystem logic.
+
+### Configurations
+
+Configuration values influence behavior:
 
 - `github.cache.refresh.interval`
 - `http.cache.refresh.interval`
 - `cache.expiration.ms`
+- `github.cache.path`
+- `http.cache.path`
 
-If stale:
-
-- Cached value is returned immediately
-- Refresh is executed asynchronously
-- New value replaces old entry only after successful retrieval
-
-This ensures zero-downtime cache refresh.
-
-#### 3. Async Refresh
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Cache
-    participant Supplier
-
-    Client->>Cache: getHttpResponse()
-    Cache->>Cache: Check staleness
-    Cache-->>Client: Return stale value
-    Cache->>Supplier: Async refresh
-    Supplier-->>Cache: Fresh data
-    Cache->>Cache: Overwrite entry
-```
-
-#### 4. Cache Readiness Flag
-
-The cache readiness mechanism allows environments to:
-
-- Delay traffic until cache warm-up completes
-- Ensure pre-cached Redis data is available
-
-A special key path is used internally to track readiness.
-
-#### 5. Cache Modes
-
-- **READ_WRITE** – Default behavior
-- **FORCE_UPDATE** – Always bypass cache
-
-Mode is controlled via `CacheConfig.CacheMode`.
+These are injected via Spring `@Value` properties.
 
 ---
 
-## Storage Implementations
+## 9. Design Principles
 
-The module includes three concrete implementations:
+### 1. Backend-Agnostic Abstraction
+All cache consumers depend only on `CacheServiceAbs`.
 
-### 1. Disk Cache Service
+### 2. Non-Blocking Refresh
+Stale entries are refreshed asynchronously while serving existing data.
 
-Documentation: [Disk Cache Service](cache-services/disk_cache_service/disk_cache_service.md)
+### 3. Environment Flexibility
 
-- Stores cache entries as JSON files
-- Uses file modification timestamp for staleness
-- Deletes corrupted or stale files
-- Ideal for local development
+| Environment | Implementation |
+|------------|---------------|
+| Local Development | DiskCacheService |
+| Production | RedisCacheService |
+| Web Profile (Read-Only) | ReadOnlyCacheService |
 
-### 2. Redis Cache Service
+### 4. Graceful Degradation
 
-Documentation: [Redis Cache Service](cache-services/redis_cache_service/redis_cache_service.md)
+If:
+- Deserialization fails
+- File is corrupted
+- Redis entry malformed
 
-- Stores serialized JSON values in Redis
-- Uses a separate expiration metadata key
-- Suitable for distributed deployments
-- Enables Kubernetes scaling
-
-### 3. Read Only Cache Service
-
-Documentation: [Read Only Cache Service](cache-services/read_only_cache_service/read_only_cache_service.md)
-
-- Extends Redis Cache Service
-- Disables writes and invalidation
-- Always returns cached values if present
-- Used for production web profile with pre-warmed cache
+The system:
+- Invalidates entry
+- Falls back to supplier
 
 ---
 
-## Integration with Other Modules
+## 10. Summary
 
-### Service Layer
+The **Cache Services** module is a foundational performance layer in the backend architecture. It:
 
-Cache Services is primarily consumed by:
+- Abstracts cache storage behind a unified interface
+- Supports both local and distributed backends
+- Enables asynchronous refresh for stale entries
+- Provides operational modes for force update and read-only execution
+- Maintains clean separation between business logic and infrastructure concerns
 
-- `GithubService`
-- `PreCacheService`
-- `LanguageService`
-- `RegionService`
-
-These services pass supplier functions that:
-
-- Call GitHub GraphQL
-- Aggregate contributor results
-- Transform API responses
-
-### Rate Management
-
-Caching significantly reduces pressure on:
-
-- `GithubTokenRateManager`
-
-This ensures:
-
-- Lower GitHub rate consumption
-- Fewer token rotations
-- More predictable API behavior
-
-### Controllers
-
-Controllers indirectly benefit via:
-
-- `ContributorController`
-- `AutocompleteController`
-
-Since they rely on cached service results.
-
----
-
-## Cache Key Strategy
-
-### HTTP Query Cache Key Structure
-
-```text
-cityId/regionId/stateId/teamId/languageId/maxResults
-```
-
-### GitHub API Cache Key Structure
-
-```text
-/delimiter/cityId/language/page_X
-```
-
-The delimiter differs by implementation.
-
-This design guarantees:
-
-- Stable key generation
-- Environment portability
-- Cross-instance consistency
-
----
-
-## Environment Profiles
-
-| Environment | Implementation | Purpose |
-|-------------|---------------|----------|
-| Local Dev   | Disk Cache    | Easy inspection |
-| Kubernetes  | Redis Cache   | Distributed caching |
-| Web Profile | Read Only Redis | Pre-warmed production cache |
-
----
-
-## Failure Handling Strategy
-
-Cache Services is defensive by design:
-
-- Corrupted entries are deleted
-- Deserialization failures invalidate entries
-- Missing insert times default to stale
-- Supplier exceptions do not crash request flow
-
-If cache lookup fails, the system gracefully falls back to supplier execution.
-
----
-
-## Extension Points
-
-To add a new cache implementation:
-
-1. Extend `CacheServiceAbs`
-2. Implement:
-   - `get()`
-   - `put()`
-   - `invalidate()`
-   - `getInsertTime()`
-   - `getHttpCachePath()`
-   - `getGithubCachePath()`
-3. Register as a Spring `@Service`
-
-This enables alternative storage backends such as:
-
-- In-memory caches
-- Cloud storage buckets
-- Hybrid layered caches
-
----
-
-## Summary
-
-The **Cache Services** module is a foundational backend component that:
-
-- Shields the system from excessive GitHub API calls
-- Provides consistent cache semantics across storage types
-- Supports async refresh and stale-while-revalidate patterns
-- Enables production-grade distributed caching with Redis
-- Allows read-only deployment models
-
-It acts as a performance accelerator, rate-limit shield, and reliability enhancer for the entire Major League GitHub platform.
+It plays a critical role in ensuring the scalability and responsiveness of Major League GitHub, especially under heavy GitHub API usage and complex contributor filtering queries.

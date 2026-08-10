@@ -1,8 +1,14 @@
-flowchart TD
-    EmitStart["emit Hook Triggered"] --> DateGen["Generate Current Date"]
-    DateGen --> Sitemap["Build sitemap.xml Content"]
-    DateGen --> Robots["Build robots.txt Content"]
-    Sitemap --> Inject1["Add sitemap.xml to compilation.assets"]
-    Robots --> Inject2["Add robots.txt to compilation.assets"]
-    Inject1 --> Done["Assets Ready for Output"]
-    Inject2 --> Done
+flowchart LR
+    subgraph BuildTime["Build Time"]
+        WP["Webpack"] --> FP["FaviconGeneratorPlugin"]
+        WP --> SP["SeoFilesPlugin"]
+    end
+
+    subgraph Runtime["Browser Runtime"]
+        React["React Application"]
+        API["Backend API"]
+    end
+
+    FP --> Assets["Static Assets"]
+    SP --> Assets
+    Assets --> React

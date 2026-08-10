@@ -1,5 +1,5 @@
-flowchart LR
-    Request["Hiring Request"] --> HiringCtrl["Hiring Controller"]
-    HiringCtrl --> HiringService["Hiring Service"]
-    HiringService --> JobOpening["JobOpening Model"]
-    JobOpening --> Response["JSON Response"]
+flowchart TD
+    Request["GET /api/hiring/*"] --> HiringControllerNode["HiringController"]
+    HiringControllerNode --> HiringServiceNode["HiringService"]
+    HiringServiceNode --> ResponseMap["Map<String,Object>"]
+    ResponseMap --> Client["Frontend Client"]

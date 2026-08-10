@@ -1,4 +1,7 @@
 flowchart TD
-    HiringManager["HiringManagerProfile"] --> SocialLinks["SocialLink[]"]
-    HiringManager --> Stats["githubStats"]
-    HiringManager --> Jobs["JobOpening"]
+    API["Backend API"] --> ApiModels["API Types"]
+    ApiModels --> Services["Service Layer"]
+    Services --> UIModels["UI Contributor Type"]
+    Services --> EnhancedModels["Enhanced Geographic Types"]
+    UIModels --> Components["Leaderboard Components"]
+    EnhancedModels --> Filters["Filtering & Proximity Logic"]

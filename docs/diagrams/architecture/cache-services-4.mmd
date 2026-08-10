@@ -1,0 +1,8 @@
+flowchart LR
+    Put["put(cachePath, key)"] --> BuildKey["Build Redis Key"]
+    BuildKey --> StoreValue["SET key -> JSON"]
+    StoreValue --> StoreMeta["SET key:expiration -> timestamp"]
+
+    Get["get(cachePath, key)"] --> Fetch["GET key"]
+    Fetch --> Deserialize["Gson.fromJson"]
+    Deserialize --> Return

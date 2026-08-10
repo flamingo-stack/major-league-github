@@ -1,5 +1,6 @@
 flowchart LR
-    HiringPage["Hiring Page"] --> HiringService["Frontend Services"]
-    HiringService --> BackendHiring["/api/hiring/* Endpoints"]
-    BackendHiring --> HiringService
-    HiringService --> HiringPage
+    QueryInput["User Types"] --> Debounce["Debounced Hook"]
+    Debounce --> ServiceCall["autocompleteX()"]
+    ServiceCall --> BackendCall["GET /api/autocomplete/*"]
+    BackendCall --> Response["ApiResponse<T[]>"]
+    Response --> FilteredList["Return T[]"]

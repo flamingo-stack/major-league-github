@@ -2,330 +2,256 @@
 
 ## Overview
 
-The **Rate Management** module is responsible for handling GitHub API rate limits across multiple access tokens in the Major League GitHub backend. Since the platform aggregates contributor and repository data from the GitHub GraphQL and REST APIs, it must operate within strict primary and secondary rate limits imposed by GitHub.
+The **Rate Management** module is responsible for orchestrating and optimizing all outbound GitHub API calls in the Major League GitHub backend. Because the application relies heavily on GitHub’s REST and GraphQL APIs for contributor discovery, statistics, and search, respecting GitHub’s primary and secondary rate limits is critical for reliability.
 
-This module ensures:
+This module:
 
-- Safe and efficient use of multiple GitHub tokens
-- Automatic detection of primary and secondary rate limits
-- Intelligent token selection based on remaining capacity
-- Blocking and retry behavior when all tokens are exhausted
-- Centralized rate state tracking for all outbound GitHub API calls
+- Manages multiple GitHub access tokens
+- Tracks primary rate limits (request quotas per hour)
+- Detects and handles secondary rate limits (abuse protection)
+- Selects the optimal token for each outgoing API call
+- Blocks and waits intelligently when all tokens are temporarily exhausted
 
-At its core, the module consists of:
-
-- `GithubToken` – A stateful model representing a single token and its rate metadata
-- `GithubTokenRateManager` – A Spring-managed service responsible for token lifecycle, selection, and synchronization
-
----
-
-## Architectural Context
-
-The Rate Management module sits between the Service Layer (e.g., GitHub integration services) and the external GitHub API.
-
-```mermaid
-flowchart TD
-    Controllers["Controllers"] --> Services["Service Layer"]
-    Services --> RateManager["GithubTokenRateManager"]
-    RateManager --> WebClient["WebClient per Token"]
-    WebClient --> GitHubAPI["GitHub API"]
-
-    RateManager --> TokenState["GithubToken State"]
-```
-
-### Flow Summary
-
-1. A service (e.g., GitHub data aggregation) needs to call GitHub.
-2. It requests the best available `WebClient` from `GithubTokenRateManager`.
-3. The manager selects the optimal token based on remaining quota and reset time.
-4. After the call, response headers are used to update the token's rate metadata.
-5. If limits are exceeded, the manager enforces wait logic before allowing further calls.
+The Rate Management module is primarily used by backend services such as `GithubService`, ensuring that all GitHub API interactions are rate-aware and resilient.
 
 ---
 
 ## Core Components
 
-### 1. GithubToken
+The module consists of two core classes:
 
-**Class:** `cx.flamingo.analysis.rate.GithubToken`
+1. **GithubToken**  
+2. **GithubTokenRateManager**
 
-`GithubToken` is a state container representing the real-time rate status of a single GitHub access token.
+### GithubToken
 
-#### Primary Rate Limit Fields
+`GithubToken` is a data model representing a single GitHub API token and its associated rate limit state.
 
-| Field | Description |
-|--------|------------|
-| `token` | Raw GitHub access token value |
-| `remainingRequests` | Remaining calls from `X-RateLimit-Remaining` |
-| `resetTime` | UNIX timestamp from `X-RateLimit-Reset` |
-| `rateLimit` | Total limit from `X-RateLimit-Limit` |
-| `usedRequests` | Used quota from `X-RateLimit-Used` |
+**Responsibilities:**
 
-#### Secondary Rate Limit Fields
+- Store primary rate limit metadata:
+  - Remaining requests
+  - Total limit
+  - Reset time (Unix timestamp)
+  - Used requests
+- Track secondary rate limit state:
+  - Retry-After duration
+  - Timestamp of last secondary limit hit
+- Provide helper methods for:
+  - Checking availability
+  - Computing seconds until reset
+  - Determining if token is under secondary rate restriction
 
-| Field | Description |
-|--------|------------|
-| `retryAfterSeconds` | `Retry-After` header value |
-| `lastSecondaryLimitHit` | Timestamp when secondary limit occurred |
+#### Primary vs Secondary Limits
 
-#### Key Behaviors
+- **Primary limit**: Standard per-hour quota (e.g., 5000 requests/hour per token).
+- **Secondary limit**: GitHub’s abuse detection mechanism, triggered by high-frequency or burst traffic. Enforced via `Retry-After` headers.
+
+Key logic:
+
+- `hasRemainingRequests()` → true only if:
+  - Remaining > 0
+  - Not under secondary rate limit
+- `isUnderSecondaryLimit()` → checks whether the retry window has elapsed.
+
+---
+
+### GithubTokenRateManager
+
+`GithubTokenRateManager` is a Spring `@Service` responsible for:
+
+- Initializing token-aware `WebClient` instances
+- Fetching and updating rate limit metadata
+- Selecting the best available token for outgoing requests
+- Blocking and retrying when necessary
+
+It acts as the central gateway for all GitHub API calls.
+
+---
+
+## Architecture Overview
+
+The Rate Management module sits between backend services and GitHub’s API.
 
 ```mermaid
-flowchart TD
-    CheckSecondary["isUnderSecondaryLimit()"] --> RetryCheck{"retryAfterSeconds and lastSecondaryLimitHit set?"}
-    RetryCheck -->|"No"| NotLimited["Return false"]
-    RetryCheck -->|"Yes"| TimeCheck["elapsedSeconds < retryAfterSeconds"]
-    TimeCheck --> Result["Return true or false"]
+flowchart LR
+    Service["Backend Service (e.g. GithubService)"] -->|"requests WebClient"| RateManager["GithubTokenRateManager"]
+    RateManager -->|"selects best token"| Token["GithubToken"]
+    RateManager -->|"uses WebClient"| GitHubAPI["GitHub API"]
+    GitHubAPI -->|"response headers"| RateManager
+    RateManager -->|"updateTokenRateLimits()"| Token
 ```
 
-- **`isUnderSecondaryLimit()`**
-  - Determines if a token is temporarily blocked by GitHub secondary rate limiting.
-  - Uses wall-clock time and `Retry-After` value.
+### Flow Summary
 
-- **`hasRemainingRequests()`**
-  - Ensures the token has positive remaining quota.
-  - Automatically excludes tokens under secondary limit.
-
-- **`getSecondsUntilReset()`**
-  - Calculates time until primary rate reset.
-  - Returns 0 if already reset or not initialized.
-
-This class is intentionally lightweight and mutable so that it can be updated dynamically after each GitHub API response.
+1. A backend service requests a GitHub client.
+2. The Rate Manager selects the best token.
+3. The API call is executed.
+4. Response headers are parsed.
+5. Token state is updated.
 
 ---
 
-### 2. GithubTokenRateManager
+## Token Initialization Lifecycle
 
-**Class:** `cx.flamingo.analysis.rate.GithubTokenRateManager`
+At application startup:
 
-This is a Spring `@Service` responsible for:
-
-- Initializing token clients
-- Fetching initial rate limit state
-- Selecting the optimal token per request
-- Handling exhaustion and wait logic
-- Updating token state from response headers
-
----
-
-## Initialization Lifecycle
+1. Tokens are injected via configuration (`github.tokens`).
+2. For each token:
+   - A `GithubToken` object is created.
+   - A dedicated `WebClient` is built with:
+     - Base URL
+     - Authorization header
+     - Increased memory buffer
+3. `initializeRateLimits()` calls GitHub’s `/rate_limit` endpoint.
+4. Each token’s metadata is populated.
 
 ```mermaid
 sequenceDiagram
-    participant Spring
-    participant Manager as "GithubTokenRateManager"
-    participant GitHub
+    participant App as Application
+    participant Manager as GithubTokenRateManager
+    participant GitHub as GitHub API
 
-    Spring->>Manager: PostConstruct init()
-    Manager->>Manager: Create WebClient per token
-    Spring->>Manager: initializeRateLimits()
-    Manager->>GitHub: GET /rate_limit per token
+    App->>Manager: init()
+    Manager->>Manager: Build WebClient per token
+    Manager->>GitHub: GET /rate_limit (per token)
     GitHub-->>Manager: Rate headers
     Manager->>Manager: updateTokenRateLimits()
 ```
 
-### Token Map Structure
+---
 
-Internally the manager maintains:
+## Token Selection Strategy
 
-- `HashMap<String, Pair<GithubToken, WebClient>> tokenMap`
+The `getBestAvailableClient()` method implements intelligent selection logic.
 
-Each configured token maps to:
+### Selection Criteria
 
-- A `GithubToken` object (state)
-- A dedicated `WebClient` configured with:
-  - Base GitHub API URL
-  - `Authorization: Bearer <token>` header
-  - Increased buffer size (1MB)
+For each token:
+
+1. Skip tokens under secondary rate limit.
+2. Skip tokens without rate metadata.
+3. Prefer tokens with:
+   - Highest remaining requests
+   - Latest reset time (if tie)
+
+### Exhaustion Handling
+
+If all tokens are:
+
+- **Under secondary limit** → Wait until earliest retry window expires.
+- **Primary exhausted (remaining = 0)** → Wait until earliest reset timestamp.
 
 This ensures:
 
-- Isolation between tokens
-- Clean state tracking per token
-- Stateless consumers (services do not manage tokens directly)
-
----
-
-## Intelligent Token Selection Algorithm
-
-The heart of the module is:
-
-```text
-getBestAvailableClient()
-```
-
-### Selection Strategy
+- No unnecessary failures
+- Full utilization of all configured tokens
+- Graceful degradation under heavy load
 
 ```mermaid
 flowchart TD
-    Start["Request Client"] --> Evaluate["Iterate All Tokens"]
-
-    Evaluate --> SecondaryCheck{"Under Secondary Limit?"}
-    SecondaryCheck -->|"Yes"| SkipSecondary["Track earliest secondary reset"]
-    SecondaryCheck -->|"No"| PrimaryCheck{"Has rate info?"}
-
-    PrimaryCheck -->|"No"| SkipToken["Skip token"]
-    PrimaryCheck -->|"Yes"| Compare["Compare remaining and reset time"]
-
-    Compare --> Select["Track best token"]
-    Select --> Exhausted{"All exhausted?"}
-
-    Exhausted -->|"Yes"| WaitPrimary["Sleep until earliest reset"]
-    Exhausted -->|"No"| ReturnBest["Return best client"]
+    Start["Request Client"] --> Evaluate["Evaluate All Tokens"]
+    Evaluate --> SecondaryCheck{"All Under Secondary?"}
+    SecondaryCheck -->|"Yes"| WaitSecondary["Sleep Until Earliest Secondary Reset"]
+    SecondaryCheck -->|"No"| PrimaryCheck{"All Exhausted?"}
+    PrimaryCheck -->|"Yes"| WaitPrimary["Sleep Until Earliest Reset"]
+    PrimaryCheck -->|"No"| Select["Select Highest Remaining Token"]
+    WaitSecondary --> Select
+    WaitPrimary --> Select
+    Select --> End["Return WebClient + GithubToken"]
 ```
-
-### Decision Rules
-
-1. **Skip tokens under secondary limit**
-   - Respect `Retry-After` duration.
-   - Track earliest secondary reset.
-
-2. **Skip tokens without rate info**
-   - Ensures safe selection.
-
-3. **Prefer token with:**
-   - Highest `remainingRequests`
-   - If tie → Latest `resetTime`
-
-4. **If all tokens are exhausted:**
-   - Sleep until earliest primary reset
-   - Reinitialize limits
-   - Retry selection recursively
-
-5. **If all tokens are under secondary limit:**
-   - Sleep until earliest secondary reset
-   - Retry selection
-
-This guarantees that the system:
-
-- Maximizes throughput
-- Avoids unnecessary failures
-- Self-recovers from temporary rate exhaustion
 
 ---
 
-## Primary vs Secondary Rate Limits
+## Rate Limit Updates
 
-### Primary Rate Limit
+After each GitHub response, the manager extracts headers such as:
 
-- Controlled via headers:
-  - `X-RateLimit-Remaining`
-  - `X-RateLimit-Reset`
-  - `X-RateLimit-Limit`
-  - `X-RateLimit-Used`
-- Reset occurs at a fixed UNIX timestamp.
-- Hard quota enforcement.
+- `X-RateLimit-Remaining`
+- `X-RateLimit-Reset`
+- `X-RateLimit-Limit`
+- `X-RateLimit-Used`
+- `Retry-After`
 
-### Secondary Rate Limit
+These are parsed and injected into the associated `GithubToken`.
 
-- Triggered by abuse detection or burst traffic.
-- Signaled via `Retry-After` header.
-- No official remaining counter.
-- Temporarily blocks the token.
+### Primary Limit Handling
 
-```mermaid
-flowchart LR
-    Primary["Primary Limit"] -->|"Hard quota"| ResetTime["Reset Timestamp"]
-    Secondary["Secondary Limit"] -->|"Burst protection"| RetryAfter["Retry-After seconds"]
-```
+- Remaining requests updated
+- Reset timestamp updated
+- Used requests tracked
 
-The Rate Management module handles both transparently.
+### Secondary Limit Handling
 
----
+When `Retry-After` is present:
 
-## Rate Limit Update Flow
-
-After each GitHub API call, response headers should be passed into:
-
-```text
-updateTokenRateLimits(GithubToken token, Map<String, List<String>> headers)
-```
-
-### Header Processing
-
-- Parses primary headers
-- Parses `Retry-After`
-- Updates token state
-- Logs structured debug information
-
-```mermaid
-flowchart TD
-    Response["GitHub Response"] --> Headers["Extract Headers"]
-    Headers --> UpdatePrimary["Update primary fields"]
-    Headers --> UpdateSecondary["Update Retry-After"]
-    UpdatePrimary --> Store["Mutate GithubToken"]
-    UpdateSecondary --> Store
-```
-
-This design ensures state accuracy without requiring persistent storage.
+- `retryAfterSeconds` is stored
+- `lastSecondaryLimitHit` timestamp is recorded
+- Token becomes temporarily unavailable
 
 ---
 
-## Concurrency and Synchronization
+## Concurrency and Thread Safety
 
-### Thread Safety Considerations
+- `initializeRateLimits()` is `synchronized` to prevent double initialization.
+- Token selection is deterministic and read-based.
+- Blocking uses `Thread.sleep()` when waiting for reset windows.
 
-- `initializeRateLimits()` is `synchronized`
-- Token selection is deterministic and based on in-memory state
-- Blocking logic uses `Thread.sleep()` when required
-
-Because this service is a singleton Spring bean, it acts as a centralized rate coordination point across all backend threads.
+While simple, this design ensures predictable behavior without requiring distributed coordination.
 
 ---
 
 ## Configuration Dependencies
 
-The module relies on Spring configuration properties:
+The module relies on configuration values injected via Spring:
 
-- `github.tokens` – List of GitHub access tokens
-- `github.api.url.rate_limit` – Endpoint for rate limit inspection
-- `github.api.url` – Base GitHub API URL
+- `github.tokens` → List of personal access tokens
+- `github.api.url` → Base GitHub API URL
+- `github.api.url.rate_limit` → Rate limit endpoint
 
-These values are injected via `@Value` annotations.
-
----
-
-## Design Characteristics
-
-### Strengths
-
-- Multi-token load balancing
-- Automatic backoff handling
-- Primary + secondary limit awareness
-- Minimal external dependencies
-- Centralized coordination model
-
-### Trade-offs
-
-- Blocking wait using `Thread.sleep()`
-- In-memory rate tracking (not distributed)
-- Assumes single-instance coordination
-
-For horizontally scaled deployments, a distributed coordination strategy (e.g., Redis-backed rate tracking) could extend this design.
+These are typically defined in the application configuration and loaded via the Configuration module.
 
 ---
 
-## How It Fits Into the Overall System
+## Interaction with Other Modules
 
-Within the Major League GitHub backend architecture:
+The Rate Management module integrates with:
 
-- Controllers expose REST endpoints.
-- Services orchestrate business logic and GitHub queries.
-- The Rate Management module ensures safe GitHub API usage.
-- Cache services reduce redundant calls.
-- Model entities represent domain objects returned to the frontend.
+- **Backend Services** → Especially `GithubService`, which delegates API calls.
+- **GraphQL Components** → When building and executing GitHub queries.
+- **Cache Services** → Rate management ensures cache refreshes do not overwhelm GitHub.
 
-The Rate Management module acts as a protective boundary between internal services and GitHub, preventing quota exhaustion and service instability.
+It does not expose HTTP endpoints directly. Instead, it acts as an internal infrastructure service.
+
+---
+
+## Design Strengths
+
+- ✅ Multi-token load balancing
+- ✅ Intelligent wait-and-retry behavior
+- ✅ Secondary rate limit awareness
+- ✅ Transparent integration with WebClient
+- ✅ Centralized rate logic
+
+---
+
+## Potential Extension Points
+
+The module could be enhanced with:
+
+- Non-blocking wait strategies (reactive delay instead of `Thread.sleep()`)
+- Metrics export (Prometheus/Grafana integration)
+- Distributed token coordination (Redis-backed state)
+- Adaptive backoff strategies
 
 ---
 
 ## Summary
 
-The **Rate Management** module provides a robust, centralized mechanism for managing GitHub API limits across multiple tokens. It:
+The **Rate Management** module ensures that Major League GitHub can scale GitHub API interactions safely and efficiently. By combining:
 
-- Tracks real-time rate state per token
-- Selects the most optimal token dynamically
-- Handles both primary and secondary rate limits
-- Self-recovers through intelligent waiting and reinitialization
+- Multi-token pooling
+- Primary and secondary rate awareness
+- Intelligent selection and wait strategies
 
-Without this module, the application would risk frequent API failures, degraded performance, and quota exhaustion. It is a foundational reliability component of the backend system.
+it transforms GitHub’s strict rate limits into a manageable, resilient infrastructure layer for the entire backend system.

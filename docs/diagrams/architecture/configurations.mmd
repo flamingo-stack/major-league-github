@@ -1,24 +1,26 @@
 flowchart TD
-    App["MajorLeagueGithubApplication"] --> Config["Configurations Module"]
+    App["Spring Boot Application"] --> Config["Configurations Module"]
 
     subgraph infra["Infrastructure Beans"]
         Async["AsyncConfig"]
         Cache["CacheConfig"]
         Redis["RedisConfig"]
         Web["WebConfig"]
-        Backend["BackendServiceConfig"]
-        Updater["CacheUpdaterConfig"]
+    end
+
+    subgraph profiles["Profile-Specific"]
+        BackendProfile["BackendServiceConfig"]
+        UpdaterProfile["CacheUpdaterConfig"]
     end
 
     Config --> Async
     Config --> Cache
     Config --> Redis
     Config --> Web
-    Config --> Backend
-    Config --> Updater
+    Config --> BackendProfile
+    Config --> UpdaterProfile
 
-    Cache --> CacheServices["Cache Services"]
-    Redis --> RedisServer[("Redis Server")]
-    Async --> Services["Service Layer"]
-    Web --> Controllers["Controllers"]
-    Updater --> Scheduler["Scheduled Jobs"]
+    Cache --> CacheServices["Cache Services Module"]
+    Async --> BackendServices["Backend Services Module"]
+    Web --> Controllers["Controllers Module"]
+    Redis --> CacheServices

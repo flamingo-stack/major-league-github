@@ -1,4 +1,4 @@
-flowchart TD
-    Profile["cache-updater Profile"] --> Scheduling["EnableScheduling"]
-    Scheduling --> Jobs["Scheduled Cache Refresh Jobs"]
-    Jobs --> Cache["CacheServiceAbs"]
+flowchart LR
+    RedisConfig["RedisConfig"] --> Factory["RedisConnectionFactory"]
+    Factory --> Template["RedisTemplate"]
+    Template --> CacheService["RedisCacheService"]

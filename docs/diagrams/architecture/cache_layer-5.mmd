@@ -1,6 +1,0 @@
-flowchart TD
-    Request["Incoming Request"] --> CacheLookup["Cache get()"]
-    CacheLookup --> TimestampCheck["Compare current time with insert timestamp"]
-    TimestampCheck --> Expired{"Expired?"}
-    Expired -->|"Yes"| Recompute["Fetch fresh data"]
-    Expired -->|"No"| ServeCached["Serve cached value"]

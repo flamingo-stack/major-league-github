@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Request Contributors"] --> BuildQuery["Build GraphQL Query"]
+    BuildQuery --> Execute["Execute via WebClient"]
+    Execute --> RateCheck{"Rate Limited?"}
+    RateCheck -->|Yes| SwitchToken["Switch Token"]
+    RateCheck -->|No| Parse["Parse JSON Response"]
+    SwitchToken --> Execute
+    Parse --> Process["Process Users"]
+    Process --> Score["Calculate Score"]
+    Score --> Return["Return Ranked Contributors"]

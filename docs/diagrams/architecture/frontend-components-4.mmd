@@ -1,6 +1,6 @@
-flowchart LR
-    ApiContributor["API Contributor"] --> TableProps["ContributorsTableProps"]
-    TableProps --> InfoProps["ContributorInfoProps"]
-    TableProps --> LocationProps["LocationInfoProps"]
-    TableProps --> StatsProps["StatsDisplayProps"]
-    TableProps --> TooltipProps["ContributorTooltipProps"]
+flowchart TD
+    Contributor["Contributor API Model"] --> Info["ContributorInfoProps"]
+    Contributor --> Location["LocationInfoProps"]
+    Contributor --> Stats["StatsDisplayProps"]
+    Contributor --> Tooltip["ContributorTooltipProps"]
+    Contributor --> LocationTooltip["LocationTooltipProps"]

@@ -1,8 +1,6 @@
 # Contributing to Major League GitHub
 
-Thank you for your interest in contributing to [Major League GitHub](https://www.mlg.soccer)! This is an open-source, standalone side project and contributions of all kinds are welcome — bug fixes, new features, documentation improvements, and more.
-
-> **Repository:** [https://github.com/flamingo-stack/major-league-github](https://github.com/flamingo-stack/major-league-github)
+Thank you for your interest in contributing to **Major League GitHub**! This is an independent, open-source side project and contributions of all kinds are welcome — bug reports, documentation improvements, feature requests, and code changes.
 
 ---
 
@@ -10,185 +8,173 @@ Thank you for your interest in contributing to [Major League GitHub](https://www
 
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
-- [Development Workflow](#development-workflow)
-- [Two Backend Profiles](#two-backend-profiles)
+- [Development Environment](#development-environment)
+- [Branch Naming](#branch-naming)
+- [Commit Messages](#commit-messages)
+- [Pull Request Process](#pull-request-process)
 - [Code Style](#code-style)
-- [Environment Variables](#environment-variables)
-- [Submitting a Pull Request](#submitting-a-pull-request)
-- [Security Vulnerabilities](#security-vulnerabilities)
+- [Security Guidelines](#security-guidelines)
+- [Reporting Issues](#reporting-issues)
 
 ---
 
 ## Code of Conduct
 
-Be respectful and constructive. This project follows standard open-source community norms — harassment, discrimination, or hostile behavior of any kind will not be tolerated.
+This project follows standard open-source community norms. Be respectful, constructive, and welcoming. Harassment of any kind will not be tolerated.
 
 ---
 
 ## Getting Started
 
-### Prerequisites
+### 1. Fork and Clone
+
+```bash
+git clone https://github.com/flamingo-stack/major-league-github.git
+cd major-league-github
+```
+
+### 2. Set Up the Development Environment
+
+**Prerequisites:**
 
 | Tool | Minimum Version |
 |------|----------------|
-| Java (JDK) | 21 |
-| Maven | 3.9+ |
+| Java JDK | 21 |
+| Apache Maven | 3.9+ |
 | Node.js | 18+ |
 | npm | 9+ |
-| Redis | 7+ (or Docker) |
-| Docker | 24+ |
-| Git | 2.40+ |
+| Redis | 6+ |
 
-### Fork and Clone
+**Backend setup:**
 
 ```bash
-# Fork the repository on GitHub, then:
-git clone https://github.com/<your-username>/major-league-github.git
-cd major-league-github
-git remote add upstream https://github.com/flamingo-stack/major-league-github.git
-```
-
-### Start Redis
-
-```bash
-docker run -d -p 6379:6379 --name mlg-redis redis:7
-```
-
-### Run the Backend Service
-
-```bash
-export GITHUB_TOKENS="ghp_yourTokenHere"
-export SPRING_REDIS_HOST="localhost"
-export SPRING_REDIS_PORT="6379"
-
 cd backend
-mvn spring-boot:run -Pbackend-service
+GITHUB_TOKENS=ghp_your_token_here mvn spring-boot:run
 ```
 
-Health check:
+The backend starts on port **8450** (REST API) by default.
 
-```bash
-curl http://localhost:8450/actuator/health
-# Expected: {"status":"UP"}
-```
-
-### Run the Cache Updater
-
-```bash
-# In a new terminal
-cd backend
-GITHUB_TOKENS=$GITHUB_TOKENS \
-SPRING_REDIS_HOST=localhost \
-SPRING_REDIS_PORT=6379 \
-mvn spring-boot:run -Pcache-updater
-```
-
-### Run the Frontend Dev Server
+**Frontend setup:**
 
 ```bash
 cd frontend
 npm install
-BACKEND_API_URL=http://localhost:8450 npx webpack serve
+BACKEND_API_URL=http://localhost:8450 npm run dev
 ```
 
-Open [http://localhost:8450](http://localhost:8450). See [Local Development](./docs/development/setup/local-development.md) for the full guide.
+The frontend dev server starts on port **3000**.
+
+> **No Redis?** Use the disk cache for simpler local development:
+> ```bash
+> GITHUB_TOKENS=ghp_your_token_here CACHE_IMPLEMENTATION=disk mvn spring-boot:run
+> ```
+
+See the [Local Development Guide](./docs/development/setup/local-development.md) for full details including debug configurations for IntelliJ IDEA and VS Code.
 
 ---
 
-## Project Structure
+## Development Environment
+
+### IDE Recommendations
+
+**Backend (Java / Spring Boot):**
+- **IntelliJ IDEA** (recommended) — enable Lombok annotation processing in Settings → Build, Execution, Deployment → Compiler → Annotation Processors
+- **VS Code** — install Extension Pack for Java, Spring Boot Extension Pack, and Lombok Annotations Support
+
+**Frontend (React / TypeScript):**
+- **VS Code** (recommended) — install ESLint, Prettier, TypeScript extensions
+- **WebStorm** — excellent TypeScript and React support out of the box
+
+### Environment Variables
+
+Set these before running the backend:
+
+```bash
+# Required
+export GITHUB_TOKENS="ghp_your_token_here"
+
+# Optional — use disk cache instead of Redis
+export CACHE_IMPLEMENTATION="disk"
+
+# Optional — Redis connection (defaults to localhost:6379)
+export SPRING_REDIS_HOST="localhost"
+export SPRING_REDIS_PORT="6379"
+
+# Optional — frontend API URL (for separate frontend/backend)
+export BACKEND_API_URL="http://localhost:8450"
+```
+
+---
+
+## Branch Naming
+
+Use descriptive branch names with a prefix indicating the type of change:
+
+| Prefix | When to use |
+|--------|-------------|
+| `feat/` | New feature |
+| `fix/` | Bug fix |
+| `docs/` | Documentation changes |
+| `refactor/` | Code refactoring (no behavior change) |
+| `chore/` | Tooling, dependencies, build config |
+| `test/` | Adding or improving tests |
+
+**Examples:**
 
 ```text
-major-league-github/
-├── backend/                  # Java 21 + Spring Boot 3.4 backend
-│   └── src/main/java/cx/flamingo/analysis/
-│       ├── controller/       # REST API controllers
-│       ├── service/          # Business logic services
-│       ├── cache/            # Cache abstraction + implementations
-│       ├── config/           # Spring configuration
-│       ├── graphql/          # GitHub GraphQL query builder
-│       ├── model/            # Domain models
-│       ├── rate/             # GitHub token rate management
-│       └── exception/        # Exception handling
-├── frontend/                 # React 19 + TypeScript frontend
-│   └── src/
-│       ├── components/       # UI components
-│       ├── hooks/            # Custom React hooks
-│       ├── services/         # API integration layer
-│       └── types/            # TypeScript type definitions
-└── docs/                     # Documentation
+feat/hiring-profile-caching
+fix/rate-limit-token-rotation
+docs/api-endpoint-reference
+refactor/city-service-loading
 ```
 
 ---
 
-## Development Workflow
+## Commit Messages
 
-### Branch Naming
+Write clear, concise commit messages that explain *what* and *why*:
 
-Use descriptive, lowercase, hyphen-separated branch names:
+- Use the imperative mood: "Add cache invalidation" not "Added cache invalidation"
+- Keep the first line under 72 characters
+- Optionally add a body for context
+
+**Examples:**
 
 ```text
-feat/add-team-filter-pagination
-fix/cache-miss-on-empty-results
-docs/update-quick-start
-chore/bump-spring-boot-version
+feat: add Haversine proximity filter for MLS teams
+
+fix: handle empty GITHUB_TOKENS env var gracefully
+
+docs: document cache mode configuration options
+
+refactor: extract scoring formula into separate method
 ```
-
-Prefixes:
-- `feat/` — new feature
-- `fix/` — bug fix
-- `docs/` — documentation only
-- `chore/` — dependency updates, tooling, non-functional changes
-- `refactor/` — code restructuring without behavior change
-
-### Workflow
-
-1. **Create a branch** from `main`:
-
-```bash
-git checkout main
-git pull upstream main
-git checkout -b feat/your-feature-name
-```
-
-2. **Make changes** — keep commits focused and atomic.
-
-3. **Verify your changes:**
-
-```bash
-# Backend: compile without tests
-cd backend && mvn compile -DskipTests
-
-# Backend: run tests (if available)
-cd backend && mvn test
-
-# Frontend: lint
-cd frontend && npx eslint src/
-
-# Frontend: build check
-cd frontend && npx webpack --mode production
-```
-
-4. **Push and open a PR:**
-
-```bash
-git push origin feat/your-feature-name
-```
-
-Then open a pull request at [https://github.com/flamingo-stack/major-league-github/pulls](https://github.com/flamingo-stack/major-league-github/pulls).
 
 ---
 
-## Two Backend Profiles
+## Pull Request Process
 
-The backend runs as **two separate services** from one codebase, controlled by Maven profiles:
+1. **Create a branch** from `main` using the naming convention above
+2. **Make your changes** — keep PRs focused and small where possible
+3. **Verify locally:**
+   - Backend compiles and starts: `mvn spring-boot:run`
+   - Frontend builds and lints: `npm run build` and `npx eslint src/`
+   - The app functions at `http://localhost:3000`
+4. **Write a clear PR description** explaining what changed and why
+5. **Open the PR** against the `main` branch at [https://github.com/flamingo-stack/major-league-github/pulls](https://github.com/flamingo-stack/major-league-github/pulls)
+6. **Address review feedback** — be responsive to comments
 
-| Service | Maven Profile | Port | Role |
-|---------|--------------|------|------|
-| Backend Service | `backend-service` | 8450 | Serves the REST API |
-| Cache Updater | `cache-updater` | 8451 | Runs scheduled cache refresh jobs |
+### PR Checklist
 
-Always test changes against the relevant profile. If you modify caching logic, test both profiles.
+Before submitting:
+
+- [ ] No secrets, tokens, or passwords committed to source
+- [ ] No hardcoded URLs that should be configurable
+- [ ] Backend compiles cleanly (`mvn clean package -DskipTests`)
+- [ ] Frontend lints cleanly (`npx eslint src/`)
+- [ ] No wildcard CORS (`allowedOrigins("*")`) introduced
+- [ ] New endpoints or behavior changes are documented
+- [ ] `ApiError` responses do not expose raw stack traces
 
 ---
 
@@ -196,126 +182,101 @@ Always test changes against the relevant profile. If you modify caching logic, t
 
 ### Backend (Java)
 
-- **Style:** Standard Java conventions; Lombok annotations (`@Data`, `@Builder`, `@RequiredArgsConstructor`) are used throughout.
-- **Annotation processing:** Must be enabled in your IDE (IntelliJ: Settings → Compiler → Annotation Processors → Enable).
-- **Constructor injection:** Prefer constructor injection over field injection for dependencies.
-- **Thin controllers:** Controllers should delegate to services — no business logic in controllers.
-- **Logging:** Use SLF4J. Log request parameters, cache state, and rate-limit status. **Never log token values or raw API responses containing personal data.**
+- **Java 21** — use modern Java features where appropriate
+- **Lombok** — use `@Data`, `@Builder`, `@Slf4j`, etc. for boilerplate reduction
+- **Spring conventions** — follow standard Spring Boot layering (Controller → Service → Repository/Cache)
+- **Thin controllers** — business logic belongs in services, not controllers
+- **Structured GraphQL** — use `GitHubQueryBuilder` for GitHub API queries; never build GraphQL strings manually
+- **Async** — use `@Async` for long-running tasks; configure thread pools in the `Configurations` module
 
 ### Frontend (TypeScript / React)
 
-- **ESLint:** Configured in `frontend/eslint.config.js`. Run before committing:
+- **TypeScript strict mode** — all props and state should be typed
+- **React hooks rules** — follow the Rules of Hooks; ESLint will enforce this
+- **URL-driven state** — use the `useUrlState` hook for filter state; do not use component-local state for URL-persisted filters
+- **Axios service layer** — all API calls go through `frontend/src/services/`; do not call the backend directly from components
+- **Material UI** — use MUI components consistently; avoid inline styles where a theme solution exists
+
+### ESLint
 
 ```bash
-cd frontend && npx eslint src/
+cd frontend
+npx eslint src/
 ```
 
-- **Formatting:** Prettier is configured. Enable format-on-save in your editor.
-- **Strong typing:** All API responses should be typed against the interfaces in `src/types/`. Avoid `any`.
-- **URL state:** Filter state is managed via the `useUrlState` hook. Do not store filter state in component state or context — keep it URL-driven.
-- **Path aliases:** Use `@/` for `frontend/src/` imports:
-
-```typescript
-import { ContributorsTable } from '@/components/ContributorsTable'
-```
-
-### IDE Setup
-
-**Backend (IntelliJ IDEA):**
-- Install plugins: **Lombok**, **Spring**
-- Set Project SDK to Java 21
-- Enable annotation processing
-
-**Frontend (VS Code):**
-- Install extensions: **ESLint**, **Prettier**, **TypeScript Language Features**, **GitLens**
-- Create `.vscode/settings.json`:
-
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "typescript.tsdk": "frontend/node_modules/typescript/lib",
-  "eslint.workingDirectories": ["frontend"]
-}
-```
+The project uses ESLint 9 with `eslint-plugin-react-hooks` and `typescript-eslint`. Fix all warnings before submitting a PR.
 
 ---
 
-## Environment Variables
+## Security Guidelines
 
-### Never commit secrets
+### Never Commit Secrets
 
-Add your local environment file to `.gitignore`:
+- GitHub tokens, LinkedIn credentials, and any API keys must **never** be committed to source control
+- Use environment variables locally; use GitHub Secrets for CI/CD; use Kubernetes Secrets in production
+- Add `.env` and `.env.local` to `.gitignore` if you use env files
+
+### Token Scopes
+
+Only the minimum required GitHub token scopes should be used:
+
+- `read:user` — read public user data
+- `public_repo` — access public repository data
+
+Do **not** request write, admin, or delete permissions.
+
+### Input Validation
+
+- Backend: validate all request parameters before passing to services
+- Frontend: the `useUrlState` hook validates URL parameters against `^[a-zA-Z0-9-]+$` — maintain this pattern for new filters
+- Use `GitHubQueryBuilder`'s structured arguments for GitHub API queries — never string-interpolate user input into GraphQL
+
+### Error Responses
+
+- Use `GlobalExceptionHandler` and `ApiResponse.error()` — never expose raw stack traces in API responses
+- Rate limit exceptions (`GithubRateLimitException`, `GithubTimeoutException`, etc.) should be handled gracefully
+
+### Dependency Audits
+
+Before merging dependency updates, run:
 
 ```bash
-echo ".env.local" >> .gitignore
+# Backend
+cd backend
+mvn dependency:resolve
+
+# Frontend
+cd frontend
+npm audit
 ```
 
-### Required Variables
-
-| Variable | Service | Description |
-|----------|---------|-------------|
-| `GITHUB_TOKENS` | Backend | Comma-separated GitHub PATs with `read:user` scope |
-| `SPRING_REDIS_HOST` | Backend | Redis host (e.g., `localhost`) |
-| `SPRING_REDIS_PORT` | Backend | Redis port (default: `6379`) |
-| `SPRING_PROFILES_ACTIVE` | Backend | `backend-service` or `cache-updater` |
-| `BACKEND_API_URL` | Frontend | Backend base URL for dev server proxy |
-
-### GitHub Token Scopes
-
-Minimum required scopes:
-- `read:user` — contributor profile data
-- `repo` — repository star counts
-
-> Multiple tokens are supported for higher throughput. The `GithubTokenRateManager` automatically selects the token with the most remaining quota.
+Fix moderate and high-severity findings before merging.
 
 ---
 
-## Pull Request Guidelines
+## Reporting Issues
 
-### Before Opening a PR
+- **Bugs and feature requests:** [https://github.com/flamingo-stack/major-league-github/issues](https://github.com/flamingo-stack/major-league-github/issues)
+- **Security vulnerabilities:** Open a private security advisory via GitHub's **Security → Advisories** feature in the repository
 
-- [ ] Code compiles without errors (`mvn compile -DskipTests` / `npx webpack --mode production`)
-- [ ] No secrets, tokens, or personal data in code or test fixtures
-- [ ] ESLint passes for frontend changes (`npx eslint src/`)
-- [ ] New environment variables are documented with empty defaults
-- [ ] CORS origins are not expanded without justification
-- [ ] Rate limiting behavior is preserved — do not bypass `GithubTokenRateManager`
-- [ ] Log statements do not include token values or raw API responses
+When filing a bug report, please include:
 
-### PR Description
-
-Include:
-- **What** the change does
-- **Why** it is needed
-- **How** to test it locally
-- Any related issues (e.g., `Closes #42`)
-
-### Review Process
-
-- All PRs require at least one review before merge
-- Maintainers may request changes — this is normal and part of the process
-- Keep PRs focused — one logical change per PR is easier to review
+1. Steps to reproduce
+2. Expected behavior
+3. Actual behavior
+4. Environment details (OS, Java version, Node.js version, browser)
+5. Relevant logs (redact any tokens before pasting)
 
 ---
 
-## Security Vulnerabilities
+## Additional Resources
 
-**Do not open a public issue for security vulnerabilities.**
-
-Please report security issues responsibly via [GitHub Security Advisories](https://github.com/flamingo-stack/major-league-github/security/advisories). This allows the maintainers to assess and patch the issue before public disclosure.
-
----
-
-## Getting Help
-
-- **Browse open issues:** [https://github.com/flamingo-stack/major-league-github/issues](https://github.com/flamingo-stack/major-league-github/issues)
-- **Open a new issue:** [https://github.com/flamingo-stack/major-league-github/issues/new](https://github.com/flamingo-stack/major-league-github/issues/new)
-- **Read the architecture docs:** [docs/development/architecture/README.md](./docs/development/architecture/README.md)
-- **Full development guide:** [docs/development/setup/local-development.md](./docs/development/setup/local-development.md)
+- [Documentation](./docs/README.md) — Full project documentation index
+- [Architecture Overview](./docs/development/architecture/README.md) — System design and data flow
+- [Local Development Guide](./docs/development/setup/local-development.md) — Detailed setup instructions
+- [Security Guidelines](./docs/development/security/README.md) — Full security reference
+- [Live Site](https://www.mlg.soccer) — See the project in production
 
 ---
 
-<div align="center">
-  Built with 💛 by the <a href="https://www.flamingo.run/about"><b>Flamingo</b></a> team
-</div>
+Thank you for contributing to Major League GitHub! 🏆

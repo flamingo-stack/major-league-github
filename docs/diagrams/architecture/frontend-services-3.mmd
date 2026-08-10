@@ -1,5 +1,6 @@
 flowchart TD
-    BuildParams["Build Query Parameters"] --> CreateLink["Create Hidden Anchor Element"]
-    CreateLink --> SetHref["Set export URL"]
-    SetHref --> ClickLink["Trigger click()"]
-    ClickLink --> Download["Browser Downloads CSV"]
+    A["User Clicks Export"] --> B["Build Query Parameters"]
+    B --> C["Create Hidden Anchor Element"]
+    C --> D["Set href to Export Endpoint"]
+    D --> E["Trigger click()"]
+    E --> F["Browser Downloads contributors.csv"]

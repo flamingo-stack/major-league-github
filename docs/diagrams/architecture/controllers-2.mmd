@@ -1,5 +1,8 @@
-flowchart LR
-    Request["HTTP Request"] --> Controller["Autocomplete Controller"]
-    Controller --> Service["Domain Service"]
-    Service --> Entities["Model Entities"]
-    Entities --> Response["ApiResponse<List<T>>"]
+flowchart TD
+    Request["GET /api/autocomplete/*"] --> Controller["AutocompleteController"]
+    Controller --> CityServiceNode["CityService"]
+    Controller --> StateServiceNode["StateService"]
+    Controller --> RegionServiceNode["RegionService"]
+    Controller --> LanguageServiceNode["LanguageService"]
+    Controller --> SoccerTeamServiceNode["SoccerTeamService"]
+    Controller --> ResponseWrap["ApiResponse.success()"]

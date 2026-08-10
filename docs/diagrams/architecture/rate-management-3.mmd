@@ -1,11 +1,10 @@
-sequenceDiagram
-    participant Spring
-    participant Manager as "GithubTokenRateManager"
-    participant GitHub
-
-    Spring->>Manager: PostConstruct init()
-    Manager->>Manager: Create WebClient per token
-    Spring->>Manager: initializeRateLimits()
-    Manager->>GitHub: GET /rate_limit per token
-    GitHub-->>Manager: Rate headers
-    Manager->>Manager: updateTokenRateLimits()
+flowchart TD
+    Start["Request Client"] --> Evaluate["Evaluate All Tokens"]
+    Evaluate --> SecondaryCheck{"All Under Secondary?"}
+    SecondaryCheck -->|"Yes"| WaitSecondary["Sleep Until Earliest Secondary Reset"]
+    SecondaryCheck -->|"No"| PrimaryCheck{"All Exhausted?"}
+    PrimaryCheck -->|"Yes"| WaitPrimary["Sleep Until Earliest Reset"]
+    PrimaryCheck -->|"No"| Select["Select Highest Remaining Token"]
+    WaitSecondary --> Select
+    WaitPrimary --> Select
+    Select --> End["Return WebClient + GithubToken"]

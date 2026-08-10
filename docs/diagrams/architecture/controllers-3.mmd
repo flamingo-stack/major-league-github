@@ -1,11 +1,9 @@
 flowchart TD
-    Request["Search Request"] --> CacheReady{"Cache Ready?"}
-    CacheReady -->|"No"| Error["Return ApiResponse.error"]
-    CacheReady -->|"Yes"| CacheLookup["Cache Service getHttpResponse()"]
-
-    CacheLookup -->|"Hit"| ReturnCached["Return Cached Contributors"]
-    CacheLookup -->|"Miss"| FetchCities["GitHub Service getTargetCities()"]
-    FetchCities --> SelectLang["Resolve Language"]
-    SelectLang --> FetchContrib["GitHub Service getTopContributorsIn()"]
-    FetchContrib --> StoreCache["Store in Cache"]
-    StoreCache --> ReturnResponse["Return ApiResponse.success"]
+    Request["GET /search"] --> CacheCheck["CacheServiceAbs.isCacheReady()"]
+    CacheCheck -->|"not ready"| ErrorResp["ApiResponse.error()"]
+    CacheCheck -->|"ready"| CacheLookup["CacheServiceAbs.getHttpResponse()"]
+    CacheLookup --> GithubServiceNode["GithubService"]
+    GithubServiceNode --> CitiesNode["CityService.getTargetCities()"]
+    GithubServiceNode --> LanguageNode["LanguageService"]
+    GithubServiceNode --> Result["List<Contributor>"]
+    Result --> SuccessResp["ApiResponse.success()"]

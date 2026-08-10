@@ -1,10 +1,11 @@
 flowchart TD
-    Start["Plugin Triggered"] --> CheckSVG["Check if SVG Exists"]
-    CheckSVG -->|"No"| Warn["Log Warning"]
-    CheckSVG -->|"Yes"| CheckICO["Check if ICO Exists"]
-    CheckICO --> CompareTime["Compare Modification Time"]
-    CompareTime -->|"ICO Newer"| Skip["Skip Generation"]
-    CompareTime -->|"SVG Newer"| Convert["Convert SVG to PNG via sharp"]
-    Convert --> ToICO["Convert PNG to ICO via to-ico"]
-    ToICO --> Save["Write favicon.ico to Disk"]
-    Save --> End["Done"]
+    Build["Webpack Emit Phase"] --> EmitHook["emit Hook"]
+    EmitHook --> Date["Compute Current Date"]
+    Date --> SitemapGen["Generate sitemap.xml"]
+    Date --> RobotsGen["Generate robots.txt"]
+
+    SitemapGen --> Inject1["Add to compilation.assets"]
+    RobotsGen --> Inject2["Add to compilation.assets"]
+
+    Inject1 --> Output["Build Output Directory"]
+    Inject2 --> Output

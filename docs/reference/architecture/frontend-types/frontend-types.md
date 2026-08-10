@@ -1,67 +1,75 @@
 # Frontend Types
 
-The **Frontend Types** module defines the TypeScript domain model for the Major League GitHub React application. It acts as the contract layer between the backend API and the frontend UI, ensuring strong typing, predictable data flow, and alignment with backend entities.
+The **Frontend Types** module defines the TypeScript interfaces that model API responses, domain entities, enriched view models, and hiring-related data structures used throughout the React frontend.
 
-This module provides:
+It acts as the **type contract layer** between:
 
-- API response and domain entity types
-- UI-focused contributor projections
-- Enhanced relational types for graph-like data modeling
-- Hiring-related profile and job types
-- Shared generic wrappers (e.g., `ApiResponse<T>`)
+- The Spring Boot backend APIs
+- Frontend services and hooks
+- UI components
+- Derived or enhanced client-side data models
 
-By centralizing these definitions, the application maintains type safety across components, hooks, and services while reflecting backend models defined in the service layer.
-
----
-
-## Architectural Role
-
-The Frontend Types module sits between API services and UI components.
-
-```mermaid
-flowchart LR
-    Backend["Spring Boot Backend"] -->|"JSON over HTTP"| ApiLayer["Frontend API Services"]
-    ApiLayer -->|"Typed responses"| Types["Frontend Types"]
-    Types -->|"Strongly typed models"| Components["React Components"]
-    Types -->|"Shared interfaces"| Hooks["Custom Hooks"]
-```
-
-### Responsibilities
-
-1. **Define API contracts** matching backend responses
-2. **Normalize data structures** for UI consumption
-3. **Provide enhanced graph relationships** for location and region modeling
-4. **Separate raw API models from UI-optimized projections**
-5. **Ensure hiring and contributor domains remain consistent**
+By centralizing these interfaces, the module ensures strong compile-time guarantees, consistent data handling, and a clear separation between raw API payloads and UI-specific representations.
 
 ---
 
-# Module Structure Overview
+## 1. Architectural Role
 
-The module is organized into five logical type groups:
+The Frontend Types module sits between the API layer and UI components, defining the canonical shape of data flowing through the frontend.
 
 ```mermaid
 flowchart TD
-    Root["Frontend Types"]
-
-    Root --> Api["API Types"]
-    Root --> Contributor["Contributor Projection Types"]
-    Root --> Enhanced["Enhanced Relational Types"]
-    Root --> Hiring["Hiring Domain Types"]
-    Root --> HiringIndex["Hiring Re-exports (Index)"]
+    Backend["Backend REST API"] -->|"JSON"| ApiResponseType["ApiResponse<T>"]
+    ApiResponseType --> ApiModels["API Domain Models"]
+    ApiModels --> Services["Frontend Services"]
+    Services --> Hooks["Custom Hooks"]
+    Hooks --> EnhancedModels["Enhanced Models"]
+    EnhancedModels --> Components["React Components"]
 ```
+
+### Key Responsibilities
+
+- Define strongly typed API response wrappers
+- Model domain entities such as contributors, cities, regions, and teams
+- Provide enriched client-side variants of core entities
+- Model hiring-related data for hiring manager views
+- Maintain consistent naming and shape alignment with backend models
 
 ---
 
-# 1. API Types
+## 2. Module Structure Overview
 
-**File:** `frontend/src/types/api.ts`
+The Frontend Types module is organized into four primary type groups:
 
-These interfaces represent the canonical backend contract.
+```mermaid
+flowchart LR
+    ApiTypes["api.ts"] --> ContributorType["Contributor (API)"]
+    ApiTypes --> CityType["City"]
+    ApiTypes --> RegionType["Region"]
+    ApiTypes --> StateType["State"]
+    ApiTypes --> TeamType["SoccerTeam"]
+    ApiTypes --> LanguageType["Language"]
 
-## ApiResponse<T>
+    ContributorDomain["contributor.ts"] --> ContributorUI["Contributor (UI)"]
 
-Generic wrapper used for all backend responses.
+    EnhancedTypes["enhanced.ts"] --> EnhancedCity["EnhancedCity"]
+    EnhancedTypes --> EnhancedRegion["EnhancedRegion"]
+    EnhancedTypes --> EnhancedState["EnhancedState"]
+
+    HiringTypes["hiring.ts"] --> HiringProfile["HiringManagerProfile"]
+    HiringTypes --> JobOpeningType["JobOpening"]
+    HiringTypes --> SocialLinkType["SocialLink"]
+```
+
+Each group serves a different layer of abstraction in the frontend.
+
+---
+
+# 3. API Domain Models (`api.ts`)
+
+These interfaces represent **raw backend payloads** and mirror backend model entities.
+
+## 3.1 ApiResponse<T>
 
 ```typescript
 export interface ApiResponse<T> {
@@ -72,285 +80,305 @@ export interface ApiResponse<T> {
 ```
 
 ### Purpose
-- Standardizes backend responses
-- Enables consistent error and success handling
-- Provides strong typing for generic payloads
 
----
+- Generic wrapper for all backend responses
+- Standardizes error and success messaging
+- Enables strongly typed API service calls
 
-## Geographic Domain Models
+Example usage:
 
-These types represent the geographic hierarchy used for leaderboard filtering and proximity calculations.
-
-### City
-- Linked to a state
-- Contains geographic coordinates
-- References nearest soccer team
-- May include resolved `state` and `nearestTeam`
-
-### Region
-- Aggregates multiple states
-- Contains central geo coordinates
-- Supports UI grouping by region
-
-### State
-- Belongs to one or more regions
-- Contains metadata (icon, displayName)
-
-### SoccerTeam
-- MLS-style team metadata
-- Used for proximity-based ranking
-- Includes stadium and coaching information
-
----
-
-## Language
-
-Represents a programming language filter.
-
-- `id`
-- `displayName`
-- `iconUrl`
-
-Used in leaderboard filtering and autocomplete components.
-
----
-
-## Contributor (API Version)
-
-The API-level Contributor is a fully hydrated backend representation.
-
-### Key Characteristics
-
-- Contains relational objects (`city`, `nearestTeam`)
-- Includes detailed GitHub metrics
-- Contains flattened metric duplicates for convenience
-- Distinguishes contributor types:
-  - `CONTRIBUTOR`
-  - `HIRING_MANAGER`
-
-```mermaid
-flowchart TD
-    Contributor["Contributor (API)"]
-
-    Contributor -->|"belongs to"| City["City"]
-    Contributor -->|"nearest"| Team["SoccerTeam"]
-    Contributor -->|"contains"| Stats["githubStats"]
-    Contributor -->|"contains"| Social["SocialLink[]"]
+```typescript
+const response: ApiResponse<Contributor[]> = await fetchContributors();
 ```
 
 ---
 
-# 2. Contributor Projection Types
+## 3.2 Core Geographic Models
 
-**File:** `frontend/src/types/contributor.ts`
+### City
 
-This file defines a UI-focused projection of Contributor.
+Represents a physical city with optional relational references.
 
-## Contributor (UI Version)
+Key characteristics:
 
-This type:
+- Contains geographic coordinates
+- References related `State` and `SoccerTeam`
+- May include embedded reference objects
 
-- Flattens key metrics
-- Uses `latestCommitDate` instead of raw timestamp
-- Adds UI-specific fields like `location`
-- Keeps `city` and `nearestTeam` references
+Notable design detail:
 
-### Why Separate from API Contributor?
+```typescript
+state?: State;
+nearestTeam?: SoccerTeam;
+```
 
-The API version reflects backend structure. The UI version:
+These fields allow the backend to optionally embed related entities to reduce round trips.
 
-- Matches table rendering needs
-- Avoids redundant nested structures
-- Enables transformation without mutating raw API data
+---
+
+### Region
+
+Represents a broader grouping of states.
+
+```typescript
+geo: {
+    latitude: number;
+    longitude: number;
+};
+```
+
+Design highlights:
+
+- Uses `stateIds` for lightweight references
+- May optionally embed full `State[]` objects
+
+---
+
+### State
+
+Represents a U.S. state or geographic region.
+
+Important properties:
+
+- `code` (e.g., CA, TX)
+- `displayName`
+- `iconUrl`
+- `regionIds` linking to parent regions
+
+---
+
+## 3.3 Language
+
+Represents a programming language used for leaderboard filtering.
+
+Includes:
+
+- Identifier
+- Display name
+- Icon URL
+
+---
+
+## 3.4 SoccerTeam
+
+Represents an MLS team used for geographic proximity ranking.
+
+Key fields:
+
+- Geographic coordinates
+- Stadium information
+- League metadata
+- Branding URLs
+
+This model is heavily used for:
+
+- Proximity calculations
+- Leaderboard grouping
+- Visual identity in UI components
+
+---
+
+## 3.5 Contributor (API Model)
+
+The most central domain entity in the application.
+
+```typescript
+export interface Contributor {
+    id: string;
+    login: string;
+    name: string | null;
+    type: 'CONTRIBUTOR' | 'HIRING_MANAGER';
+    city: City;
+    nearestTeam: SoccerTeam | null;
+    githubStats: {
+        score: number;
+        totalCommits: number;
+        starsGiven: number;
+        starsReceived: number;
+        forksReceived: number;
+        forksGiven: number;
+        javaRepos: number;
+    };
+}
+```
+
+### Architectural Characteristics
+
+- Contains both flattened metrics (e.g., `score`) and nested `githubStats`
+- Embeds relational objects (`city`, `nearestTeam`)
+- Includes hiring-related metadata via `type` and `socialLinks`
+
+This model powers:
+
+- Leaderboards
+- Contributor profile views
+- Hiring manager displays
+
+---
+
+# 4. UI-Level Contributor Model (`contributor.ts`)
+
+This `Contributor` interface represents a **frontend-optimized version** of contributor data.
+
+Key differences from API model:
+
+- Focused on display-ready metrics
+- Uses `latestCommitDate` (string) instead of timestamp
+- Includes `location` string
+- Removes deeply nested structures
+
+```mermaid
+flowchart TD
+    ApiContributor["Contributor (API)"] --> Transform["Transform / Map"]
+    Transform --> UIContributor["Contributor (UI)"]
+```
+
+### Purpose
+
+- Simplify table rendering
+- Provide display-ready fields
+- Reduce UI transformation logic inside components
+
+This separation prevents UI components from depending directly on backend data shape.
+
+---
+
+# 5. Enhanced Models (`enhanced.ts`)
+
+Enhanced models introduce **client-side relational enrichment** using `Set` collections.
+
+## 5.1 EnhancedCity
+
+```typescript
+export interface EnhancedCity extends Omit<City, 'state' | 'nearestTeam'> {
+  state: State | null;
+  nearestTeam: SoccerTeam | null;
+}
+```
+
+Replaces optional references with explicitly resolved objects.
+
+---
+
+## 5.2 EnhancedRegion
+
+```typescript
+states: Set<State>;
+cities: Set<City>;
+```
+
+Transforms:
+
+- `stateIds` → `Set<State>`
+- Adds city relationships
+
+---
+
+## 5.3 EnhancedState
+
+Extends `State` by adding:
+
+- `regions: Set<Region>`
+- `cities: Set<City>`
 
 ```mermaid
 flowchart LR
-    ApiContributor["Contributor (API)"] -->|"transform"| UiContributor["Contributor (UI)"]
+    RawRegion["Region (IDs)"] --> EnhanceRegion["EnhancedRegion (Objects)"]
+    RawState["State (IDs)"] --> EnhanceState["EnhancedState (Objects)"]
+    RawCity["City (Optional refs)"] --> EnhanceCity["EnhancedCity (Resolved refs)"]
 ```
 
-This separation improves maintainability and allows independent backend evolution.
+### Design Motivation
+
+- Avoid repeated lookups
+- Enable fast graph traversal
+- Support proximity and filtering logic
 
 ---
 
-# 3. Enhanced Relational Types
+# 6. Hiring Models (`hiring.ts`)
 
-**File:** `frontend/src/types/enhanced.ts`
+The hiring types support the hiring manager feature.
 
-These types enrich geographic models with full object references and set-based relationships.
+## 6.1 SocialLink
 
-## EnhancedCity
-
-Extends City while:
-
-- Ensuring `state` and `nearestTeam` are resolved
-- Replacing optional references with nullable concrete ones
-
-## EnhancedRegion
-
-Extends Region while:
-
-- Using `Set<State>` instead of array
-- Adding `cities: Set<City>`
-
-## EnhancedState
-
-Extends State while:
-
-- Adding `regions: Set<Region>`
-- Adding `cities: Set<City>`
-
-```mermaid
-flowchart TD
-    Region["EnhancedRegion"] --> State["EnhancedState"]
-    State --> City["EnhancedCity"]
-    City --> Team["SoccerTeam"]
+```typescript
+platform: 'linkedin' | 'twitter' | 'x' | 'github' | 'facebook' | 'instagram' | 'mastodon' | 'bluesky' | 'email' | 'website';
 ```
 
-### Purpose of Enhanced Types
-
-These types are used when:
-
-- Building in-memory geographic graphs
-- Computing nearest regions
-- Supporting advanced filtering
-- Avoiding repeated lookups
-
-Using `Set<T>` ensures uniqueness and improves traversal logic.
+Provides typed platform validation.
 
 ---
 
-# 4. Hiring Domain Types
+## 6.2 JobOpening
 
-**File:** `frontend/src/types/hiring.ts`
+Represents open roles associated with a hiring manager.
 
-Represents hiring managers and job-related information.
+---
 
-## SocialLink
+## 6.3 HiringManagerProfile
 
-Supports multiple platforms:
+Includes:
 
-- linkedin
-- twitter / x
-- github
-- facebook
-- instagram
-- mastodon
-- bluesky
-- email
-- website
-
-## JobOpening
-
-Represents:
-
-- Title
-- Location
-- External URL
-
-## HiringManagerProfile
-
-Contains:
-
-- Personal metadata
+- Public profile information
 - Social links
-- GitHub statistics
+- Extended GitHub metrics
 - Activity timestamp
 
 ```mermaid
 flowchart TD
-    HiringManager["HiringManagerProfile"] --> SocialLinks["SocialLink[]"]
-    HiringManager --> Stats["githubStats"]
-    HiringManager --> Jobs["JobOpening"]
+    HiringManager["HiringManagerProfile"] --> Stats["GitHub Stats"]
+    HiringManager --> Links["Social Links"]
+    HiringManager --> Activity["Last Active"]
 ```
 
-This domain integrates contributor ranking with recruiting capabilities.
-
 ---
 
-# 5. Hiring Index Types
+# 7. Data Flow Summary
 
-**File:** `frontend/src/types/hiring/index.ts`
-
-This file provides simplified exports of hiring-related types.
-
-Differences from the full hiring types:
-
-- Restricted social platforms
-- Reduced GitHub metrics
-- Lighter-weight profile shape
-
-### Purpose
-
-- Support lightweight imports
-- Reduce bundle coupling
-- Enable controlled exposure of hiring interfaces
-
----
-
-# Data Flow Summary
+The following diagram summarizes how types evolve across the frontend:
 
 ```mermaid
 flowchart TD
-    Backend["Backend Services"] --> ApiResponse["ApiResponse<T>"]
-    ApiResponse --> ApiModels["API Domain Models"]
-    ApiModels --> Transform["Transformation Layer"]
-    Transform --> UiModels["UI Contributor Type"]
-    ApiModels --> EnhancedModels["Enhanced Geographic Types"]
-    UiModels --> Components["Leaderboard UI"]
-    EnhancedModels --> Hooks["Geolocation Hooks"]
+    API["Backend API"] --> ApiModels["API Types"]
+    ApiModels --> Services["Service Layer"]
+    Services --> UIModels["UI Contributor Type"]
+    Services --> EnhancedModels["Enhanced Geographic Types"]
+    UIModels --> Components["Leaderboard Components"]
+    EnhancedModels --> Filters["Filtering & Proximity Logic"]
 ```
 
 ---
 
-# Design Principles
+# 8. Design Principles
 
-## 1. Strong Contract Alignment
+## 8.1 Clear Separation of Concerns
 
-Frontend API types closely mirror backend entities to avoid serialization mismatches.
+- API types mirror backend contracts
+- UI types optimize rendering
+- Enhanced types optimize relational traversal
 
-## 2. Separation of Concerns
+## 8.2 Strong Type Safety
 
-- API types represent backend truth
-- UI types represent presentation needs
-- Enhanced types represent relational graph logic
+- Generic API response wrapping
+- Discriminated unions (`CONTRIBUTOR | HIRING_MANAGER`)
+- Strict platform enums for social links
 
-## 3. Immutability Friendly
+## 8.3 Extensibility
 
-Interfaces encourage pure transformation functions rather than mutation.
-
-## 4. Domain-Driven Structure
-
-Types reflect real-world concepts:
-
-- Geographic hierarchy
-- Soccer team proximity
-- Contributor scoring
-- Hiring workflows
+- `Omit<>` usage allows safe overrides
+- `Set<>` enables efficient graph modeling
+- Optional embedding supports backend flexibility
 
 ---
 
-# When to Use Each Type
+# 9. Conclusion
 
-| Scenario | Recommended Type |
-|----------|-----------------|
-| Raw API response | `ApiResponse<T>` |
-| Leaderboard row | UI `Contributor` |
-| Data normalization | API `Contributor` |
-| Geographic graph building | `EnhancedRegion`, `EnhancedState`, `EnhancedCity` |
-| Hiring profile display | `HiringManagerProfile` |
+The **Frontend Types** module provides the structural backbone of the frontend application. It:
 
----
+- Defines the contract with the backend
+- Enables safe transformations into UI-ready models
+- Supports geographic enrichment logic
+- Powers contributor leaderboard and hiring features
 
-# Conclusion
-
-The **Frontend Types** module is the foundation of type safety across the Major League GitHub frontend.
-
-It:
-
-- Bridges backend contracts and UI rendering
-- Models complex geographic and contributor relationships
-- Supports hiring workflows
-- Enables scalable, maintainable frontend development
-
-By clearly separating API contracts, UI projections, and enhanced relational models, the application maintains both flexibility and structural integrity as features evolve.
+Without this module, data transformations would be scattered across components and services. Instead, Frontend Types centralizes domain modeling, improving maintainability, clarity, and long-term scalability of the application.

@@ -1,0 +1,4 @@
+flowchart TD
+    Controller["Controller"] --> Service["Service Method"]
+    Service -->|"@Async"| AsyncExecutor["Task Executor"]
+    AsyncExecutor --> BackgroundTask["Background Job"]

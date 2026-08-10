@@ -1,9 +1,16 @@
-flowchart LR
-    Request["Incoming Request"] --> KeyGen["Key Generation"]
-    KeyGen --> CacheLookup["Cache Lookup"]
-    CacheLookup -->|"Hit"| ReturnCached["Return Cached Data"]
-    CacheLookup -->|"Miss"| Supplier["Execute Supplier"]
-    Supplier --> Store["Store in Cache"]
-    Store --> ReturnFresh["Return Fresh Data"]
+flowchart TD
+    Request["Incoming Request"] --> CheckMode{"FORCE_UPDATE?"}
+    CheckMode -->|"No"| TryCache["Attempt Cache Read"]
+    CheckMode -->|"Yes"| Fetch
 
-    CacheLookup -->|"Stale"| AsyncRefresh["Async Refresh"]
+    TryCache --> Hit{"Cache Hit?"}
+    Hit -->|"Yes"| Stale{"Stale?"}
+    Hit -->|"No"| Fetch
+
+    Stale -->|"Yes"| AsyncRefresh["Async Refresh"]
+    Stale -->|"No"| ReturnCached["Return Cached Value"]
+
+    AsyncRefresh --> ReturnCached
+
+    Fetch["Execute Supplier (HTTP/GitHub)"] --> Store["Put in Cache"]
+    Store --> ReturnFresh["Return Fresh Value"]

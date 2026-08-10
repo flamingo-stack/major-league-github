@@ -1,226 +1,225 @@
 # Webpack Plugins
 
-The **Webpack Plugins** module contains custom build-time extensions for the Major League GitHub frontend. These plugins enhance the Webpack compilation lifecycle by generating static assets and SEO-related files automatically during the build process.
+The **Webpack Plugins** module contains custom build-time extensions used by the Major League GitHub frontend. These plugins enhance the Webpack compilation process by generating static assets that are not directly produced by the React application itself.
 
-This module is part of the frontend toolchain and operates entirely at build time. It does not ship runtime code to the browser. Instead, it integrates with Webpack’s plugin system to:
+This module currently provides:
 
-- Generate a production-ready `favicon.ico` from an SVG source
-- Produce SEO-critical files such as `sitemap.xml` and `robots.txt`
+- **FaviconGeneratorPlugin** – Automatically generates a `favicon.ico` file from an SVG source.
+- **SeoFilesPlugin** – Dynamically generates `sitemap.xml` and `robots.txt` during the Webpack build.
 
-By encapsulating this logic in custom plugins, the project ensures consistent asset generation across local development and CI/CD pipelines.
+Together, these plugins ensure that branding and SEO-related assets are always consistent, up to date, and environment-aware.
+
+---
+
+## Module Responsibilities
+
+The Webpack Plugins module is responsible for:
+
+1. Extending the Webpack build lifecycle via custom hooks.
+2. Generating derived static assets (ICO from SVG).
+3. Injecting SEO-related files directly into the build output.
+4. Ensuring build artifacts remain synchronized with source files.
+
+These plugins operate purely at **build time** and do not affect runtime performance in the browser.
 
 ---
 
 ## Architectural Overview
 
-The Webpack Plugins module integrates directly with the Webpack compiler lifecycle. Each plugin hooks into specific compilation phases to inject or transform build artifacts.
-
 ```mermaid
 flowchart TD
     Dev["Developer Runs Build"] --> Webpack["Webpack Compiler"]
-    Webpack -->|"beforeRun / watchRun"| FaviconPlugin["FaviconGeneratorPlugin"]
-    Webpack -->|"emit"| SeoPlugin["SeoFilesPlugin"]
 
-    FaviconPlugin --> FileSystem["File System"]
-    SeoPlugin --> Assets["Compilation Assets"]
+    subgraph plugins["Webpack Plugins Module"]
+        direction TB
+        FaviconPlugin["FaviconGeneratorPlugin"]
+        SeoPlugin["SeoFilesPlugin"]
+    end
 
-    Assets --> Output["Build Output Directory"]
-    FileSystem --> Output
+    Webpack -->|"beforeRun / watchRun"| FaviconPlugin
+    Webpack -->|"emit"| SeoPlugin
+
+    FaviconPlugin -->|"Generates"| IcoFile["favicon.ico"]
+    SeoPlugin -->|"Injects"| Sitemap["sitemap.xml"]
+    SeoPlugin -->|"Injects"| Robots["robots.txt"]
+
+    IcoFile --> Output["Build Output Directory"]
+    Sitemap --> Output
+    Robots --> Output
 ```
 
-### Key Characteristics
+### Key Points
 
-- **Build-time execution only**
-- **Zero runtime overhead** in the browser bundle
-- **Deterministic asset generation**
-- **CI/CD friendly**
+- Plugins hook into the **Webpack compiler lifecycle**.
+- Output files are injected into the final build artifact.
+- No runtime code changes are required in the React application.
 
 ---
 
-## Plugin Lifecycle Integration
+# FaviconGeneratorPlugin
 
-Webpack exposes lifecycle hooks that plugins can subscribe to. The two plugins in this module use different hooks depending on their responsibilities.
+## Purpose
 
-```mermaid
-flowchart LR
-    Compiler["Webpack Compiler"] --> BeforeRun["beforeRun Hook"]
-    Compiler --> WatchRun["watchRun Hook"]
-    Compiler --> Emit["emit Hook"]
+The **FaviconGeneratorPlugin** ensures that a `favicon.ico` file is always generated from a source SVG file. This prevents manual conversion steps and keeps the favicon aligned with the latest branding updates.
 
-    BeforeRun --> FaviconPlugin["FaviconGeneratorPlugin"]
-    WatchRun --> FaviconPlugin
-    Emit --> SeoPlugin["SeoFilesPlugin"]
-```
+## Core Features
 
-- **FaviconGeneratorPlugin** runs before compilation starts (both normal and watch mode).
-- **SeoFilesPlugin** runs during the `emit` phase to inject generated files into the output bundle.
+- Converts SVG → PNG → ICO
+- Skips regeneration if the ICO file is newer than the SVG
+- Works in both normal build mode and watch mode
+- Automatically creates output directories if missing
 
----
-
-## FaviconGeneratorPlugin
-
-**Core Component:**  
-`major-league-github.frontend.webpack-plugins.favicon-generator-plugin.FaviconGeneratorPlugin`
-
-### Purpose
-
-Automatically generates a `favicon.ico` file from an SVG source file during the build process.
-
-This ensures:
-
-- A single source of truth (`favicon.svg`)
-- Automatic regeneration when the SVG changes
-- Consistent output for all environments
-
-### Configuration Options
-
-| Option | Description | Default |
-|---------|------------|----------|
-| `svgPath` | Path to the source SVG file | `public/favicon.svg` |
-| `icoPath` | Output path for generated ICO file | `public/favicon.ico` |
-| `size` | Icon size in pixels | `60` |
-
-### Internal Workflow
+## Build Lifecycle Integration
 
 ```mermaid
 flowchart TD
-    Start["Plugin Triggered"] --> CheckSVG["Check if SVG Exists"]
+    Start["Webpack Build Starts"] --> Hook1["beforeRun Hook"]
+    Start --> Hook2["watchRun Hook"]
+
+    Hook1 --> Generate["generateFavicon()"]
+    Hook2 --> Generate
+
+    Generate --> CheckSVG{"SVG Exists?"}
     CheckSVG -->|"No"| Warn["Log Warning"]
-    CheckSVG -->|"Yes"| CheckICO["Check if ICO Exists"]
-    CheckICO --> CompareTime["Compare Modification Time"]
-    CompareTime -->|"ICO Newer"| Skip["Skip Generation"]
-    CompareTime -->|"SVG Newer"| Convert["Convert SVG to PNG via sharp"]
-    Convert --> ToICO["Convert PNG to ICO via to-ico"]
-    ToICO --> Save["Write favicon.ico to Disk"]
-    Save --> End["Done"]
+    CheckSVG -->|"Yes"| CheckTime{"ICO Newer?"}
+
+    CheckTime -->|"Yes"| Skip["Skip Generation"]
+    CheckTime -->|"No"| Convert["Convert SVG → PNG → ICO"]
+
+    Convert --> Save["Write favicon.ico"]
+    Save --> End["Continue Build"]
+    Skip --> End
+    Warn --> End
 ```
 
-### Optimization Strategy
+## Internal Workflow
 
-The plugin avoids unnecessary work by:
+1. Resolve SVG and ICO paths relative to the Webpack context.
+2. Validate that the SVG file exists.
+3. Compare modification timestamps.
+4. Use:
+   - `sharp` for SVG → PNG conversion.
+   - `to-ico` for PNG → ICO conversion.
+5. Persist the generated `favicon.ico` to disk.
 
-- Checking if the SVG file exists
-- Comparing modification timestamps
-- Skipping regeneration if the ICO file is already up to date
+## Configuration Options
 
-This improves incremental build performance, especially in watch mode.
+| Option | Default | Description |
+|--------|---------|------------|
+| `svgPath` | `public/favicon.svg` | Path to the source SVG file |
+| `icoPath` | `public/favicon.ico` | Output path for the ICO file |
+| `size` | `60` | Resize dimension before ICO conversion |
 
-### External Dependencies
+## Why This Matters
 
-- **sharp** – Image processing (SVG → PNG conversion)
-- **to-ico** – Converts PNG buffer to ICO format
-- **fs / path** – Node.js filesystem utilities
-
-### Error Handling
-
-- Logs warnings if the SVG file is missing
-- Throws build errors if image conversion fails
-- Ensures output directory exists before writing files
+- Prevents stale favicon artifacts.
+- Ensures SVG remains the single source of truth.
+- Reduces manual asset management errors.
 
 ---
 
-## SeoFilesPlugin
+# SeoFilesPlugin
 
-**Core Component:**  
-`major-league-github.frontend.webpack-plugins.seo-files-plugin.SeoFilesPlugin`
+## Purpose
 
-### Purpose
-
-Generates SEO-related static files during the Webpack `emit` phase:
+The **SeoFilesPlugin** generates search engine optimization files dynamically during the Webpack build:
 
 - `sitemap.xml`
 - `robots.txt`
 
-These files are injected directly into the Webpack compilation assets and included in the final output bundle.
+This ensures that deployments always include consistent and environment-aware SEO metadata.
 
-### Configuration Options
-
-| Option | Description | Default |
-|---------|------------|----------|
-| `baseUrl` | Base site URL used in generated files | `https://www.mlg.soccer` |
-
-### Internal Workflow
+## Build Lifecycle Integration
 
 ```mermaid
 flowchart TD
-    EmitStart["emit Hook Triggered"] --> DateGen["Generate Current Date"]
-    DateGen --> Sitemap["Build sitemap.xml Content"]
-    DateGen --> Robots["Build robots.txt Content"]
-    Sitemap --> Inject1["Add sitemap.xml to compilation.assets"]
-    Robots --> Inject2["Add robots.txt to compilation.assets"]
-    Inject1 --> Done["Assets Ready for Output"]
-    Inject2 --> Done
+    Build["Webpack Emit Phase"] --> EmitHook["emit Hook"]
+    EmitHook --> Date["Compute Current Date"]
+    Date --> SitemapGen["Generate sitemap.xml"]
+    Date --> RobotsGen["Generate robots.txt"]
+
+    SitemapGen --> Inject1["Add to compilation.assets"]
+    RobotsGen --> Inject2["Add to compilation.assets"]
+
+    Inject1 --> Output["Build Output Directory"]
+    Inject2 --> Output
 ```
 
-### Generated Artifacts
+## Generated Files
 
-#### sitemap.xml
+### sitemap.xml
 
-- Includes homepage URL
-- Sets daily change frequency
-- Sets priority to `1.0`
-- Uses current date as `lastmod`
+Includes:
+- Base URL
+- Current build date as `<lastmod>`
+- Change frequency
+- Priority value
 
-#### robots.txt
+### robots.txt
 
-- Allows all crawlers
-- Disallows `/api/` routes
-- References generated sitemap
+Includes:
+- Allow all crawlers
+- Disallow `/api/`
+- Reference to sitemap location
 
-### Design Considerations
+## Configuration Options
 
-- Uses Webpack’s asset injection system
-- Avoids filesystem writes during build
-- Ensures generated files are part of the final artifact
+| Option | Default | Description |
+|--------|---------|------------|
+| `baseUrl` | `https://www.mlg.soccer` | Root URL used in sitemap and robots file |
 
----
+## Design Characteristics
 
-## Responsibilities Within the Frontend Architecture
-
-The Webpack Plugins module supports the frontend build pipeline by providing:
-
-| Concern | Responsibility |
-|----------|----------------|
-| Branding | Generate consistent favicon from SVG |
-| SEO | Provide sitemap and crawler configuration |
-| Automation | Eliminate manual asset management |
-| Performance | Avoid redundant file generation |
-
-It complements frontend components, hooks, services, and types by enhancing the production build rather than modifying runtime behavior.
+- Generated entirely in memory during compilation.
+- Injected directly into `compilation.assets`.
+- No filesystem writes required.
+- Automatically reflects the current build date.
 
 ---
 
-## Separation of Concerns
+# Interaction with the Frontend Application
+
+Although these plugins live alongside the frontend codebase, they:
+
+- Do not modify React components.
+- Do not impact bundle size directly.
+- Operate strictly during the Webpack compilation phase.
+
+They complement:
+
+- **Frontend Components** (UI rendering)
+- **Frontend Services** (API communication)
+- **Frontend Types** (TypeScript domain models)
+
+by ensuring that build artifacts meet production readiness standards.
+
+---
+
+# Build-Time vs Runtime Responsibilities
 
 ```mermaid
 flowchart LR
-    Runtime["Frontend Application Code"] --> Browser["Browser Runtime"]
-    BuildTime["Webpack Plugins"] --> Output["Static Build Artifacts"]
+    subgraph BuildTime["Build Time"]
+        WP["Webpack"] --> FP["FaviconGeneratorPlugin"]
+        WP --> SP["SeoFilesPlugin"]
+    end
 
-    Runtime -.->|"No Direct Dependency"| BuildTime
+    subgraph Runtime["Browser Runtime"]
+        React["React Application"]
+        API["Backend API"]
+    end
+
+    FP --> Assets["Static Assets"]
+    SP --> Assets
+    Assets --> React
 ```
-
-- The application code does not depend on these plugins.
-- The plugins do not modify application logic.
-- They operate strictly at build time.
-
----
-
-## Benefits of the Approach
-
-1. **Single Source of Truth** – SVG-based favicon management.
-2. **SEO Automation** – Always up-to-date sitemap and robots configuration.
-3. **Build Consistency** – Works identically in local and CI environments.
-4. **Incremental Efficiency** – Avoids redundant image processing.
-5. **Clear Responsibility Boundary** – Isolated build-time concerns.
-
----
 
 ## Summary
 
-The **Webpack Plugins** module encapsulates build-time automation logic for the Major League GitHub frontend. It enhances the Webpack pipeline through two focused plugins:
+The **Webpack Plugins** module enhances the frontend build pipeline by:
 
-- **FaviconGeneratorPlugin** – Converts SVG to ICO efficiently and conditionally.
-- **SeoFilesPlugin** – Injects SEO-critical static files during compilation.
+- Automating favicon generation from SVG sources.
+- Ensuring SEO metadata is always present and correct.
+- Keeping branding and indexing artifacts synchronized with each build.
 
-Together, they ensure the application’s static assets and search engine configuration remain accurate, automated, and production-ready without introducing runtime complexity.
+By embedding these concerns directly into the Webpack lifecycle, the system ensures consistent, reproducible, and production-ready frontend builds without adding runtime complexity.

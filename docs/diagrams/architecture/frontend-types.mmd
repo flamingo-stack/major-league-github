@@ -1,5 +1,7 @@
-flowchart LR
-    Backend["Spring Boot Backend"] -->|"JSON over HTTP"| ApiLayer["Frontend API Services"]
-    ApiLayer -->|"Typed responses"| Types["Frontend Types"]
-    Types -->|"Strongly typed models"| Components["React Components"]
-    Types -->|"Shared interfaces"| Hooks["Custom Hooks"]
+flowchart TD
+    Backend["Backend REST API"] -->|"JSON"| ApiResponseType["ApiResponse<T>"]
+    ApiResponseType --> ApiModels["API Domain Models"]
+    ApiModels --> Services["Frontend Services"]
+    Services --> Hooks["Custom Hooks"]
+    Hooks --> EnhancedModels["Enhanced Models"]
+    EnhancedModels --> Components["React Components"]
