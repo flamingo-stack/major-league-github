@@ -1,0 +1,8 @@
+flowchart TD
+    Controller["Controllers"] --> Services["Backend Services"]
+    Services --> Cache["Cache Services"]
+    Services --> GraphQL["GraphQL Components"]
+    Services --> Rate["Rate Management"]
+    Services --> Models["Model Entities"]
+    Services --> ExternalGitHub["GitHub GraphQL API"]
+    Services --> ExternalLinkedIn["LinkedIn API"]

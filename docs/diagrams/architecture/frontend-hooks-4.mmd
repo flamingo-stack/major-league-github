@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant UI
+    participant Hook as "useUrlState"
+    participant Router as "React Router"
+
+    UI->>Hook: updateUrlState(newState)
+    Hook->>Hook: debounce if configured
+    Hook->>Router: setSearchParams()
+    Router->>Hook: searchParams updated
+    Hook->>UI: new urlState

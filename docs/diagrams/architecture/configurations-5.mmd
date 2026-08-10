@@ -1,0 +1,4 @@
+flowchart LR
+    Browser["Frontend"] -->|"HTTP Request"| Backend["Backend Service"]
+    Backend -->|"CORS Validation"| WebConfig
+    WebConfig -->|"Allowed Origin"| Response["HTTP Response"]

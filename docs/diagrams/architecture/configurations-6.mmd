@@ -1,0 +1,4 @@
+flowchart TD
+    Startup["Application Startup"] --> Profile{"Active Profile"}
+    Profile -->|"backend-service"| BackendMode["REST API Mode"]
+    Profile -->|"cache-updater"| UpdaterMode["Scheduled Refresh Mode"]

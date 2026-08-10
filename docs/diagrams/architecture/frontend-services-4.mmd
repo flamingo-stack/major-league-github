@@ -1,0 +1,6 @@
+flowchart LR
+    QueryInput["User Types"] --> Debounce["Debounced Hook"]
+    Debounce --> ServiceCall["autocompleteX()"]
+    ServiceCall --> BackendCall["GET /api/autocomplete/*"]
+    BackendCall --> Response["ApiResponse<T[]>"]
+    Response --> FilteredList["Return T[]"]

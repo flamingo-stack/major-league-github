@@ -1,0 +1,7 @@
+flowchart TD
+    Page["Leaderboard Page"] --> LanguageAuto["LanguageAutocomplete"]
+    LanguageAuto --> BaseAuto["BaseAutocomplete"]
+    Page --> Table["Contributors Table"]
+    Page --> PaginationComp["Pagination"]
+    LanguageAuto --> Services["Frontend Services"]
+    Table --> Types["Frontend Types"]

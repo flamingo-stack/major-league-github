@@ -1,0 +1,8 @@
+flowchart TD
+    Request["GET /api/autocomplete/*"] --> Controller["AutocompleteController"]
+    Controller --> CityServiceNode["CityService"]
+    Controller --> StateServiceNode["StateService"]
+    Controller --> RegionServiceNode["RegionService"]
+    Controller --> LanguageServiceNode["LanguageService"]
+    Controller --> SoccerTeamServiceNode["SoccerTeamService"]
+    Controller --> ResponseWrap["ApiResponse.success()"]

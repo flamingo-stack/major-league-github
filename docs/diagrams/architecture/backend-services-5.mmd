@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Get Company Job Postings"] --> Token["Request OAuth Token"]
+    Token --> FetchUpdates["Fetch Organization Updates"]
+    FetchUpdates --> FilterJobs["Filter jobPosting Content"]
+    FilterJobs --> MapJobs["Map to JobOpening Model"]
+    MapJobs --> Cache["Store in Cache"]

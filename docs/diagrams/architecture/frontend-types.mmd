@@ -1,0 +1,7 @@
+flowchart TD
+    Backend["Backend REST API"] -->|"JSON"| ApiResponseType["ApiResponse<T>"]
+    ApiResponseType --> ApiModels["API Domain Models"]
+    ApiModels --> Services["Frontend Services"]
+    Services --> Hooks["Custom Hooks"]
+    Hooks --> EnhancedModels["Enhanced Models"]
+    EnhancedModels --> Components["React Components"]

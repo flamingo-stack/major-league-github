@@ -1,0 +1,6 @@
+flowchart TD
+    Startup["Application Startup"] --> LoopLanguages["Iterate Languages"]
+    LoopLanguages --> Trigger["Call ContributorController"]
+    Trigger --> GithubFetch["GithubService Fetch"]
+    GithubFetch --> CacheStore["Cache Responses"]
+    CacheStore --> Complete["Mark Cache Ready"]

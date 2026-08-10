@@ -1,0 +1,5 @@
+flowchart TD
+    URL["URLSearchParams"] --> Parse["parseUrlValue()"]
+    Parse --> Validate{"Valid?"}
+    Validate -->|"Yes"| State["Populate UrlState"]
+    Validate -->|"No"| Default["Use defaultValue"]

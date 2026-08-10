@@ -1,0 +1,26 @@
+flowchart TD
+    App["Spring Boot Application"] --> Config["Configurations Module"]
+
+    subgraph infra["Infrastructure Beans"]
+        Async["AsyncConfig"]
+        Cache["CacheConfig"]
+        Redis["RedisConfig"]
+        Web["WebConfig"]
+    end
+
+    subgraph profiles["Profile-Specific"]
+        BackendProfile["BackendServiceConfig"]
+        UpdaterProfile["CacheUpdaterConfig"]
+    end
+
+    Config --> Async
+    Config --> Cache
+    Config --> Redis
+    Config --> Web
+    Config --> BackendProfile
+    Config --> UpdaterProfile
+
+    Cache --> CacheServices["Cache Services Module"]
+    Async --> BackendServices["Backend Services Module"]
+    Web --> Controllers["Controllers Module"]
+    Redis --> CacheServices

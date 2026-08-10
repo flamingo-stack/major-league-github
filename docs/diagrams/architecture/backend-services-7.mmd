@@ -1,0 +1,6 @@
+flowchart TD
+    Request["City Batch"] --> Async["CompletableFuture Execution"]
+    Async --> TokenManager["GithubTokenRateManager"]
+    TokenManager --> WebClient["WebClient Call"]
+    WebClient --> CacheLayer["CacheServiceAbs"]
+    CacheLayer --> Response["Parsed JSON"]

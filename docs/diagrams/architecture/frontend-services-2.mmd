@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant UI as React UI
+    participant Service as Frontend Services
+    participant API as Backend API
+
+    UI->>Service: getContributors(filters)
+    Service->>Service: Build URLSearchParams
+    Service->>API: GET /api/contributors/search
+    API-->>Service: ApiResponse<Contributor[]>
+    Service->>Service: Validate status === "success"
+    Service-->>UI: Contributor[]

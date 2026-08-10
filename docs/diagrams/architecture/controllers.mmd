@@ -1,0 +1,9 @@
+flowchart TD
+    Client["Frontend Client"] -->|"HTTP Request"| ControllerLayer["Controllers"]
+    ControllerLayer -->|"delegates"| ServiceLayer["Backend Services"]
+    ServiceLayer -->|"reads/writes"| ModelLayer["Model Entities"]
+    ServiceLayer -->|"queries"| GraphQLLayer["GraphQL Components"]
+    ServiceLayer -->|"uses"| CacheLayer["Cache Services"]
+    ServiceLayer -->|"rate limits"| RateLayer["Rate Management"]
+    ControllerLayer -->|"wraps response"| ApiResponseNode["ApiResponse"]
+    ApiResponseNode --> Client

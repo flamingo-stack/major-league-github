@@ -1,0 +1,6 @@
+flowchart LR
+    Frontend["Frontend Application"] --> Controllers["REST Controllers"]
+    Controllers --> Backend["Backend Services"]
+    Backend --> CacheLayer["Cache Services"]
+    Backend --> ExternalAPIs["External APIs"]
+    Backend --> StaticData["CSV Data"]

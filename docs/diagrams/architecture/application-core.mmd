@@ -1,0 +1,24 @@
+flowchart TD
+    AppCore["Application Core"]
+
+    Controllers["Controllers"]
+    Services["Backend Services"]
+    Cache["Cache Services"]
+    Rate["Rate Management"]
+    Config["Configurations"]
+    Models["Model Entities"]
+    GraphQL["GraphQL Components"]
+
+    AppCore --> Controllers
+    AppCore --> Services
+    AppCore --> Cache
+    AppCore --> Rate
+    AppCore --> Config
+    AppCore --> Models
+    AppCore --> GraphQL
+
+    Controllers --> Services
+    Services --> Cache
+    Services --> Rate
+    Services --> GraphQL
+    Services --> Models

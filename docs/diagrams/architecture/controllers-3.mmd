@@ -1,0 +1,9 @@
+flowchart TD
+    Request["GET /search"] --> CacheCheck["CacheServiceAbs.isCacheReady()"]
+    CacheCheck -->|"not ready"| ErrorResp["ApiResponse.error()"]
+    CacheCheck -->|"ready"| CacheLookup["CacheServiceAbs.getHttpResponse()"]
+    CacheLookup --> GithubServiceNode["GithubService"]
+    GithubServiceNode --> CitiesNode["CityService.getTargetCities()"]
+    GithubServiceNode --> LanguageNode["LanguageService"]
+    GithubServiceNode --> Result["List<Contributor>"]
+    Result --> SuccessResp["ApiResponse.success()"]

@@ -1,0 +1,7 @@
+flowchart TD
+    Root["Field: search"] --> Args["Arguments"]
+    Root --> Nodes["Subfields"]
+    Nodes --> User["... on User"]
+    User --> Login["login"]
+    User --> Location["location"]
+    User --> Repositories["repositories"]

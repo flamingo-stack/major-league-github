@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Request Client"] --> Evaluate["Evaluate All Tokens"]
+    Evaluate --> SecondaryCheck{"All Under Secondary?"}
+    SecondaryCheck -->|"Yes"| WaitSecondary["Sleep Until Earliest Secondary Reset"]
+    SecondaryCheck -->|"No"| PrimaryCheck{"All Exhausted?"}
+    PrimaryCheck -->|"Yes"| WaitPrimary["Sleep Until Earliest Reset"]
+    PrimaryCheck -->|"No"| Select["Select Highest Remaining Token"]
+    WaitSecondary --> Select
+    WaitPrimary --> Select
+    Select --> End["Return WebClient + GithubToken"]

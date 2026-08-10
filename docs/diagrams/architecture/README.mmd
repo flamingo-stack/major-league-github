@@ -1,0 +1,8 @@
+flowchart LR
+    User["User (Browser)"] --> Frontend["React Frontend (Port 3000 / Prod)"]
+    Frontend --> Backend["Backend Service (Spring Boot - Port 8450)"]
+    Backend --> Cache["Redis Cache"]
+    Backend --> GitHub["GitHub GraphQL API"]
+    Backend --> LinkedIn["LinkedIn API"]
+    CacheUpdater["Cache Updater Service (Port 8451)"] --> Backend
+    CacheUpdater --> GitHub

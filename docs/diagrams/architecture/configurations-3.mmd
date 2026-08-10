@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Application Startup"] --> ReadProps["Read cache.* Properties"]
+    ReadProps --> Mode{"Cache Mode?"}
+    Mode -->|"read-only"| ReadOnly["ReadOnlyCacheService"]
+    Mode -->|"read-write"| Impl{"Implementation?"}
+    Mode -->|"force-update"| Impl
+    Impl -->|"redis"| RedisImpl["RedisCacheService"]
+    Impl -->|"disk"| DiskImpl["DiskCacheService"]

@@ -1,0 +1,17 @@
+flowchart LR
+    ApiTypes["api.ts"] --> ContributorType["Contributor (API)"]
+    ApiTypes --> CityType["City"]
+    ApiTypes --> RegionType["Region"]
+    ApiTypes --> StateType["State"]
+    ApiTypes --> TeamType["SoccerTeam"]
+    ApiTypes --> LanguageType["Language"]
+
+    ContributorDomain["contributor.ts"] --> ContributorUI["Contributor (UI)"]
+
+    EnhancedTypes["enhanced.ts"] --> EnhancedCity["EnhancedCity"]
+    EnhancedTypes --> EnhancedRegion["EnhancedRegion"]
+    EnhancedTypes --> EnhancedState["EnhancedState"]
+
+    HiringTypes["hiring.ts"] --> HiringProfile["HiringManagerProfile"]
+    HiringTypes --> JobOpeningType["JobOpening"]
+    HiringTypes --> SocialLinkType["SocialLink"]

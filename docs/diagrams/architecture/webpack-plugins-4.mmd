@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph BuildTime["Build Time"]
+        WP["Webpack"] --> FP["FaviconGeneratorPlugin"]
+        WP --> SP["SeoFilesPlugin"]
+    end
+
+    subgraph Runtime["Browser Runtime"]
+        React["React Application"]
+        API["Backend API"]
+    end
+
+    FP --> Assets["Static Assets"]
+    SP --> Assets
+    Assets --> React

@@ -1,0 +1,6 @@
+flowchart TD
+    Input["User Types"] --> QueryState["inputValue Updated"]
+    QueryState --> Options["Options Provided"]
+    Options --> Select["User Selects Option"]
+    Select --> OnChange["onChange(value)"]
+    OnChange --> Sync["Input Normalized on Blur"]

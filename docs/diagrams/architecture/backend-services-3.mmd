@@ -1,0 +1,5 @@
+flowchart TD
+    Init["PostConstruct Init"] --> LoadRegions["Get All Regions"]
+    LoadRegions --> ResolveStates["Resolve States by Code"]
+    ResolveStates --> ResolveCities["Resolve Cities by Region"]
+    ResolveCities --> UpdateRegion["Update Region in RegionService"]

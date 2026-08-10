@@ -1,0 +1,11 @@
+flowchart LR
+    Controllers["Controllers"] --> Services["Backend Services"]
+    Services --> CacheAbs["CacheServiceAbs (Abstract)"]
+
+    CacheAbs --> Disk["DiskCacheService"]
+    CacheAbs --> Redis["RedisCacheService"]
+    Redis --> ReadOnly["ReadOnlyCacheService"]
+
+    Disk --> FS[("File System")]
+    Redis --> RedisDB[("Redis")]
+    Services --> GitHub[("GitHub API")]

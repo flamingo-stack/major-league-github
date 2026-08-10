@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant App as Application
+    participant Manager as GithubTokenRateManager
+    participant GitHub as GitHub API
+
+    App->>Manager: init()
+    Manager->>Manager: Build WebClient per token
+    Manager->>GitHub: GET /rate_limit (per token)
+    GitHub-->>Manager: Rate headers
+    Manager->>Manager: updateTokenRateLimits()

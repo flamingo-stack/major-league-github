@@ -1,0 +1,10 @@
+flowchart TD
+    Request["Contributor Search Request"] --> CacheCheck["CacheServiceAbs.getHttpResponse()"]
+    CacheCheck -->|Miss| GithubFetch["GithubService"]
+    GithubFetch --> QueryBuilder["GitHubQueryBuilder"]
+    QueryBuilder --> GitHubAPI["GitHub GraphQL API"]
+    GitHubAPI --> Parse["Parse & Map to Contributor"]
+    Parse --> Score["Apply Scoring Formula"]
+    Score --> Store["Store in Cache"]
+    Store --> Response["ApiResponse<List<Contributor>>"]
+    CacheCheck -->|Hit| Response

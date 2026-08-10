@@ -1,0 +1,6 @@
+flowchart LR
+    Service["Backend Service (e.g. GithubService)"] -->|"requests WebClient"| RateManager["GithubTokenRateManager"]
+    RateManager -->|"selects best token"| Token["GithubToken"]
+    RateManager -->|"uses WebClient"| GitHubAPI["GitHub API"]
+    GitHubAPI -->|"response headers"| RateManager
+    RateManager -->|"updateTokenRateLimits()"| Token

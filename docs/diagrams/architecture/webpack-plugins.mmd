@@ -1,0 +1,19 @@
+flowchart TD
+    Dev["Developer Runs Build"] --> Webpack["Webpack Compiler"]
+
+    subgraph plugins["Webpack Plugins Module"]
+        direction TB
+        FaviconPlugin["FaviconGeneratorPlugin"]
+        SeoPlugin["SeoFilesPlugin"]
+    end
+
+    Webpack -->|"beforeRun / watchRun"| FaviconPlugin
+    Webpack -->|"emit"| SeoPlugin
+
+    FaviconPlugin -->|"Generates"| IcoFile["favicon.ico"]
+    SeoPlugin -->|"Injects"| Sitemap["sitemap.xml"]
+    SeoPlugin -->|"Injects"| Robots["robots.txt"]
+
+    IcoFile --> Output["Build Output Directory"]
+    Sitemap --> Output
+    Robots --> Output

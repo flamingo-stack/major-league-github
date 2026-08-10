@@ -1,0 +1,14 @@
+flowchart TD
+    Put["put(cachePath, key, value)"] --> Serialize["Serialize to JSON"]
+    Serialize --> WriteFile["Write <key>.json"]
+
+    Get["get(cachePath, key)"] --> Exists{"File Exists?"}
+    Exists -->|"No"| Miss["Cache Miss"]
+    Exists -->|"Yes"| Stale{"Stale?"}
+
+    Stale -->|"Yes"| Delete["Delete File"]
+    Delete --> Miss
+
+    Stale -->|"No"| Read["Read JSON"]
+    Read --> Deserialize["Gson.fromJson"]
+    Deserialize --> Hit["Return Value"]

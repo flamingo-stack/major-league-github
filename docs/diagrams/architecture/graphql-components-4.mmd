@@ -1,0 +1,6 @@
+flowchart TD
+    Fields["List of Field"] --> SerializeFields["serializeFields()"]
+    SerializeFields --> SerializeField["serializeField()"]
+    SerializeField --> SerializeArgs["serializeArguments()"]
+    SerializeField --> Recurse["Serialize Subfields"]
+    Recurse --> SerializeField

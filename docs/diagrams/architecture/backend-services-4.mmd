@@ -1,0 +1,7 @@
+flowchart TD
+    Request["Get Hiring Profile"] --> CacheCheck{"In Cache?"}
+    CacheCheck -->|Yes| ReturnCached["Return Cached Profile"]
+    CacheCheck -->|No| FetchGitHub["Fetch via GithubService"]
+    FetchGitHub --> BuildProfile["Build HiringManagerProfile"]
+    BuildProfile --> StoreCache["Cache Result"]
+    StoreCache --> ReturnProfile["Return Profile"]

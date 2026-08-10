@@ -1,0 +1,6 @@
+flowchart TD
+    UI["Frontend Components"] -->|"uses"| Hooks["Frontend Hooks"]
+    Hooks -->|"reads/writes"| Router["React Router Search Params"]
+    Hooks -->|"consumes"| Types["Frontend Types"]
+    Hooks -->|"drives filters"| Services["Frontend Services"]
+    Services -->|"calls"| Backend["Backend API"]

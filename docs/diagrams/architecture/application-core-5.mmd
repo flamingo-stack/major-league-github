@@ -1,0 +1,10 @@
+flowchart TD
+    Client["Frontend Client"] --> Controller["Controller"]
+    Controller --> Service["Backend Service"]
+    Service --> CacheCheck["Cache Layer"]
+    CacheCheck -->|"Miss"| GitHub["GitHub GraphQL API"]
+    GitHub --> Service
+    Service --> Model["Model Entities"]
+    Service --> ApiResponse["ApiResponse"]
+    ApiResponse --> Controller
+    Controller --> Client

@@ -1,0 +1,7 @@
+flowchart TD
+    Controllers["Controllers"] -->|"return ApiResponse<T>"| ApiResponse["ApiResponse"]
+    Controllers --> Services["Backend Services"]
+    Services --> Models["Model Entities"]
+    Services --> Cache["Cache Services"]
+    Cache --> Models
+    Models --> Frontend["Frontend (TypeScript Types)"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Service as Backend Service
+    participant Builder as GitHubQueryBuilder
+    participant API as GitHub GraphQL API
+
+    Service->>Builder: searchUsers(size)
+    Service->>Builder: location(city)
+    Service->>Builder: language(lang)
+    Service->>Builder: cursor(after)
+    Service->>Builder: build()
+    Builder-->>Service: query string
+    Service->>API: Execute GraphQL query

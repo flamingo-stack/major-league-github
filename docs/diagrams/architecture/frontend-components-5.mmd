@@ -1,0 +1,4 @@
+flowchart LR
+    Prev["Previous Button"] --> PageState["currentPage"]
+    Next["Next Button"] --> PageState
+    PageState --> Render["Re-render with new page"]

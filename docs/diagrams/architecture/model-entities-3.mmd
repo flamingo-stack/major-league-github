@@ -1,0 +1,4 @@
+flowchart TD
+    Contributor["Contributor"] --> RoleCheck{{"Role?"}}
+    RoleCheck -->|"CONTRIBUTOR"| BuildMap["Build stats map from fields"]
+    RoleCheck -->|"HIRING_MANAGER"| UseStored["Use githubStats field"]

@@ -1,0 +1,6 @@
+flowchart LR
+    Controller["Controller"] --> Service["Backend Service"]
+    Service -->|"Submit Task"| LowPool["Low Priority Executor"]
+    Service -->|"Submit Task"| HighPool["High Priority Executor"]
+    LowPool --> GithubAPI["GitHub API"]
+    HighPool --> GithubAPI

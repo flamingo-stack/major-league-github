@@ -1,0 +1,7 @@
+flowchart LR
+    GitHubRepo["GitHub Repository"] --> CI["GitHub Actions CI/CD"]
+    CI --> Docker["Docker Images"]
+    Docker --> GKE["Google Kubernetes Engine"]
+    GKE --> BackendPods["Backend + Cache Updater Pods"]
+    GKE --> RedisPod["Redis"]
+    GKE --> FrontendService["Frontend Service"]

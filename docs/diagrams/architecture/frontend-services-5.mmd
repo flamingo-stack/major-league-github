@@ -1,0 +1,6 @@
+flowchart TD
+    A["getEntityById(id)"] --> B["GET /api/entities/{type}/{id}"]
+    B --> C["ApiResponse<Entity>"]
+    C --> D{"status success?"}
+    D -->|"Yes"| E["Return data"]
+    D -->|"No"| F["Throw Error"]

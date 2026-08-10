@@ -1,0 +1,8 @@
+flowchart TD
+    BackendService["Backend Services"] -->|"build query"| GitHubQueryBuilder["GitHubQueryBuilder"]
+    GitHubQueryBuilder -->|"composes"| SearchFieldBuilder["SearchField (Builder)"]
+    GitHubQueryBuilder -->|"returns string"| GraphQLQuery["GraphQL Query String"]
+    FieldCore["Field (Core Model)"] --> QuerySerializer["QuerySerializer"]
+    QuerySerializer --> SerializedQuery["Formatted GraphQL Query"]
+    GraphQLQuery --> GitHubAPI["GitHub GraphQL API"]
+    SerializedQuery --> GitHubAPI

@@ -1,0 +1,4 @@
+flowchart LR
+    RedisConfig["RedisConfig"] --> Factory["RedisConnectionFactory"]
+    Factory --> Template["RedisTemplate"]
+    Template --> CacheService["RedisCacheService"]
