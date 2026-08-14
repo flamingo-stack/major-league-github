@@ -184,7 +184,9 @@ public class ContributorController {
         Language language = languageId != null ? 
             languageService.getLanguageById(languageId) : 
             languageService.getDefaultLanguage();
-        String languageName = language.getName().toLowerCase();
+        String languageName = (language != null && language.getName() != null)
+            ? language.getName().toLowerCase()
+            : "unknown";
         
         // Build location part of filename
         String locationPart = "all";
@@ -197,15 +199,20 @@ public class ContributorController {
             locationPart = regionId;
         }
 
+        // Sanitize filename components to prevent Content-Disposition header injection
+        String safeLanguageName = languageName.replaceAll("[^a-zA-Z0-9._-]", "");
+        String safeLocationPart = locationPart.replaceAll("[^a-zA-Z0-9._-]", "");
+        String safeDateStr = dateStr.replaceAll("[^a-zA-Z0-9._-]", "");
+
         // Construct filename
         String filename = String.format("mlg-contributors-%s-%s-%s.csv", 
-            languageName,
-            locationPart,
-            dateStr
+            safeLanguageName,
+            safeLocationPart,
+            safeDateStr
         );
 
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=%s", filename))
+            .header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=\"%s\"", filename))
             .contentType(MediaType.parseMediaType("text/csv"))
             .body(stringWriter.toString());
     }
