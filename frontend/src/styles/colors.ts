@@ -60,20 +60,24 @@ export const baseColors = {
 } as const;
 
 // Semantic Colors (hex values from ods-colors.css)
+// NOTE: Values below were manually corrected from placeholder values (#000000, #ffffff, #00ff00)
+// that were silently left by extract-ui-kit-colors.js when CSS var() references could not be resolved.
+// These values are mapped to the nearest ODS base tokens. Re-run the generation script after
+// fixing it to resolve var() references, and verify these values against the actual ODS spec.
 export const semanticColors = {
   text_on_accent: '#1a1a1a',
   warning: '#f59e0b',
   warning_hover: '#d97706',
   warning_active: '#b45309',
   link_visited: '#b794f6',
-  bg_card: '#000000',
-  border_default: '#ffffff',
+  bg_card: '#212121',         // was '#000000' (placeholder) — mapped to system_greys_black
+  border_default: '#3a3a3a',  // was '#ffffff' (placeholder) — mapped to system_greys_soft_grey
   divider: '#e5e5e5',
-  bg: '#000000',
-  text_primary: '#ffffff',
-  text_secondary: '#ffffff',
-  accent_primary: '#00ff00',
-  focus_ring: '#00ff00',
+  bg: '#161616',              // was '#000000' (placeholder) — mapped to system_greys_background
+  text_primary: '#fafafa',    // was '#ffffff' (placeholder) — mapped to system_greys_white
+  text_secondary: '#888888',  // was '#ffffff' (placeholder) — mapped to system_greys_grey
+  accent_primary: '#5efaf0',  // was '#00ff00' (placeholder) — mapped to flamingo_cyan_base
+  focus_ring: '#5efaf0',      // was '#00ff00' (placeholder) — mapped to flamingo_cyan_base
 } as const;
 
 // Combined colors export
