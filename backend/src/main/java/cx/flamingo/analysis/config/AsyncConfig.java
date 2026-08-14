@@ -58,17 +58,11 @@ public class AsyncConfig {
     public void shutdownThreadPoolExecutor(ThreadPoolTaskExecutor executor) {
         if (executor != null) {
             log.info("Shutting down Contributors thread pool...");
+            // Delegate entirely to ThreadPoolTaskExecutor, which honours
+            // waitForTasksToCompleteOnShutdown and awaitTerminationSeconds (60 s)
+            // configured above.  No manual awaitTermination is needed here and
+            // adding one would race with / override the configured 60-second wait.
             executor.shutdown();
-            try {
-                if (!executor.getThreadPoolExecutor().awaitTermination(10, TimeUnit.SECONDS)) {
-                    log.warn("Thread pool did not terminate in time. Forcing shutdown...");
-                    executor.getThreadPoolExecutor().shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("Thread pool shutdown interrupted", e);
-                executor.getThreadPoolExecutor().shutdownNow();
-            }
             log.info("Thread pool shutdown completed");
         }
     }
