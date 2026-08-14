@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.javatuples.Pair;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,12 +20,10 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import jakarta.annotation.PostConstruct;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-@Getter
 public class GithubTokenRateManager {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -38,7 +37,7 @@ public class GithubTokenRateManager {
     @Value("${github.api.url}")
     private String githubApiUrl;
 
-    private final HashMap<String, Pair<GithubToken, WebClient>> tokenMap = new HashMap<>();
+    private final ConcurrentHashMap<String, Pair<GithubToken, WebClient>> tokenMap = new ConcurrentHashMap<>();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @PostConstruct
@@ -59,7 +58,7 @@ public class GithubTokenRateManager {
 
     }
 
-    boolean alreadyInitialized = false;
+    volatile boolean alreadyInitialized = false;
 
     private String formatResetTime(Long resetTimeSeconds) {
         if (resetTimeSeconds == null) {
@@ -119,8 +118,8 @@ public class GithubTokenRateManager {
                             token.substring(0, 8), response.statusCode());
                 }
             } catch (Exception e) {
-                log.error("Error checking rate limit for token {}: {}",
-                        token.substring(0, 8), e.getMessage());
+                log.error("Error checking rate limit for token {}",
+                        token.substring(0, 8), e);
             }
         }
         printTokensStatus();
@@ -128,10 +127,11 @@ public class GithubTokenRateManager {
 
     /**
      * Returns the WebClient with the most remaining API calls and furthest reset time.
-     * If all tokens are exhausted, waits for the earliest reset time.
-     * @return WebClient with optimal rate limit status
+     * If all tokens are exhausted, returns null rather than blocking the calling thread.
+     * Callers should handle a null result by retrying after a delay on a non-request thread.
+     * @return WebClient with optimal rate limit status, or null if all tokens are rate-limited
      */
-    public Pair<WebClient, GithubToken> getBestAvailableClient() {
+    public synchronized Pair<WebClient, GithubToken> getBestAvailableClient() {
         WebClient bestClient = null;
         GithubToken bestToken = null;
         int maxRemaining = -1;
@@ -177,51 +177,31 @@ public class GithubTokenRateManager {
 
         long now = Instant.now().getEpochSecond();
         
-        // If all tokens are under secondary rate limit, wait for the earliest one
+        // If all tokens are under secondary rate limit, log and return null — do not block
         if (bestClient == null && earliestSecondaryReset != Long.MAX_VALUE) {
             long waitTime = earliestSecondaryReset - now;
             if (waitTime > 0) {
-                log.info("All tokens under secondary rate limit. Waiting {} seconds until first token available", waitTime);
-                try {
-                    Thread.sleep(waitTime * 1000);
-                    return getBestAvailableClient();
-                } catch (InterruptedException e) {
-                    log.error("Sleep interrupted while waiting for secondary rate limit", e);
-                    Thread.currentThread().interrupt();
-                }
+                log.warn("All tokens under secondary rate limit. Earliest available in {} seconds", waitTime);
+                return null;
             }
         }
 
-        // If all tokens are exhausted (maxRemaining == 0), wait for the earliest reset
+        // If all tokens are exhausted (maxRemaining == 0), log and return null — do not block
         if (maxRemaining == 0 && earliestReset != Long.MAX_VALUE) {
             long waitTime = earliestReset - now;
             if (waitTime > 0) {
-                log.info("All tokens exhausted. Waiting {} seconds until first token refresh at {}", 
+                log.warn("All tokens exhausted. Earliest token refresh in {} seconds at {}",
                     waitTime, formatResetTime(earliestReset));
-                try {
-                    Thread.sleep(waitTime * 1000);
-                    initializeRateLimits();
-                    return getBestAvailableClient();
-                } catch (InterruptedException e) {
-                    log.error("Sleep interrupted while waiting for token refresh", e);
-                    Thread.currentThread().interrupt();
-                }
+                return null;
             }
         }
 
-        // If best token needs to wait for primary rate limit reset, wait
+        // If best token needs to wait for primary rate limit reset, log and return null — do not block
         if (bestToken != null && maxRemaining == 0) {
             long waitTime = bestToken.getSecondsUntilReset();
             if (waitTime > 0) {
-                log.info("Best token needs to wait {} seconds until rate limit reset", waitTime);
-                try {
-                    Thread.sleep(waitTime * 1000);
-                    initializeRateLimits();
-                    return getBestAvailableClient();
-                } catch (InterruptedException e) {
-                    log.error("Sleep interrupted while waiting for token reset", e);
-                    Thread.currentThread().interrupt();
-                }
+                log.warn("Best token needs to wait {} seconds until rate limit reset", waitTime);
+                return null;
             }
         }
 
@@ -306,5 +286,3 @@ public class GithubTokenRateManager {
         return values != null && !values.isEmpty() ? values.get(0) : null;
     }
 }
-
-
