@@ -11,7 +11,7 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { hiringManager, jobOpenings, isLoading: isLoadingHiring } = useHiring();
+  const { hiringManager, jobOpenings, isLoading: isLoadingHiring, error: hiringError } = useHiring();
 
   return (
     <Box 
@@ -39,30 +39,30 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {children}
       </Container>
-      {!isLoadingHiring && hiringManager && jobOpenings && (
-        <Box
-          data-testid="footer"
-          sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            bgcolor: systemGreys.background,
-            borderTop: '1px solid',
-            borderColor: systemGreys.soft_grey_hover,
-            boxShadow: `0 -4px 12px ${systemGreys.black}4D`,
-            transition: 'transform 0.3s ease-in-out',
-            zIndex: 2000,
-          }}
-        >
-          <Container maxWidth="xl">
-            <HiringSection
-              hiringManager={hiringManager}
-              jobOpenings={jobOpenings}
-            />
-          </Container>
-        </Box>
-      )}
+      <Box
+        data-testid="footer"
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          bgcolor: systemGreys.background,
+          borderTop: '1px solid',
+          borderColor: systemGreys.soft_grey_hover,
+          boxShadow: `0 -4px 12px ${systemGreys.black}4D`,
+          transition: 'transform 0.3s ease-in-out',
+          zIndex: 2000,
+        }}
+      >
+        <Container maxWidth="xl">
+          <HiringSection
+            hiringManager={hiringManager}
+            jobOpenings={jobOpenings}
+            isLoading={isLoadingHiring}
+            error={hiringError}
+          />
+        </Container>
+      </Box>
     </Box>
   );
 }; 
