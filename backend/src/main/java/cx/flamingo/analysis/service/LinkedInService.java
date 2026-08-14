@@ -55,19 +55,34 @@ public class LinkedInService {
             .orElseGet(() -> {
                 try {
                     // First get an access token
+                    // NOTE: client_credentials grant does not provide access to
+                    // /v2/organizations/{id}/updates — a member-authorized token with
+                    // r_organization_social scope is required. This will consistently
+                    // return 401/403 from LinkedIn until the auth flow is corrected.
                     String tokenUrl = "https://www.linkedin.com/oauth/v2/accessToken";
+                    String tokenBody = "grant_type=client_credentials&client_id="
+                        + clientId
+                        + "&client_secret="
+                        + clientSecret;
                     var tokenResponse = webClientBuilder.build()
                         .post()
                         .uri(tokenUrl)
                         .header("Content-Type", "application/x-www-form-urlencoded")
-                        .bodyValue(String.format(
-                            "grant_type=client_credentials&client_id=%s&client_secret=%s",
-                            clientId, clientSecret))
+                        .bodyValue(tokenBody)
                         .retrieve()
                         .bodyToMono(String.class)
                         .block();
 
+                    if (tokenResponse == null) {
+                        log.error("Failed to fetch LinkedIn job postings: token response was null");
+                        return List.of();
+                    }
+
                     JsonObject tokenJson = JsonParser.parseString(tokenResponse).getAsJsonObject();
+                    if (!tokenJson.has("access_token") || tokenJson.get("access_token").isJsonNull()) {
+                        log.error("Failed to fetch LinkedIn job postings: access_token missing from token response");
+                        return List.of();
+                    }
                     String accessToken = tokenJson.get("access_token").getAsString();
 
                     // Then get the organization's updates which include job postings
@@ -80,6 +95,11 @@ public class LinkedInService {
                         .bodyToMono(String.class)
                         .timeout(Duration.ofSeconds(10))
                         .block();
+
+                    if (response == null) {
+                        log.error("Failed to fetch LinkedIn job postings: updates response was null");
+                        return List.of();
+                    }
 
                     JsonObject jsonResponse = JsonParser.parseString(response).getAsJsonObject();
                     
@@ -108,7 +128,7 @@ public class LinkedInService {
                     return jobs;
 
                 } catch (Exception e) {
-                    log.error("Failed to fetch LinkedIn job postings: {}", e.getMessage());
+                    log.error("Failed to fetch LinkedIn job postings", e);
                     return List.of();
                 }
             });
@@ -134,14 +154,4 @@ public class LinkedInService {
             return "Remote";
         }
     }
-
-    public record LinkedInJobPosting(
-        String id,
-        String title,
-        String description,
-        String formattedLocation,
-        String companyId,
-        String applicationUrl,
-        boolean isRemote
-    ) {}
 } 
