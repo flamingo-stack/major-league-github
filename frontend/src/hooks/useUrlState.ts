@@ -73,9 +73,7 @@ class UrlStateError extends Error {
 
 function validateValue(value: string, config: ParamConfig): boolean {
     if (!config.validate) return true;
-    return config.transform 
-        ? config.validate(config.transform(value))
-        : config.validate(value);
+    return config.validate(value);
 }
 
 /**
@@ -128,6 +126,12 @@ export const useUrlState = (options: UseUrlStateOptions = {}) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const debouncedUpdateRef = useRef<ReturnType<typeof setTimeout>>();
     const previousStateRef = useRef<UrlState | null>(null);
+    const onErrorRef = useRef(options.onError);
+
+    // Keep onErrorRef current without adding onError to memo deps
+    useEffect(() => {
+        onErrorRef.current = options.onError;
+    });
 
     // Parse and validate URL state
     const urlState = useMemo<UrlState>(() => {
@@ -137,14 +141,14 @@ export const useUrlState = (options: UseUrlStateOptions = {}) => {
                 const value = parseUrlValue(searchParams.get(config.key), config);
                 state[stateKey] = value;
             } catch (error) {
-                if (error instanceof UrlStateError && options.onError) {
-                    options.onError(error);
+                if (error instanceof UrlStateError && onErrorRef.current) {
+                    onErrorRef.current(error);
                 }
                 state[stateKey] = config.defaultValue;
             }
         });
         return state;
-    }, [searchParams, options.onError]);
+    }, [searchParams]);
 
     // Cleanup debounce timeout
     useEffect(() => {
@@ -188,10 +192,10 @@ export const useUrlState = (options: UseUrlStateOptions = {}) => {
             }
         };
 
-        // For input changes, we want to update immediately to prevent typing lag
+        // For input changes (non-null values = typing), we want to update immediately to prevent typing lag
         const isInputChange = Object.keys(newState).some(key => 
             ['languageId', 'teamId', 'stateId', 'selectedRegionId', 'selectedCityId'].includes(key) && 
-            newState[key as keyof UrlState] === null
+            newState[key as keyof UrlState] !== null
         );
 
         if (immediate || isInputChange || !options.debounceMs) {
@@ -206,20 +210,17 @@ export const useUrlState = (options: UseUrlStateOptions = {}) => {
         setSearchParams(new URLSearchParams(), { replace: true });
     }, [setSearchParams]);
 
-    // Check if state has changed
-    const hasStateChanged = useMemo(() => {
-        if (!previousStateRef.current) {
-            previousStateRef.current = urlState;
-            return false;
-        }
-        
-        const hasChanged = Object.entries(urlState).some(([key, value]) => {
+    // Check if state has changed by comparing to previousStateRef without mutating inside useMemo
+    const hasStateChanged = previousStateRef.current
+        ? Object.entries(urlState).some(([key, value]) => {
             const prevValue = previousStateRef.current![key as UrlStateKey];
             return value !== prevValue;
-        });
+        })
+        : false;
 
+    // Update previousStateRef after render as a proper side effect
+    useEffect(() => {
         previousStateRef.current = urlState;
-        return hasChanged;
     }, [urlState]);
 
     return {
