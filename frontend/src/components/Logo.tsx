@@ -1,9 +1,8 @@
 import React from 'react';
-import { SvgIcon, SvgIconProps } from '@mui/material';
-import LogoSvg from '../assets/logo.svg';
+import { MlgLogo } from '@flamingo/ui-kit/components/icons';
 
-export const Logo = React.forwardRef<SVGSVGElement, SvgIconProps>((props, ref) => {
+export const Logo = React.forwardRef<SVGSVGElement, React.ComponentProps<typeof MlgLogo>>((props, ref) => {
   return (
-    <SvgIcon ref={ref} component={LogoSvg} inheritViewBox {...props} />
+    <MlgLogo ref={ref} {...props} />
   );
-}); 
+});
