@@ -10,6 +10,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import UpdateIcon from '@mui/icons-material/Update';
 import CodeIcon from '@mui/icons-material/Code';
 import ListAltIcon from '@mui/icons-material/ListAlt';
+import { formatDate } from '../../../utils/date';
 
 interface GitHubStats {
   score: number;
@@ -66,19 +67,6 @@ export const GitHubStats: React.FC<GitHubStatsProps> = ({ stats, lastActive }) =
       return `${(score / 1000).toFixed(1)}K`;
     }
     return score.toString();
-  };
-
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(parseInt(dateString) * 1000);
-    if (isNaN(date.getTime())) {
-      return 'N/A';
-    }
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
   };
 
   if (!stats) {
