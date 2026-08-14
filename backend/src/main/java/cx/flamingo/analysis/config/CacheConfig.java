@@ -1,6 +1,7 @@
 package cx.flamingo.analysis.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -54,29 +55,38 @@ public class CacheConfig {
         }
     }
 
-    @Value("${cache.implementation:redis}")
-    private String cacheImplementation;
-
     @Value("${cache.mode:read-write}")
     private String cacheMode;
 
     @Bean
     @Primary
-    public CacheServiceAbs cacheService(RedisCacheService redisCache, 
-                                      DiskCacheService diskCache,
-                                      ReadOnlyCacheService readOnlyCache) {
+    @ConditionalOnProperty(name = "cache.mode", havingValue = "read-only", matchIfMissing = false)
+    public CacheServiceAbs cacheServiceReadOnly(ReadOnlyCacheService readOnlyCache) {
         CacheMode mode = CacheMode.fromString(cacheMode);
-        CacheImplementation impl = CacheImplementation.fromString(cacheImplementation);
-        redisCache.setCacheMode(mode);
-        diskCache.setCacheMode(mode);   
         readOnlyCache.setCacheMode(mode);
-        
-        log.info("Initializing cache with mode: {} and implementation: {}", mode.getValue(), impl.getValue());
-        
-        if (mode == CacheMode.READ_ONLY) {
-            return readOnlyCache;
-        }
-
-        return impl == CacheImplementation.REDIS ? redisCache : diskCache;
+        log.info("Initializing cache with mode: {} and implementation: read-only", mode.getValue());
+        return readOnlyCache;
     }
-} 
+
+    @Bean
+    @Primary
+    @ConditionalOnProperty(name = "cache.implementation", havingValue = "redis", matchIfMissing = true)
+    @ConditionalOnProperty(name = "cache.mode", havingValue = "read-only", matchIfMissing = false)
+    public CacheServiceAbs cacheServiceRedis(RedisCacheService redisCache) {
+        CacheMode mode = CacheMode.fromString(cacheMode);
+        redisCache.setCacheMode(mode);
+        log.info("Initializing cache with mode: {} and implementation: redis", mode.getValue());
+        return redisCache;
+    }
+
+    @Bean
+    @Primary
+    @ConditionalOnProperty(name = "cache.implementation", havingValue = "disk")
+    @ConditionalOnProperty(name = "cache.mode", havingValue = "read-only", matchIfMissing = false)
+    public CacheServiceAbs cacheServiceDisk(DiskCacheService diskCache) {
+        CacheMode mode = CacheMode.fromString(cacheMode);
+        diskCache.setCacheMode(mode);
+        log.info("Initializing cache with mode: {} and implementation: disk", mode.getValue());
+        return diskCache;
+    }
+}
