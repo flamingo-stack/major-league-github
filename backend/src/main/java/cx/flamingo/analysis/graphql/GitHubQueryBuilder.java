@@ -31,7 +31,8 @@ public class GitHubQueryBuilder {
 
     public GitHubQueryBuilder cursor(String cursor) {
         if (cursor != null) {
-            searchField.withArgs(searchField.getArgs() + ", after: \"" + cursor + "\"");
+            String escapedCursor = cursor.replace("\\", "\\\\").replace("\"", "\\\"");
+            searchField.withArgs(searchField.getArgs() + ", after: \"" + escapedCursor + "\"");
         }
         return this;
     }
@@ -171,13 +172,16 @@ public class GitHubQueryBuilder {
             return this;
         }
 
+        /** @deprecated This method is a no-op stub; page size is set via {@link #setType(String, int)}. */
+        @Deprecated
         public SearchField setFirst(int first) {
             return this;
         }
 
         public SearchField addLocationFilter(String location) {
             if (queryFilters.length() > 0) queryFilters.append(" ");
-            queryFilters.append("location:\"").append(location).append("\"");
+            String escapedLocation = location.replace("\\", "\\\\").replace("\"", "\\\"");
+            queryFilters.append("location:\"").append(escapedLocation).append("\"");
             updateQueryArg();
             return this;
         }
