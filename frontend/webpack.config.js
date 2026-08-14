@@ -111,7 +111,11 @@ module.exports = (env, argv) => {
         size: 60
       }),
       new webpack.DefinePlugin({
-        'process.env': JSON.stringify(process.env),
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+        'process.env.BACKEND_API_URL': JSON.stringify(process.env.BACKEND_API_URL || 'https://www.mlg.soccer'),
+        'process.env.GTM_ID': JSON.stringify(process.env.GTM_ID || ''),
+        'process.env.WEBAPP_EXTRA_BUTTON_LINK': JSON.stringify(process.env.WEBAPP_EXTRA_BUTTON_LINK || '/blog/why-we-built-mlg'),
+        'process.env.WEBAPP_EXTRA_BUTTON_TEXT': JSON.stringify(process.env.WEBAPP_EXTRA_BUTTON_TEXT || 'Why MLG?'),
       }),
       new CopyWebpackPlugin({
         patterns: [
