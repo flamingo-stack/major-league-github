@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import { useCallback, useMemo, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 
 /**
  * Represents the structure of URL state parameters
@@ -128,6 +128,7 @@ export const useUrlState = (options: UseUrlStateOptions = {}) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const debouncedUpdateRef = useRef<ReturnType<typeof setTimeout>>();
     const previousStateRef = useRef<UrlState | null>(null);
+    const [hasStateChanged, setHasStateChanged] = useState(false);
 
     // Parse and validate URL state
     const urlState = useMemo<UrlState>(() => {
@@ -154,6 +155,23 @@ export const useUrlState = (options: UseUrlStateOptions = {}) => {
             }
         };
     }, []);
+
+    // Track whether state has changed by comparing to previous value in an effect
+    useEffect(() => {
+        if (!previousStateRef.current) {
+            previousStateRef.current = urlState;
+            setHasStateChanged(false);
+            return;
+        }
+
+        const hasChanged = Object.entries(urlState).some(([key, value]) => {
+            const prevValue = previousStateRef.current![key as UrlStateKey];
+            return value !== prevValue;
+        });
+
+        previousStateRef.current = urlState;
+        setHasStateChanged(hasChanged);
+    }, [urlState]);
 
     // Update URL state with debouncing and validation
     const updateUrlState = useCallback((
@@ -205,22 +223,6 @@ export const useUrlState = (options: UseUrlStateOptions = {}) => {
     const resetUrlState = useCallback(() => {
         setSearchParams(new URLSearchParams(), { replace: true });
     }, [setSearchParams]);
-
-    // Check if state has changed
-    const hasStateChanged = useMemo(() => {
-        if (!previousStateRef.current) {
-            previousStateRef.current = urlState;
-            return false;
-        }
-        
-        const hasChanged = Object.entries(urlState).some(([key, value]) => {
-            const prevValue = previousStateRef.current![key as UrlStateKey];
-            return value !== prevValue;
-        });
-
-        previousStateRef.current = urlState;
-        return hasChanged;
-    }, [urlState]);
 
     return {
         urlState,
