@@ -3,30 +3,35 @@ package cx.flamingo.analysis.service;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Region;
 import cx.flamingo.analysis.model.State;
-import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ReferencePopulationService {
     
-    @Autowired
-    private CityService cityService;
+    private final CityService cityService;
     
-    @Autowired
-    private RegionService regionService;
+    private final RegionService regionService;
     
-    @Autowired
-    private StateService stateService;
-    
-    @PostConstruct
-    public void init() {
+    private final StateService stateService;
+
+    private volatile boolean initialized = false;
+
+    @EventListener(ContextRefreshedEvent.class)
+    public synchronized void init() {
+        if (initialized) {
+            return;
+        }
+        initialized = true;
         populateReferences();
     }
     
@@ -42,8 +47,12 @@ public class ReferencePopulationService {
             Set<State> states = region.getStateIds().stream()
                 .map(stateService::getStateByCode)
                 .filter(state -> state != null)
-                .peek(state -> state.getRegionIds().add(region.getId()))
                 .collect(Collectors.toSet());
+
+            // Mutate state objects in an explicit loop, not via peek()
+            for (State state : states) {
+                state.getRegionIds().add(region.getId());
+            }
             
             // Fill cities
             Set<City> cities = cityService.getAllCities().stream()
