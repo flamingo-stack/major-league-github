@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.core.io.ClassPathResource;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class SoccerTeamService {
+    private static final int EXPECTED_COLUMNS = 14;
     private List<SoccerTeam> teams;
 
     @PostConstruct
@@ -35,41 +37,52 @@ public class SoccerTeamService {
             reader.readLine();
             
             String line;
+            int lineNumber = 1;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                String id = parts[0];
-                String name = parts[1];
-                String city = parts[2];
-                String state = parts[3];
-                double latitude = Double.parseDouble(parts[4]);
-                double longitude = Double.parseDouble(parts[5]);
-                String league = parts[6];
-                String stadium = parts[7];
-                int stadiumCapacity = Integer.parseInt(parts[8]);
-                int joinedYear = Integer.parseInt(parts[9]);
-                String headCoach = parts[10];
-                String teamUrl = parts[11];
-                String wikipediaUrl = parts[12];
-                String logoUrl = parts[13];
-                
-                SoccerTeam team = SoccerTeam.builder()
-                    .id(id)
-                    .name(name)
-                    .city(city)
-                    .state(state)
-                    .latitude(latitude)
-                    .longitude(longitude)
-                    .league(league)
-                    .stadium(stadium)
-                    .stadiumCapacity(stadiumCapacity)
-                    .joinedYear(joinedYear)
-                    .headCoach(headCoach)
-                    .teamUrl(teamUrl)
-                    .wikipediaUrl(wikipediaUrl)
-                    .logoUrl(logoUrl)
-                    .build();
-                
-                teams.add(team);
+                lineNumber++;
+                String[] parts = line.split(",", -1);
+                if (parts.length < EXPECTED_COLUMNS) {
+                    log.warn("Skipping malformed CSV row at line {} (expected {} columns, got {}): {}",
+                            lineNumber, EXPECTED_COLUMNS, parts.length, line);
+                    continue;
+                }
+                try {
+                    String id = parts[0];
+                    String name = parts[1];
+                    String city = parts[2];
+                    String state = parts[3];
+                    double latitude = Double.parseDouble(parts[4]);
+                    double longitude = Double.parseDouble(parts[5]);
+                    String league = parts[6];
+                    String stadium = parts[7];
+                    int stadiumCapacity = Integer.parseInt(parts[8]);
+                    int joinedYear = Integer.parseInt(parts[9]);
+                    String headCoach = parts[10];
+                    String teamUrl = parts[11];
+                    String wikipediaUrl = parts[12];
+                    String logoUrl = parts[13];
+                    
+                    SoccerTeam team = SoccerTeam.builder()
+                        .id(id)
+                        .name(name)
+                        .city(city)
+                        .state(state)
+                        .latitude(latitude)
+                        .longitude(longitude)
+                        .league(league)
+                        .stadium(stadium)
+                        .stadiumCapacity(stadiumCapacity)
+                        .joinedYear(joinedYear)
+                        .headCoach(headCoach)
+                        .teamUrl(teamUrl)
+                        .wikipediaUrl(wikipediaUrl)
+                        .logoUrl(logoUrl)
+                        .build();
+                    
+                    teams.add(team);
+                } catch (NumberFormatException e) {
+                    log.warn("Skipping CSV row at line {} due to number parse error: {}", lineNumber, e.getMessage());
+                }
             }
         } catch (IOException e) {
             log.error("Error loading teams from CSV", e);
@@ -100,11 +113,10 @@ public class SoccerTeamService {
         return nearest != null ? nearest.getId() : null;
     }
 
-    public SoccerTeam getTeamById(String id) {
+    public Optional<SoccerTeam> getTeamById(String id) {
         return teams.stream()
             .filter(t -> t.getId().equals(id))
-            .findFirst()
-            .orElse(null);
+            .findFirst();
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -121,7 +133,7 @@ public class SoccerTeamService {
     }
 
     public List<SoccerTeam> getAllTeams() {
-        return teams;
+        return new ArrayList<>(teams);
     }
 
     public List<SoccerTeam> autocompleteTeams(String query, int maxResults) {
