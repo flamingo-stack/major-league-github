@@ -42,7 +42,7 @@ spec:
             - name: SPRING_REDIS_HOST
               value: "${REDIS_HOST}"
             - name: SPRING_REDIS_PORT
-              value: "6379"
+              value: "${REDIS_PORT}"
             - name: JAVA_MIN_HEAP
               value: "${JAVA_MIN_HEAP}"
             - name: JAVA_MAX_HEAP
@@ -69,7 +69,15 @@ spec:
             initialDelaySeconds: 90
             periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 3 
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: ${SERVER_PORT}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
 ---
 apiVersion: v1
 kind: Service
