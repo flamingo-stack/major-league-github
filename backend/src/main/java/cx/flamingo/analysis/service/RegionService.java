@@ -5,35 +5,39 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import cx.flamingo.analysis.model.City;
 import cx.flamingo.analysis.model.Region;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class RegionService {
     private List<Region> regions;
+    private Map<String, Integer> regionPopulationCache;
 
-    @Autowired
-    private StateService stateService;
+    private final StateService stateService;
 
-    @Autowired
-    private CityService cityService;
+    private final CityService cityService;
 
     @PostConstruct
     public void init() {
         loadRegions();
         log.info("Loaded {} regions", regions.size());
+        buildPopulationCache();
     }
 
     private void loadRegions() {
@@ -71,6 +75,15 @@ public class RegionService {
         }
     }
 
+    private void buildPopulationCache() {
+        regionPopulationCache = new HashMap<>();
+        for (City city : cityService.getAllCities()) {
+            for (String regionId : city.getRegionIds()) {
+                regionPopulationCache.merge(regionId, city.getPopulation(), Integer::sum);
+            }
+        }
+    }
+
     public void updateRegion(Region updatedRegion) {
         int index = -1;
         for (int i = 0; i < regions.size(); i++) {
@@ -88,10 +101,7 @@ public class RegionService {
     }
 
     private int getRegionTotalPopulation(Region region) {
-        return cityService.getAllCities().stream()
-            .filter(city -> city.getRegionIds().contains(region.getId()))
-            .mapToInt(City::getPopulation)
-            .sum();
+        return regionPopulationCache.getOrDefault(region.getId(), 0);
     }
 
     public List<Region> autocompleteRegions(String query, String stateId, List<String> cityIds, int maxResults) {
@@ -122,18 +132,16 @@ public class RegionService {
             .collect(Collectors.toList());
     }
 
-    public Region getRegionById(String id) {
+    public Optional<Region> getRegionById(String id) {
         return regions.stream()
             .filter(r -> r.getId().equals(id))
-            .findFirst()
-            .orElse(null);
+            .findFirst();
     }
 
-    public Region getRegionByName(String name) {
+    public Optional<Region> getRegionByName(String name) {
         return regions.stream()
             .filter(r -> r.getName().equalsIgnoreCase(name))
-            .findFirst()
-            .orElse(null);
+            .findFirst();
     }
 
     public List<Region> getAllRegions() {
