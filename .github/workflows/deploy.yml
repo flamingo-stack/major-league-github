@@ -28,7 +28,7 @@ env:
   DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
   DOMAIN_SUFFIX: ${{ secrets.DOMAIN_SUFFIX }}
   FORWARD_TO_WWW: ${{ secrets.FORWARD_TO_WWW || 'false' }}
-  STATIC_IP_NAME: "main-ingress-ip"
+  STATIC_IP_NAME: ${{ secrets.STATIC_IP_NAME || 'main-ingress-ip' }}
   STATIC_IP_ADDRESS: ${{ secrets.STATIC_IP_ADDRESS }}
 
   GH_API_TOKENS: ${{ secrets.GH_API_TOKENS }}
@@ -150,6 +150,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Set up Google Cloud CLI 🛠️
         uses: google-github-actions/auth@v2
@@ -306,21 +307,6 @@ jobs:
           
           echo "✅ Kubernetes secrets created successfully"
 
-      - name: Cleanup GKE Resources 🧹
-        run: |
-          echo "🧹 Cleaning up all existing resources in namespace ${{ env.NAMESPACE }}..."
-          
-          # Clean up all resources in namespace (except secrets and configmaps we'll recreate)
-          kubectl delete all --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No standard resources to clean up"
-          kubectl delete ingress --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No ingress resources to clean up"
-          kubectl delete backendconfig --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No backendconfig resources to clean up"
-          
-          # Wait for NEG cleanup to complete (they take time to detach from load balancers)
-          echo "⏳ Waiting for NEG cleanup to complete..."
-          sleep 30
-          
-          echo "✅ Cleanup completed successfully"
-
       - name: Deploy to GKE 🚀
         env:
           REGISTRY_URL: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}
@@ -337,11 +323,11 @@ jobs:
         run: |
           echo "🚀 Processing and applying Kubernetes configurations..."
           
-          # Always use 'latest' tag for active K8s deployments for simplicity
-          BACKEND_VERSION="latest"
-          CACHE_UPDATER_VERSION="latest" 
-          FRONTEND_VERSION="latest"
-          echo "🏷️ Using 'latest' tags for all K8s deployments"
+          # Use versioned tags for reproducible deployments; only deploy changed services
+          BACKEND_VERSION="${{ env.VERSION }}"
+          CACHE_UPDATER_VERSION="${{ env.VERSION }}"
+          FRONTEND_VERSION="${{ env.VERSION }}"
+          echo "🏷️ Using versioned tag ${{ env.VERSION }} for K8s deployments"
           
           # Create temporary directory
           mkdir -p processed_k8s
@@ -351,49 +337,61 @@ jobs:
           envsubst < kubernetes/base/config.yaml > processed_k8s/config.yaml
           kubectl apply -n ${{ env.NAMESPACE }} -f processed_k8s/config.yaml
           
-          # Process and apply backend service
-          echo "🚀 Processing backend service..."
-          SERVICE_NAME=backend-service \
-          SERVER_PORT=8080 \
-          VERSION=$BACKEND_VERSION \
-            envsubst < kubernetes/base/backend-service.yaml > processed_k8s/backend-service.yaml
-          kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/backend-service.yaml
-          
-          # Process and apply cache updater
-          echo "🚀 Processing cache updater..."
-          SERVICE_NAME=cache-updater \
-          SERVER_PORT=8081 \
-          VERSION=$CACHE_UPDATER_VERSION \
-            envsubst < kubernetes/base/cache-updater-service.yaml > processed_k8s/cache-updater.yaml
-          kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
-          
-          # Process and apply frontend (creates frontend-service as ClusterIP with NEG)
-          echo "🚀 Processing frontend..."
-          
-          # Determine redirect configuration for runtime
-          ENABLE_REDIRECT="false"
-          ROOT_DOMAIN=""
-          
-          if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
-            # Check if DOMAIN_NAME is a subdomain (doesn't contain dots)
-            if [[ "${{ env.DOMAIN_NAME }}" != *"."* ]]; then
-              # This is a simple subdomain like "www", so enable redirect
-              ENABLE_REDIRECT="true"
-              ROOT_DOMAIN="${{ env.DOMAIN_SUFFIX }}"
-              echo "📍 Frontend nginx redirect: $ROOT_DOMAIN → ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
-            else
-              echo "⚠️ DOMAIN_NAME contains dots, assuming complex subdomain - no redirect"
-            fi
+          # Process and apply backend service (only if changed)
+          if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then
+            echo "🚀 Processing backend service..."
+            SERVICE_NAME=backend-service \
+            SERVER_PORT=8080 \
+            VERSION=$BACKEND_VERSION \
+              envsubst < kubernetes/base/backend-service.yaml > processed_k8s/backend-service.yaml
+            kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/backend-service.yaml
+          else
+            echo "⏩ Skipping backend service deployment - no changes detected"
           fi
           
-          VERSION=$FRONTEND_VERSION \
-          ENABLE_REDIRECT="$ENABLE_REDIRECT" \
-          ROOT_DOMAIN="$ROOT_DOMAIN" \
-            envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
-          kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
-          echo "✅ Frontend applied successfully"
+          # Process and apply cache updater (only if changed)
+          if [ "${{ steps.changes.outputs.cache_updater }}" = "true" ]; then
+            echo "🚀 Processing cache updater..."
+            SERVICE_NAME=cache-updater \
+            SERVER_PORT=8081 \
+            VERSION=$CACHE_UPDATER_VERSION \
+              envsubst < kubernetes/base/cache-updater-service.yaml > processed_k8s/cache-updater.yaml
+            kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/cache-updater.yaml
+          else
+            echo "⏩ Skipping cache updater deployment - no changes detected"
+          fi
           
-          echo "✅ All resources cleanup completed"
+          # Process and apply frontend (only if changed)
+          if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then
+            echo "🚀 Processing frontend..."
+            
+            # Determine redirect configuration for runtime
+            ENABLE_REDIRECT="false"
+            ROOT_DOMAIN=""
+            
+            if [ "${{ env.FORWARD_TO_WWW }}" = "true" ]; then
+              # Check if DOMAIN_NAME is a subdomain (doesn't contain dots)
+              if [[ "${{ env.DOMAIN_NAME }}" != *"."* ]]; then
+                # This is a simple subdomain like "www", so enable redirect
+                ENABLE_REDIRECT="true"
+                ROOT_DOMAIN="${{ env.DOMAIN_SUFFIX }}"
+                echo "📍 Frontend nginx redirect: $ROOT_DOMAIN → ${{ env.DOMAIN_NAME }}.${{ env.DOMAIN_SUFFIX }}"
+              else
+                echo "⚠️ DOMAIN_NAME contains dots, assuming complex subdomain - no redirect"
+              fi
+            fi
+            
+            VERSION=$FRONTEND_VERSION \
+            ENABLE_REDIRECT="$ENABLE_REDIRECT" \
+            ROOT_DOMAIN="$ROOT_DOMAIN" \
+              envsubst < kubernetes/base/frontend.yaml > processed_k8s/frontend.yaml
+            kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
+            echo "✅ Frontend applied successfully"
+          else
+            echo "⏩ Skipping frontend deployment - no changes detected"
+          fi
+          
+          echo "✅ All resources applied"
           
           # Check deployment status immediately after creation
           echo "🔍 Immediate deployment status check..."
@@ -416,11 +414,11 @@ jobs:
           
           # Create static IP if it doesn't exist
           echo "🚀 Ensuring static IP exists..."
-          if ! gcloud compute addresses describe main-ingress-ip --global >/dev/null 2>&1; then
-            echo "Creating static IP main-ingress-ip with address ${STATIC_IP_ADDRESS}..."
-            gcloud compute addresses create main-ingress-ip --global --addresses=${STATIC_IP_ADDRESS}
+          if ! gcloud compute addresses describe ${{ env.STATIC_IP_NAME }} --global >/dev/null 2>&1; then
+            echo "Creating static IP ${{ env.STATIC_IP_NAME }} with address ${STATIC_IP_ADDRESS}..."
+            gcloud compute addresses create ${{ env.STATIC_IP_NAME }} --global --addresses=${STATIC_IP_ADDRESS}
           else
-            echo "Static IP main-ingress-ip already exists"
+            echo "Static IP ${{ env.STATIC_IP_NAME }} already exists"
           fi
           
           
@@ -448,6 +446,7 @@ jobs:
           
           DOMAIN_NAME="${{ env.DOMAIN_NAME }}" \
           DOMAIN_SUFFIX="${{ env.DOMAIN_SUFFIX }}" \
+          STATIC_IP_NAME="${{ env.STATIC_IP_NAME }}" \
           ROOT_DOMAIN_CERT="$ROOT_DOMAIN_CERT" \
           ROOT_DOMAIN_RULE="$ROOT_DOMAIN_RULE" \
             envsubst < kubernetes/base/ingress.yaml > processed_k8s/ingress.yaml
