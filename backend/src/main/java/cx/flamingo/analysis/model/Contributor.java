@@ -5,11 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class Contributor {
     public enum Role {
         CONTRIBUTOR,
@@ -46,16 +50,19 @@ public class Contributor {
 
     public Map<String, Integer> getGithubStats() {
         if (type == Role.CONTRIBUTOR) {
-            // For contributors, convert individual fields to map format
-            Map<String, Integer> stats = new HashMap<>();
-            stats.put("score", score);
-            stats.put("totalCommits", totalCommits);
-            stats.put("javaRepos", javaRepos);
-            stats.put("starsReceived", starsReceived);
-            stats.put("forksReceived", forksReceived);
-            stats.put("starsGiven", starsGiven);
-            stats.put("forksGiven", forksGiven);
-            return stats;
+            // For contributors, convert individual fields to map format and cache in field
+            if (githubStats == null) {
+                Map<String, Integer> stats = new HashMap<>();
+                stats.put("score", score);
+                stats.put("totalCommits", totalCommits);
+                stats.put("javaRepos", javaRepos);
+                stats.put("starsReceived", starsReceived);
+                stats.put("forksReceived", forksReceived);
+                stats.put("starsGiven", starsGiven);
+                stats.put("forksGiven", forksGiven);
+                githubStats = stats;
+            }
+            return githubStats;
         }
         return githubStats;
     }
