@@ -31,8 +31,6 @@ env:
   STATIC_IP_NAME: "main-ingress-ip"
   STATIC_IP_ADDRESS: ${{ secrets.STATIC_IP_ADDRESS }}
 
-  GH_API_TOKENS: ${{ secrets.GH_API_TOKENS }}
-  
   # LinkedIn
   LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
   LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
@@ -149,7 +147,7 @@ jobs:
       - name: Checkout code 📦
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Set up Google Cloud CLI 🛠️
         uses: google-github-actions/auth@v2
@@ -299,27 +297,12 @@ jobs:
           # Create application secrets
           kubectl create secret generic app-secrets \
             --namespace=${{ env.NAMESPACE }} \
-            --from-literal=github.tokens="${{ env.GH_API_TOKENS }}" \
-            --from-literal=linkedin.client.id="${{ env.LINKEDIN_CLIENT_ID }}" \
-            --from-literal=linkedin.client.secret="${{ env.LINKEDIN_CLIENT_SECRET }}" \
+            --from-literal=github.tokens="${{ secrets.GH_API_TOKENS }}" \
+            --from-literal=linkedin.client.id="${{ secrets.LINKEDIN_CLIENT_ID }}" \
+            --from-literal=linkedin.client.secret="${{ secrets.LINKEDIN_CLIENT_SECRET }}" \
             --dry-run=client -o yaml | kubectl apply -f -
           
           echo "✅ Kubernetes secrets created successfully"
-
-      - name: Cleanup GKE Resources 🧹
-        run: |
-          echo "🧹 Cleaning up all existing resources in namespace ${{ env.NAMESPACE }}..."
-          
-          # Clean up all resources in namespace (except secrets and configmaps we'll recreate)
-          kubectl delete all --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No standard resources to clean up"
-          kubectl delete ingress --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No ingress resources to clean up"
-          kubectl delete backendconfig --all -n ${{ env.NAMESPACE }} --ignore-not-found=true || echo "No backendconfig resources to clean up"
-          
-          # Wait for NEG cleanup to complete (they take time to detach from load balancers)
-          echo "⏳ Waiting for NEG cleanup to complete..."
-          sleep 30
-          
-          echo "✅ Cleanup completed successfully"
 
       - name: Deploy to GKE 🚀
         env:
@@ -337,11 +320,11 @@ jobs:
         run: |
           echo "🚀 Processing and applying Kubernetes configurations..."
           
-          # Always use 'latest' tag for active K8s deployments for simplicity
-          BACKEND_VERSION="latest"
-          CACHE_UPDATER_VERSION="latest" 
-          FRONTEND_VERSION="latest"
-          echo "🏷️ Using 'latest' tags for all K8s deployments"
+          # Use the versioned tag built in this run for all K8s deployments
+          BACKEND_VERSION="${{ env.VERSION }}"
+          CACHE_UPDATER_VERSION="${{ env.VERSION }}"
+          FRONTEND_VERSION="${{ env.VERSION }}"
+          echo "🏷️ Using versioned tags for all K8s deployments: ${{ env.VERSION }}"
           
           # Create temporary directory
           mkdir -p processed_k8s
@@ -393,7 +376,7 @@ jobs:
           kubectl apply --server-side=true --force-conflicts -n ${{ env.NAMESPACE }} -f processed_k8s/frontend.yaml
           echo "✅ Frontend applied successfully"
           
-          echo "✅ All resources cleanup completed"
+          echo "✅ All resources applied"
           
           # Check deployment status immediately after creation
           echo "🔍 Immediate deployment status check..."
@@ -673,5 +656,3 @@ jobs:
           delete-ghost-images: true
           delete-tags: "*"
           exclude-tags: latest,${{ env.VERSION }}
-
-
