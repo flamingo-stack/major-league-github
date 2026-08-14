@@ -44,7 +44,6 @@ const getSocialIcon = (platform: string) => {
             return <LanguageIcon fontSize="small" />;
         default:
             // Fallback to website icon for unknown platforms
-            console.log(`Unknown social platform: ${platform}`);
             return <LanguageIcon fontSize="small" />;
     }
 };
