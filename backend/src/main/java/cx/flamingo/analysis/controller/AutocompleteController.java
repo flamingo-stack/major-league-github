@@ -13,6 +13,7 @@ import cx.flamingo.analysis.model.Language;
 import cx.flamingo.analysis.model.Region;
 import cx.flamingo.analysis.model.SoccerTeam;
 import cx.flamingo.analysis.model.State;
+import cx.flamingo.analysis.service.CacheService;
 import cx.flamingo.analysis.service.CityService;
 import cx.flamingo.analysis.service.LanguageService;
 import cx.flamingo.analysis.service.RegionService;
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AutocompleteController {
 
+    private final CacheService cacheService;
     private final CityService cityService;
     private final StateService stateService;
     private final RegionService regionService;
@@ -39,6 +41,9 @@ public class AutocompleteController {
             @RequestParam(required = false) String regionId,
             @RequestParam(required = false) String stateId,
             @RequestParam(defaultValue = "50") int maxResults) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Service is not ready yet, please try again later");
+        }
         log.info("Autocomplete cities with query: {}, regionId: {}, stateId: {}, maxResults: {}",
                 query != null ? query : "none",
                 regionId != null ? regionId : "none",
@@ -54,6 +59,9 @@ public class AutocompleteController {
             @RequestParam(required = false) String stateId,
             @RequestParam(required = false) List<String> cityIds,
             @RequestParam(defaultValue = "50") int maxResults) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Service is not ready yet, please try again later");
+        }
         log.info("Autocomplete regions with query: {}, stateId: {}, cityIds: {}, maxResults: {}", 
                 query != null ? query : "none",
                 stateId != null ? stateId : "none",
@@ -69,6 +77,9 @@ public class AutocompleteController {
             @RequestParam(required = false) String regionId,
             @RequestParam(required = false) List<String> cityIds,
             @RequestParam(defaultValue = "50") int maxResults) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Service is not ready yet, please try again later");
+        }
         log.info("Autocomplete states with query: {}, regionId: {}, cityIds: {}, maxResults: {}", 
                 query != null ? query : "none",
                 regionId != null ? regionId : "none",
@@ -82,6 +93,9 @@ public class AutocompleteController {
     public ApiResponse<List<Language>> autocompleteLanguages(
             @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "50") int maxResults) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Service is not ready yet, please try again later");
+        }
         log.info("Autocomplete languages with query: {}, maxResults: {}", 
                 query != null ? query : "none", 
                 maxResults);
@@ -93,6 +107,9 @@ public class AutocompleteController {
     public ApiResponse<List<SoccerTeam>> autocompleteTeams(
             @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "50") int maxResults) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Service is not ready yet, please try again later");
+        }
         log.info("Autocomplete teams with query: {}, maxResults: {}", 
                 query != null ? query : "none", 
                 maxResults);
