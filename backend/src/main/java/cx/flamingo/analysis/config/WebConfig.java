@@ -19,12 +19,10 @@ public class WebConfig implements WebMvcConfigurer {
                 "http://localhost:8450",
                 "http://localhost:3000",
                 // Production origins
-                "https://www.mlg.soccer",
-                // Allow the ingress controller origin
-                "http://www.mlg.soccer"
+                "https://www.mlg.soccer"
             )
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .allowedHeaders("*")
+            .allowedHeaders("Content-Type", "Authorization", "X-Requested-With")
             .exposedHeaders("Access-Control-Allow-Origin")
             .allowCredentials(true)
             .maxAge(3600); // 1 hour max age
