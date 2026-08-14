@@ -1,5 +1,6 @@
 package cx.flamingo.analysis.cache.impl;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.redis.core.RedisTemplate;
@@ -47,6 +48,9 @@ public class RedisCacheService extends CacheServiceAbs {
     protected Long getInsertTime(String cachePath, String key) {
         String redisKey = buildRedisKey(cachePath, key);
         Object json = valueOps.get(redisKey + EXPIRATION_SUFFIX);
+        if (json == null) {
+            return 0L;
+        }
         Expiration expiration = gson.fromJson(json.toString(), Expiration.class);
         if (expiration != null) {
             return expiration.getTimestamp();
@@ -87,9 +91,16 @@ public class RedisCacheService extends CacheServiceAbs {
 
         String redisKey = buildRedisKey(cachePath, key);
         try {
-            // Let the RedisTemplate's serializer handle the conversion
-            valueOps.set(redisKey, gson.toJson(value));
-            valueOps.set(redisKey + EXPIRATION_SUFFIX, gson.toJson(Expiration.builder().timestamp(System.currentTimeMillis())));
+            redisTemplate.executePipelined((org.springframework.data.redis.core.RedisCallback<Object>) connection -> {
+                byte[] keyBytes = redisTemplate.getStringSerializer().serialize(redisKey);
+                byte[] valueBytes = redisTemplate.getStringSerializer().serialize(gson.toJson(value));
+                byte[] expirationKeyBytes = redisTemplate.getStringSerializer().serialize(redisKey + EXPIRATION_SUFFIX);
+                byte[] expirationValueBytes = redisTemplate.getStringSerializer().serialize(
+                        gson.toJson(Expiration.builder().timestamp(System.currentTimeMillis())));
+                connection.set(keyBytes, valueBytes);
+                connection.set(expirationKeyBytes, expirationValueBytes);
+                return null;
+            });
             log.debug("Cached value in Redis for key: '{}'", redisKey);
         } catch (Exception e) {
             log.error("Failed to write to Redis cache for key '{}': {}", redisKey, e.getMessage());
