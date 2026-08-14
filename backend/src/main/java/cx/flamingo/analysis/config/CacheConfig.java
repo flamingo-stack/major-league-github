@@ -3,6 +3,7 @@ package cx.flamingo.analysis.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 
 import cx.flamingo.analysis.cache.CacheServiceAbs;
@@ -62,9 +63,9 @@ public class CacheConfig {
 
     @Bean
     @Primary
-    public CacheServiceAbs cacheService(RedisCacheService redisCache, 
-                                      DiskCacheService diskCache,
-                                      ReadOnlyCacheService readOnlyCache) {
+    public CacheServiceAbs cacheService(@Lazy RedisCacheService redisCache, 
+                                      @Lazy DiskCacheService diskCache,
+                                      @Lazy ReadOnlyCacheService readOnlyCache) {
         CacheMode mode = CacheMode.fromString(cacheMode);
         CacheImplementation impl = CacheImplementation.fromString(cacheImplementation);
         redisCache.setCacheMode(mode);
