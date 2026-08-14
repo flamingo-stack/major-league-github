@@ -6,10 +6,14 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
@@ -42,23 +46,19 @@ public class CityService {
     private void loadCities() {
         cities = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new ClassPathResource("data/cities.csv").getInputStream()))) {
-            
-            // Skip header
-            reader.readLine();
-            
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                String id = parts[0];
-                String name = parts[1];
-                String stateId = parts[2];
-                int population = Integer.parseInt(parts[3]);
-                double latitude = Double.parseDouble(parts[4]);
-                double longitude = Double.parseDouble(parts[5]);
-                Set<String> regionIds = Arrays.stream(parts[6].split("\\|"))
+                new InputStreamReader(new ClassPathResource("data/cities.csv").getInputStream()));
+             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
+
+            for (CSVRecord record : csvParser) {
+                String id = record.get(0);
+                String name = record.get(1);
+                String stateId = record.get(2);
+                int population = Integer.parseInt(record.get(3));
+                double latitude = Double.parseDouble(record.get(4));
+                double longitude = Double.parseDouble(record.get(5));
+                Set<String> regionIds = Arrays.stream(record.get(6).split("\\|"))
                     .collect(Collectors.toSet());
-                
+
                 City city = City.builder()
                     .id(id)
                     .name(name)
@@ -68,10 +68,10 @@ public class CityService {
                     .longitude(longitude)
                     .regionIds(regionIds)
                     .build();
-                
+
                 // Set nearest team ID
                 city.setNearestTeamId(soccerTeamService.findNearestTeamId(city));
-                
+
                 cities.add(city);
             }
         } catch (IOException e) {
@@ -128,13 +128,11 @@ public class CityService {
             .collect(Collectors.toList());
     }
 
-    public City getCityById(String id) {
-        City city = cities.stream()
+    public Optional<City> getCityById(String id) {
+        return cities.stream()
             .filter(c -> c.getId().equals(id))
             .findFirst()
-            .orElse(null);
-            
-        return city != null ? populateState(city) : null;
+            .map(this::populateState);
     }
 
     public List<City> getAllCities() {
@@ -159,10 +157,7 @@ public class CityService {
             return new ArrayList<>();
         }
         return cities.stream()
-            .filter(city -> {
-                String nearestTeamId = soccerTeamService.findNearestTeamId(city);
-                return teamId.equals(nearestTeamId);
-            })
+            .filter(city -> teamId.equals(city.getNearestTeamId()))
             .map(this::populateState)
             .sorted((a, b) -> Integer.compare(b.getPopulation(), a.getPopulation()))
             .collect(Collectors.toList());
