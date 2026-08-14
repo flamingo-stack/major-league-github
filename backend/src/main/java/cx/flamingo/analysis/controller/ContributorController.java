@@ -184,7 +184,11 @@ public class ContributorController {
         Language language = languageId != null ? 
             languageService.getLanguageById(languageId) : 
             languageService.getDefaultLanguage();
-        String languageName = language.getName().toLowerCase();
+        if (language == null) {
+            log.warn("Language not found for ID: {}, defaulting language name to 'unknown'", languageId);
+            language = languageService.getDefaultLanguage();
+        }
+        String languageName = language != null ? language.getName().toLowerCase() : "unknown";
         
         // Build location part of filename
         String locationPart = "all";
@@ -205,7 +209,7 @@ public class ContributorController {
         );
 
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=%s", filename))
+            .header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=\"%s\"", filename.replaceAll("[^a-zA-Z0-9._-]", "_")))
             .contentType(MediaType.parseMediaType("text/csv"))
             .body(stringWriter.toString());
     }
