@@ -4,30 +4,27 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import cx.flamingo.analysis.cache.CacheServiceAbs;
-import cx.flamingo.analysis.controller.ContributorController;
 import cx.flamingo.analysis.model.Language;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PreCacheService {
 
-    @Autowired
-    ContributorController contributorController;
+    private final ContributorService contributorService;
 
-    @Autowired
-    LanguageService languageService;
+    private final LanguageService languageService;
 
-    @Autowired
-    CacheServiceAbs cacheService;
+    private final CacheServiceAbs cacheService;
 
     // Always run the cache refresh cycle on startup
-    @Scheduled(initialDelay = 1000l, fixedDelay = 1000l)
+    @Scheduled(initialDelay = 1000l, fixedDelay = 3600000l)
     void runFullCacheCycle() {
         Instant startTime = Instant.now();
         log.info("Starting cache refresh cycle for all languages...");
@@ -37,7 +34,7 @@ public class PreCacheService {
             try {
                 log.info("Refreshing cache for language {}", language.getName());
                 // Force cache refresh for all cities
-                contributorController.getContributors(null, null, null, null, language.getId(), 15,
+                contributorService.getContributors(null, null, null, null, language.getId(), 15,
                         GithubService.GithubApiPriority.Low);
             } catch (Exception e) {
                 log.error("Error fetching contributors for language {}: {}", language.getName(), e.getMessage());
