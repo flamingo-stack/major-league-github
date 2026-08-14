@@ -1,7 +1,6 @@
 package cx.flamingo.analysis.config;
 
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -27,7 +26,7 @@ public class AsyncConfig {
         executorLow.setCorePoolSize(githubApiConcurrency);
         executorLow.setMaxPoolSize(100);
         executorLow.setQueueCapacity(1000);
-        executorLow.setThreadNamePrefix("GithuhContributorsLow-");
+        executorLow.setThreadNamePrefix("GithubContributorsLow-");
         executorLow.setWaitForTasksToCompleteOnShutdown(true); // Wait for tasks to complete
         executorLow.setAwaitTerminationSeconds(60); // Wait up to 60 seconds
         executorLow.initialize();
@@ -42,7 +41,7 @@ public class AsyncConfig {
         executorHigh.setCorePoolSize(githubApiConcurrency);
         executorHigh.setMaxPoolSize(100);
         executorHigh.setQueueCapacity(1000);
-        executorHigh.setThreadNamePrefix("GithuhContributorsHigh-");
+        executorHigh.setThreadNamePrefix("GithubContributorsHigh-");
         executorHigh.setWaitForTasksToCompleteOnShutdown(true); // Wait for tasks to complete
         executorHigh.setAwaitTerminationSeconds(60); // Wait up to 60 seconds
         executorHigh.initialize();
@@ -59,16 +58,6 @@ public class AsyncConfig {
         if (executor != null) {
             log.info("Shutting down Contributors thread pool...");
             executor.shutdown();
-            try {
-                if (!executor.getThreadPoolExecutor().awaitTermination(10, TimeUnit.SECONDS)) {
-                    log.warn("Thread pool did not terminate in time. Forcing shutdown...");
-                    executor.getThreadPoolExecutor().shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("Thread pool shutdown interrupted", e);
-                executor.getThreadPoolExecutor().shutdownNow();
-            }
             log.info("Thread pool shutdown completed");
         }
     }
