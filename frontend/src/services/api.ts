@@ -4,7 +4,6 @@ import { HiringManagerProfile, JobOpening } from '../types/hiring';
 
 // Configure axios to use the backend URL from environment
 const BACKEND_API_URL = process.env.BACKEND_API_URL || '/';
-console.log('API Service: Using backend URL:', BACKEND_API_URL);
 
 axios.defaults.baseURL = BACKEND_API_URL;
 
@@ -60,7 +59,7 @@ export function downloadContributors({
 
     // Create a hidden link and click it to trigger the download
     const link = document.createElement('a');
-    link.href = `${BACKEND_API_URL}/api/contributors/export?${params.toString()}`;
+    link.href = `/api/contributors/export?${params.toString()}`;
     link.download = 'contributors.csv';
     document.body.appendChild(link);
     link.click();
@@ -222,4 +221,4 @@ export const getJobOpenings = async (): Promise<JobOpening[]> => {
     throw new Error(response.data.message);
   }
   return response.data.data;
-}; // Force rebuild Sun Aug 31 19:49:51 EDT 2025
+};
