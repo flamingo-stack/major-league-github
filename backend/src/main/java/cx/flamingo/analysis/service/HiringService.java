@@ -36,6 +36,11 @@ public class HiringService {
 
     public Map<String, Object> getHiringManagerProfile() {
         Map<String, Object> response = new HashMap<>();
+        if (!cacheService.isCacheReady()) {
+            response.put("status", "error");
+            response.put("message", "Cache is not ready yet, please try again later");
+            return response;
+        }
         HiringManagerProfile profile = cacheService.get(CACHE_PATH, PROFILE_KEY, new TypeToken<HiringManagerProfile>() {
         }, refreshInterval)
                 .orElseGet(() -> {
@@ -65,31 +70,15 @@ public class HiringService {
     }
 
     public List<JobOpening> getJobOpenings() {
+        if (!cacheService.isCacheReady()) {
+            return List.of();
+        }
         return cacheService.get(CACHE_PATH, JOBS_KEY, new TypeToken<List<JobOpening>>() {
         }, refreshInterval)
                 .orElseGet(() -> {
                     List<JobOpening> jobs = linkedInService.getCompanyJobPostings();
                     if (jobs == null || jobs.isEmpty()) {
-                        // Fallback to default jobs if LinkedIn API fails
-                        jobs = List.of(
-                                JobOpening.builder()
-                                        .id("senior-back-end-engineer-1")
-                                        .title("Senior Back-end Engineer")
-                                        .location("Remote")
-                                        .url("https://djinni.co/jobs/717621-senior-back-end-engineer/")
-                                        .build(),
-                                JobOpening.builder()
-                                        .id("senior-devops-engineer-2")
-                                        .title("Senior DevOps Engineer")
-                                        .location("Remote")
-                                        .url("https://djinni.co/jobs/717622-senior-devops-engineer/")
-                                        .build(),
-                                JobOpening.builder()
-                                        .id("senior-front-end-engineer-3")
-                                        .title("Senior Front-end Engineer")
-                                        .location("Remote")
-                                        .url("https://djinni.co/jobs/717624-senior-front-end-engineer/")
-                                        .build());
+                        jobs = List.of();
                     }
                     cacheService.put(CACHE_PATH, JOBS_KEY, jobs);
                     return jobs;
