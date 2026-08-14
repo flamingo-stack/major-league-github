@@ -36,7 +36,7 @@ public abstract class CacheServiceAbs {
     @Value("${cache.expiration.ms:3600000}")
     protected long cacheExpirationMs;
 
-    @Value("${cache.should.be.ready:false}")
+    @Value("${cache.should.be.ready}")
     protected boolean cacheShouldBeReady;
 
     public abstract String getDelimiter();
@@ -71,7 +71,7 @@ public abstract class CacheServiceAbs {
             }
             return isStale;
         } catch (Throwable e) {
-            log.error("Error checking cache entry age: {}", e.getMessage());
+            log.error("Error checking cache entry age", e);
             return true; // Consider it stale if we can't check
         }
     }
@@ -149,9 +149,8 @@ public abstract class CacheServiceAbs {
 
     @Async
     protected <T> CompletableFuture<Void> doHttpCallAsync(Supplier<T> supplier, String cachePath, String cacheKey) {
-        return CompletableFuture.runAsync(() -> {
-            doHttpCall(supplier, cachePath, cacheKey);
-        });
+        doHttpCall(supplier, cachePath, cacheKey);
+        return CompletableFuture.completedFuture(null);
     }
 
     protected <T> Optional<T> doHttpCall(Supplier<T> supplier, String cachePath, String cacheKey) {
@@ -161,7 +160,7 @@ public abstract class CacheServiceAbs {
             put(cachePath, cacheKey, response);
             return Optional.of(response);
         } catch (Exception e) {
-            log.error("Error fetching data: {}", e.getMessage());
+            log.error("Error fetching data from cache path {}/{}", cachePath, cacheKey, e);
             return Optional.empty();
         }
     }
@@ -237,7 +236,7 @@ public abstract class CacheServiceAbs {
         return getCacheMode() == CacheMode.FORCE_UPDATE;
     }
 
-    private CacheMode cacheMode = CacheMode.READ_WRITE;
+    private volatile CacheMode cacheMode = CacheMode.READ_WRITE;
 
     private CacheMode getCacheMode() {
         return cacheMode;
