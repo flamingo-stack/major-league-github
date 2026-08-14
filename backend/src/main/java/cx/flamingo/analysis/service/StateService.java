@@ -4,8 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class StateService {
     private List<State> states;
+    private Map<String, Integer> statePopulationCache;
 
     private final CityService cityService;
 
@@ -36,6 +40,7 @@ public class StateService {
     public void init() {
         loadStates();
         log.info("Loaded {} states", states.size());
+        buildPopulationCache();
     }
 
     private void loadStates() {
@@ -70,11 +75,15 @@ public class StateService {
         }
     }
 
+    private void buildPopulationCache() {
+        statePopulationCache = new HashMap<>();
+        for (City city : cityService.getAllCities()) {
+            statePopulationCache.merge(city.getStateId(), city.getPopulation(), Integer::sum);
+        }
+    }
+
     private int getStateTotalPopulation(State state) {
-        return cityService.getAllCities().stream()
-            .filter(city -> city.getStateId().equals(state.getId()))
-            .mapToInt(City::getPopulation)
-            .sum();
+        return statePopulationCache.getOrDefault(state.getId(), 0);
     }
 
     public List<State> autocompleteStates(String query, String regionId, List<String> cityIds, int maxResults) {
@@ -105,18 +114,16 @@ public class StateService {
             .collect(Collectors.toList());
     }
 
-    public State getStateById(String id) {
+    public Optional<State> getStateById(String id) {
         return states.stream()
             .filter(s -> s.getId().equals(id))
-            .findFirst()
-            .orElse(null);
+            .findFirst();
     }
 
-    public State getStateByCode(String code) {
+    public Optional<State> getStateByCode(String code) {
         return states.stream()
             .filter(s -> s.getCode().equalsIgnoreCase(code))
-            .findFirst()
-            .orElse(null);
+            .findFirst();
     }
 
     public List<State> getAllStates() {
