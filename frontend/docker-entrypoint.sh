@@ -13,7 +13,7 @@ echo "Debug: ROOT_DOMAIN='$ROOT_DOMAIN'"
 # Process redirect block conditionally
 if [ "$ENABLE_REDIRECT" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
     echo "Enabling redirect from $ROOT_DOMAIN to $TARGET_DOMAIN"
-    export REDIRECT_SERVER_BLOCK=$(envsubst < /etc/nginx/templates/nginx-redirect.conf.template)
+    export REDIRECT_SERVER_BLOCK=$(envsubst '$ROOT_DOMAIN $TARGET_DOMAIN' < /etc/nginx/templates/nginx-redirect.conf.template)
 else
     echo "Redirect disabled or ROOT_DOMAIN not set"
     export REDIRECT_SERVER_BLOCK=""
