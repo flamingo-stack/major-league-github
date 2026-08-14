@@ -8,7 +8,7 @@ import { TeamAutocomplete } from './TeamAutocomplete';
 import { RegionAutocomplete } from './RegionAutocomplete';
 import { StateAutocomplete } from './StateAutocomplete';
 import { CityAutocomplete } from './CityAutocomplete';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getLanguageById, getTeamById, getRegionById, getStateById, getCityById, autocompleteLanguages } from '../services/api';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -20,6 +20,19 @@ const dismissKeyboard = () => {
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
+};
+
+// Utility function to detect Mac platform without deprecated navigator.platform
+const isMacPlatform = (): boolean => {
+  if (navigator.userAgentData) {
+    // userAgentData.platform is synchronous for high-entropy hints on Chromium
+    // It may be empty string on non-Chromium; fall through to userAgent check
+    const p = (navigator.userAgentData as { platform?: string }).platform;
+    if (p) {
+      return p.toLowerCase().includes('mac');
+    }
+  }
+  return /Mac/i.test(navigator.userAgent);
 };
 
 export const FiltersPanel = () => {
@@ -45,13 +58,17 @@ export const FiltersPanel = () => {
   const [stateInput, setStateInput] = useState('');
   const [cityInput, setCityInput] = useState('');
 
+  // Ref to capture the initial urlState snapshot so the effect is not stale
+  const initialUrlStateRef = useRef(urlState);
+
   // Load initial state from URL
   useEffect(() => {
+    const initialState = initialUrlStateRef.current;
     const loadInitialState = async () => {
       try {
         // Load language or set default to Java
-        if (urlState.languageId) {
-          const language = await getLanguageById(urlState.languageId);
+        if (initialState.languageId) {
+          const language = await getLanguageById(initialState.languageId);
           setSelectedLanguage(language);
           setLanguageInput(language.displayName);
         } else {
@@ -62,43 +79,43 @@ export const FiltersPanel = () => {
             setSelectedLanguage(java);
             setLanguageInput(java.displayName);
             updateUrlState({
-              ...urlState,
+              ...initialState,
               languageId: java.id
             });
           }
         }
 
         // Load team
-        if (urlState.teamId) {
-          const team = await getTeamById(urlState.teamId);
+        if (initialState.teamId) {
+          const team = await getTeamById(initialState.teamId);
           setSelectedTeam(team);
           setTeamInput(team.name);
         }
 
         // Load region
-        if (urlState.selectedRegionId) {
-          const region = await getRegionById(urlState.selectedRegionId);
+        if (initialState.selectedRegionId) {
+          const region = await getRegionById(initialState.selectedRegionId);
           setSelectedRegion(region);
           setRegionInput(region.displayName);
         }
 
         // Load state
-        if (urlState.stateId) {
-          const state = await getStateById(urlState.stateId);
+        if (initialState.stateId) {
+          const state = await getStateById(initialState.stateId);
           setSelectedState(state);
           setStateInput(state.name);
         }
 
         // Load city
-        if (urlState.selectedCityId) {
-          const city = await getCityById(urlState.selectedCityId);
+        if (initialState.selectedCityId) {
+          const city = await getCityById(initialState.selectedCityId);
           setSelectedCity(city);
           setCityInput(city.name);
         }
       } catch (error) {
         console.error('Error loading initial state:', error);
         // Only clear the problematic ID from URL state
-        const newState = { ...urlState };
+        const newState = { ...initialState };
         if (error instanceof Error && error.message.includes('language')) {
           newState.languageId = null;
         }
@@ -123,18 +140,9 @@ export const FiltersPanel = () => {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      console.log('Key pressed:', {
-        key: event.key,
-        altKey: event.altKey,
-        metaKey: event.metaKey,
-        code: event.code,
-        keyCode: event.keyCode
-      });
-      
       // Check if it's Option+E on Mac (using event.code)
-      if ((navigator.platform.includes('Mac') && event.altKey && event.code === 'KeyE') ||
-          (!navigator.platform.includes('Mac') && event.altKey && event.key.toLowerCase() === 'e')) {
-        console.log('Export shortcut triggered!');
+      if ((isMacPlatform() && event.altKey && event.code === 'KeyE') ||
+          (!isMacPlatform() && event.altKey && event.key.toLowerCase() === 'e')) {
         event.preventDefault();
         setShowSizeSelection(true);
         setExportDialogOpen(true);
