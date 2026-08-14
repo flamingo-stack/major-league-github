@@ -11,6 +11,27 @@ import { formatNumber } from '../utils';
 import { githubToOds } from '../../../styles/colorMappings';
 
 export const StatsDisplay: React.FC<StatsDisplayProps> = ({ contributor }) => {
+    const formatLatestCommitDate = (): string => {
+        const d = contributor.latestCommitDate;
+        if (!d || d.length < 3) {
+            return 'N/A';
+        }
+        const year = Number(d[0]);
+        const month = Number(d[1]) - 1;
+        const day = Number(d[2]);
+        const hours = d.length > 3 ? Number(d[3]) : 0;
+        const minutes = d.length > 4 ? Number(d[4]) : 0;
+        const date = new Date(Date.UTC(year, month, day, hours, minutes));
+        if (isNaN(date.getTime())) {
+            return 'N/A';
+        }
+        return date.toLocaleDateString('en-US', {
+            month: 'numeric',
+            day: 'numeric',
+            year: 'numeric'
+        }).replace(/\//g, '/');
+    };
+
     const stats = [
         {
             icon: <EmojiEventsIcon sx={{ fontSize: 16 }} />,
@@ -39,17 +60,7 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({ contributor }) => {
         },
         {
             icon: <UpdateIcon sx={{ fontSize: 16 }} />,
-            value: new Date(Date.UTC(
-                Number(contributor.latestCommitDate[0]),
-                Number(contributor.latestCommitDate[1]) - 1,
-                Number(contributor.latestCommitDate[2]),
-                Number(contributor.latestCommitDate[3]),
-                Number(contributor.latestCommitDate[4])
-            )).toLocaleDateString('en-US', {
-                month: 'numeric',
-                day: 'numeric',
-                year: 'numeric'
-            }).replace(/\//g, '/'),
+            value: formatLatestCommitDate(),
             label: 'Last Active'
         }
     ];
