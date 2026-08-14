@@ -44,7 +44,10 @@ public class ReadOnlyCacheService extends RedisCacheService {
 
         if (cachedValue != null) {
             try {
-                T value = gson.fromJson(cachedValue.toString(), typeRef);
+                String json = (cachedValue instanceof String)
+                        ? (String) cachedValue
+                        : gson.toJson(cachedValue);
+                T value = gson.fromJson(json, typeRef);
                 log.debug("Read-only cache hit for key: '{}'", redisKey);
                 return Optional.of(value);
             } catch (Exception e) {
