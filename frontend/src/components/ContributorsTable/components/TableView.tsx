@@ -238,7 +238,7 @@ export const TableView: React.FC<ContributorsTableProps> = ({ contributors, isLo
                                 color: githubToOds.link,
                                 fontWeight: 500
                             }}>
-                                {isExpanded ? 'How score is calculated?' : 'How score is calculated?'}
+                                {isExpanded ? 'Hide calculation' : 'How score is calculated?'}
                             </Typography>
                         </Box>
                         {isExpanded && (
