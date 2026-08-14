@@ -40,19 +40,42 @@ function extractColorsFromJSON() {
 function extractSemanticColorsFromCSS() {
   const cssContent = fs.readFileSync(COLOR_CSS_FILE, 'utf8');
   const semanticColors = {};
-  
-  // Extract CSS custom properties (--color-* variables)
+
+  // First pass: collect all raw values for every --color-* variable
+  const rawValues = {};
   const cssVariableRegex = /--color-([^:]+):\s*([^;]+);/g;
   let match;
-  
+
   while ((match = cssVariableRegex.exec(cssContent)) !== null) {
     const [, name, value] = match;
-    // Only extract hex values, skip var() references
-    if (value.startsWith('#')) {
-      semanticColors[name.replace(/-/g, '_')] = value.trim();
+    rawValues[name.trim()] = value.trim();
+  }
+
+  // Resolve a single raw value, following var() references up to maxDepth hops
+  function resolve(value, depth) {
+    if (depth > 10) return null; // guard against circular references
+    const trimmed = value.trim();
+    if (trimmed.startsWith('#')) return trimmed;
+    // Match var(--color-some-name) or var(--color-some-name, fallback)
+    const varMatch = trimmed.match(/^var\(\s*(--color-[^,)]+)/);
+    if (varMatch) {
+      const referencedName = varMatch[1].replace(/^--color-/, '').trim();
+      const referencedValue = rawValues[referencedName];
+      if (referencedValue !== undefined) {
+        return resolve(referencedValue, depth + 1);
+      }
+    }
+    // Not a hex and not a resolvable var() — skip
+    return null;
+  }
+
+  for (const [name, value] of Object.entries(rawValues)) {
+    const resolved = resolve(value, 0);
+    if (resolved !== null) {
+      semanticColors[name.replace(/-/g, '_')] = resolved;
     }
   }
-  
+
   return semanticColors;
 }
 
