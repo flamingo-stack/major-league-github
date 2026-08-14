@@ -15,6 +15,8 @@ import com.google.gson.reflect.TypeToken;
 
 import cx.flamingo.analysis.cache.CacheServiceAbs;
 import cx.flamingo.analysis.model.JobOpening;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -56,15 +58,16 @@ public class LinkedInService {
                 try {
                     // First get an access token
                     String tokenUrl = "https://www.linkedin.com/oauth/v2/accessToken";
+                    String requestBody = "grant_type=client_credentials&client_id=" + clientId
+                        + "&client_secret=" + clientSecret;
                     var tokenResponse = webClientBuilder.build()
                         .post()
                         .uri(tokenUrl)
                         .header("Content-Type", "application/x-www-form-urlencoded")
-                        .bodyValue(String.format(
-                            "grant_type=client_credentials&client_id=%s&client_secret=%s",
-                            clientId, clientSecret))
+                        .bodyValue(requestBody)
                         .retrieve()
                         .bodyToMono(String.class)
+                        .timeout(Duration.ofSeconds(10))
                         .block();
 
                     JsonObject tokenJson = JsonParser.parseString(tokenResponse).getAsJsonObject();
@@ -108,7 +111,7 @@ public class LinkedInService {
                     return jobs;
 
                 } catch (Exception e) {
-                    log.error("Failed to fetch LinkedIn job postings: {}", e.getMessage());
+                    log.error("Failed to fetch LinkedIn job postings", e);
                     return List.of();
                 }
             });
@@ -135,13 +138,15 @@ public class LinkedInService {
         }
     }
 
-    public record LinkedInJobPosting(
-        String id,
-        String title,
-        String description,
-        String formattedLocation,
-        String companyId,
-        String applicationUrl,
-        boolean isRemote
-    ) {}
+    @Getter
+    @AllArgsConstructor
+    public static class LinkedInJobPosting {
+        private final String id;
+        private final String title;
+        private final String description;
+        private final String formattedLocation;
+        private final String companyId;
+        private final String applicationUrl;
+        private final boolean isRemote;
+    }
 } 
