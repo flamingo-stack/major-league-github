@@ -83,11 +83,7 @@ public abstract class CacheServiceAbs {
             Supplier<JsonObject> supplier) {
         String cacheKey = generateGithubCacheKey(city, language, pageNumber);
 
-        fetchFromCache: {
-            if (forceCacheUpdate()) {
-                break fetchFromCache;
-            }
-
+        if (!shouldSkipCache()) {
             Optional<JsonObject> cachedResponse = get(getGithubCachePath(), cacheKey, new TypeToken<JsonObject>() {
             }, githubRefreshIntervalMs);
 
@@ -122,11 +118,7 @@ public abstract class CacheServiceAbs {
 
         String cacheKey = generateCacheKey(cityId, regionId, stateId, teamId, languageId, maxResults);
 
-        fetchFromCache: {
-            if (forceCacheUpdate()) {
-                break fetchFromCache;
-            }
-
+        if (!shouldSkipCache()) {
             Optional<List<Contributor>> cachedResponse = get(getHttpCachePath(), cacheKey,
                     new TypeToken<List<Contributor>>() {
                     }, httpRefreshIntervalMs);
@@ -147,11 +139,14 @@ public abstract class CacheServiceAbs {
         return doHttpCall(supplier, getHttpCachePath(), cacheKey);
     }
 
+    private boolean shouldSkipCache() {
+        return forceCacheUpdate();
+    }
+
     @Async
     protected <T> CompletableFuture<Void> doHttpCallAsync(Supplier<T> supplier, String cachePath, String cacheKey) {
-        return CompletableFuture.runAsync(() -> {
-            doHttpCall(supplier, cachePath, cacheKey);
-        });
+        doHttpCall(supplier, cachePath, cacheKey);
+        return CompletableFuture.completedFuture(null);
     }
 
     protected <T> Optional<T> doHttpCall(Supplier<T> supplier, String cachePath, String cacheKey) {
@@ -204,8 +199,7 @@ public abstract class CacheServiceAbs {
 
     protected String generateGithubCacheKey(City city, String language, int pageNumber) {
         StringBuilder key = new StringBuilder();
-        key.append(getDelimiter())
-                .append(city.getId())
+        key.append(city.getId())
                 .append(getDelimiter())
                 .append(language)
                 .append(getDelimiter())
