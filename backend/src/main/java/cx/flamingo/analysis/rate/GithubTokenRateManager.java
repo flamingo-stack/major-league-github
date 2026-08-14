@@ -19,12 +19,10 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import jakarta.annotation.PostConstruct;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-@Getter
 public class GithubTokenRateManager {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -59,7 +57,7 @@ public class GithubTokenRateManager {
 
     }
 
-    boolean alreadyInitialized = false;
+    private volatile boolean alreadyInitialized = false;
 
     private String formatResetTime(Long resetTimeSeconds) {
         if (resetTimeSeconds == null) {
@@ -126,120 +124,136 @@ public class GithubTokenRateManager {
         printTokensStatus();
     }
 
+    private static final int MAX_RETRY_ATTEMPTS = 10;
+
     /**
      * Returns the WebClient with the most remaining API calls and furthest reset time.
      * If all tokens are exhausted, waits for the earliest reset time.
      * @return WebClient with optimal rate limit status
      */
-    public Pair<WebClient, GithubToken> getBestAvailableClient() {
-        WebClient bestClient = null;
-        GithubToken bestToken = null;
-        int maxRemaining = -1;
-        long latestReset = 0;
-        long earliestReset = Long.MAX_VALUE;
-        long earliestSecondaryReset = Long.MAX_VALUE;
+    public synchronized Pair<WebClient, GithubToken> getBestAvailableClient() {
+        int attempts = 0;
+        while (attempts < MAX_RETRY_ATTEMPTS) {
+            WebClient bestClient = null;
+            GithubToken bestToken = null;
+            int maxRemaining = -1;
+            long latestReset = 0;
+            long earliestReset = Long.MAX_VALUE;
+            long earliestSecondaryReset = Long.MAX_VALUE;
 
-        for (Map.Entry<String, Pair<GithubToken, WebClient>> entry : tokenMap.entrySet()) {
-            GithubToken token = entry.getValue().getValue0();
-            WebClient client = entry.getValue().getValue1();
-            
-            // Skip tokens under secondary rate limit
-            if (token.isUnderSecondaryLimit()) {
-                long secondaryResetTime = token.getLastSecondaryLimitHit()/1000 + token.getRetryAfterSeconds();
-                if (secondaryResetTime < earliestSecondaryReset) {
-                    earliestSecondaryReset = secondaryResetTime;
+            for (Map.Entry<String, Pair<GithubToken, WebClient>> entry : tokenMap.entrySet()) {
+                GithubToken token = entry.getValue().getValue0();
+                WebClient client = entry.getValue().getValue1();
+
+                // Skip tokens under secondary rate limit
+                if (token.isUnderSecondaryLimit()) {
+                    long secondaryResetTime = token.getLastSecondaryLimitHit()/1000 + token.getRetryAfterSeconds();
+                    if (secondaryResetTime < earliestSecondaryReset) {
+                        earliestSecondaryReset = secondaryResetTime;
+                    }
+                    continue;
                 }
+
+                Integer remaining = token.getRemainingRequests();
+                Long resetTime = token.getResetTime();
+
+                // Skip if we don't have rate limit info
+                if (remaining == null || resetTime == null) {
+                    continue;
+                }
+
+                // Track earliest reset time for waiting when all tokens are exhausted
+                if (resetTime < earliestReset) {
+                    earliestReset = resetTime;
+                }
+
+                // If this token has more remaining calls, or same calls but later reset
+                if (remaining > maxRemaining ||
+                    (remaining == maxRemaining && resetTime > latestReset)) {
+                    maxRemaining = remaining;
+                    latestReset = resetTime;
+                    bestClient = client;
+                    bestToken = token;
+                }
+            }
+
+            long now = Instant.now().getEpochSecond();
+
+            // If all tokens are under secondary rate limit, wait for the earliest one
+            if (bestClient == null && earliestSecondaryReset != Long.MAX_VALUE) {
+                long waitTime = earliestSecondaryReset - now;
+                if (waitTime > 0) {
+                    log.info("All tokens under secondary rate limit. Waiting {} seconds until first token available", waitTime);
+                    try {
+                        Thread.sleep(waitTime * 1000);
+                    } catch (InterruptedException e) {
+                        log.error("Sleep interrupted while waiting for secondary rate limit", e);
+                        Thread.currentThread().interrupt();
+                        return null;
+                    }
+                }
+                attempts++;
                 continue;
             }
-            
-            Integer remaining = token.getRemainingRequests();
-            Long resetTime = token.getResetTime();
-            
-            // Skip if we don't have rate limit info
-            if (remaining == null || resetTime == null) {
+
+            // If all tokens are exhausted (maxRemaining == 0), wait for the earliest reset
+            if (maxRemaining == 0 && earliestReset != Long.MAX_VALUE) {
+                long waitTime = earliestReset - now;
+                if (waitTime > 0) {
+                    log.info("All tokens exhausted. Waiting {} seconds until first token refresh at {}",
+                        waitTime, formatResetTime(earliestReset));
+                    try {
+                        Thread.sleep(waitTime * 1000);
+                    } catch (InterruptedException e) {
+                        log.error("Sleep interrupted while waiting for token refresh", e);
+                        Thread.currentThread().interrupt();
+                        return null;
+                    }
+                }
+                alreadyInitialized = false;
+                initializeRateLimits();
+                attempts++;
                 continue;
             }
 
-            // Track earliest reset time for waiting when all tokens are exhausted
-            if (resetTime < earliestReset) {
-                earliestReset = resetTime;
-            }
-
-            // If this token has more remaining calls, or same calls but later reset
-            if (remaining > maxRemaining || 
-                (remaining == maxRemaining && resetTime > latestReset)) {
-                maxRemaining = remaining;
-                latestReset = resetTime;
-                bestClient = client;
-                bestToken = token;
-            }
-        }
-
-        long now = Instant.now().getEpochSecond();
-        
-        // If all tokens are under secondary rate limit, wait for the earliest one
-        if (bestClient == null && earliestSecondaryReset != Long.MAX_VALUE) {
-            long waitTime = earliestSecondaryReset - now;
-            if (waitTime > 0) {
-                log.info("All tokens under secondary rate limit. Waiting {} seconds until first token available", waitTime);
-                try {
-                    Thread.sleep(waitTime * 1000);
-                    return getBestAvailableClient();
-                } catch (InterruptedException e) {
-                    log.error("Sleep interrupted while waiting for secondary rate limit", e);
-                    Thread.currentThread().interrupt();
+            // If best token needs to wait for primary rate limit reset, wait
+            if (bestToken != null && maxRemaining == 0) {
+                long waitTime = bestToken.getSecondsUntilReset();
+                if (waitTime > 0) {
+                    log.info("Best token needs to wait {} seconds until rate limit reset", waitTime);
+                    try {
+                        Thread.sleep(waitTime * 1000);
+                    } catch (InterruptedException e) {
+                        log.error("Sleep interrupted while waiting for token reset", e);
+                        Thread.currentThread().interrupt();
+                        return null;
+                    }
                 }
+                alreadyInitialized = false;
+                initializeRateLimits();
+                attempts++;
+                continue;
             }
-        }
 
-        // If all tokens are exhausted (maxRemaining == 0), wait for the earliest reset
-        if (maxRemaining == 0 && earliestReset != Long.MAX_VALUE) {
-            long waitTime = earliestReset - now;
-            if (waitTime > 0) {
-                log.info("All tokens exhausted. Waiting {} seconds until first token refresh at {}", 
-                    waitTime, formatResetTime(earliestReset));
-                try {
-                    Thread.sleep(waitTime * 1000);
-                    initializeRateLimits();
-                    return getBestAvailableClient();
-                } catch (InterruptedException e) {
-                    log.error("Sleep interrupted while waiting for token refresh", e);
-                    Thread.currentThread().interrupt();
-                }
+            // If no client found with rate info, return the first one
+            if (bestClient == null && !tokenMap.isEmpty()) {
+                log.warn("No rate limit information available, returning first available client");
+                bestClient = tokenMap.values().iterator().next().getValue1();
+                bestToken = tokenMap.values().iterator().next().getValue0();
             }
-        }
 
-        // If best token needs to wait for primary rate limit reset, wait
-        if (bestToken != null && maxRemaining == 0) {
-            long waitTime = bestToken.getSecondsUntilReset();
-            if (waitTime > 0) {
-                log.info("Best token needs to wait {} seconds until rate limit reset", waitTime);
-                try {
-                    Thread.sleep(waitTime * 1000);
-                    initializeRateLimits();
-                    return getBestAvailableClient();
-                } catch (InterruptedException e) {
-                    log.error("Sleep interrupted while waiting for token reset", e);
-                    Thread.currentThread().interrupt();
-                }
+            if (bestClient != null) {
+                log.debug("Selected token {} with {} remaining calls, reset at {}",
+                    bestToken.getToken().substring(0, 8),
+                    maxRemaining,
+                    formatResetTime(latestReset));
             }
+
+            return Pair.with(bestClient, bestToken);
         }
 
-        // If no client found with rate info, return the first one
-        if (bestClient == null && !tokenMap.isEmpty()) {
-            log.warn("No rate limit information available, returning first available client");
-            bestClient = tokenMap.values().iterator().next().getValue1();
-            bestToken = tokenMap.values().iterator().next().getValue0();
-        }
-
-        if (bestClient != null) {
-            log.debug("Selected token {} with {} remaining calls, reset at {}", 
-                bestToken.getToken().substring(0, 8),
-                maxRemaining, 
-                formatResetTime(latestReset));
-        }
-
-        return Pair.with(bestClient, bestToken);
+        log.error("getBestAvailableClient() exceeded maximum retry attempts ({})", MAX_RETRY_ATTEMPTS);
+        return null;
     }
 
     /**
@@ -288,12 +302,12 @@ public class GithubTokenRateManager {
                 token.getRateLimit(),
                 formatResetTime(token.getResetTime()),
                 token.getUsedRequests());
-        
+
         if (retryAfter != null) {
             log.debug("Token {} - Secondary rate limit hit: Retry-After={}, Last hit={}",
                 token.getToken().substring(0, 8),
                 token.getRetryAfterSeconds(),
-                token.getLastSecondaryLimitHit() != null ? 
+                token.getLastSecondaryLimitHit() != null ?
                     Instant.ofEpochMilli(token.getLastSecondaryLimitHit()).toString() : "N/A");
         }
     }
@@ -306,5 +320,3 @@ public class GithubTokenRateManager {
         return values != null && !values.isEmpty() ? values.get(0) : null;
     }
 }
-
-
