@@ -19,10 +19,19 @@ spec:
       labels:
         app: ${SERVICE_NAME}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: ${SERVICE_NAME}
           image: ghcr.io/flamingo-stack/major-league-github/${SERVICE_NAME}:${VERSION}
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           envFrom:
             - configMapRef:
                 name: app-config
@@ -62,6 +71,14 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 10
             failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: ${SERVER_PORT}
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
