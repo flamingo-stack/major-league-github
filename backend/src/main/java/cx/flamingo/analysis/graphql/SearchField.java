@@ -13,7 +13,8 @@ public class SearchField extends Field {
             queryBuilder.append(" ");
         }
         queryBuilder.append(queryPart);
-        args.put("query", "\"" + queryBuilder.toString() + "\"");
+        String escaped = queryBuilder.toString().replace("\\", "\\\\").replace("\"", "\\\"");
+        args.put("query", "\"" + escaped + "\"");
         return this;
     }
 
