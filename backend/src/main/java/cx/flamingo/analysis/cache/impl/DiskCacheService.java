@@ -1,10 +1,13 @@
 package cx.flamingo.analysis.cache.impl;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -53,9 +56,29 @@ public class DiskCacheService extends CacheServiceAbs {
         return httpCachePath;
     }
 
+    /**
+     * Sanitizes a cache key by hashing it with SHA-256 so that user-supplied
+     * values (GitHub usernames, URLs, etc.) cannot introduce path-traversal
+     * sequences into the resulting filename.
+     */
+    private String sanitizeKey(String key) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(key.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 is guaranteed by the JVM spec; this branch is unreachable in practice.
+            throw new IllegalStateException("SHA-256 algorithm not available", e);
+        }
+    }
+
     @Override
     protected Long getInsertTime(String cachePath, String key) {
-        Path filePath = Paths.get(cachePath, key + ".json");
+        Path filePath = Paths.get(cachePath, sanitizeKey(key) + ".json");
         try {
             BasicFileAttributes attrs = Files.readAttributes(filePath, BasicFileAttributes.class);
             return attrs.lastModifiedTime().toMillis();
@@ -76,7 +99,7 @@ public class DiskCacheService extends CacheServiceAbs {
 
     @Override
     public <T> Optional<T> get(String cachePath, String key, TypeToken<T> typeRef, Long refreshInterval) {
-        Path filePath = Paths.get(cachePath, key + ".json");
+        Path filePath = Paths.get(cachePath, sanitizeKey(key) + ".json");
 
         if (!Files.exists(filePath)) {
             log.debug("Cache miss for key: '{}'", key);
@@ -124,7 +147,7 @@ public class DiskCacheService extends CacheServiceAbs {
             return;
         }
 
-        Path filePath = Paths.get(cachePath, key + ".json");
+        Path filePath = Paths.get(cachePath, sanitizeKey(key) + ".json");
         try {
             Files.createDirectories(filePath.getParent());
 
@@ -145,7 +168,7 @@ public class DiskCacheService extends CacheServiceAbs {
 
     @Override
     public void invalidate(String cachePath, String key) {
-        Path filePath = Paths.get(cachePath, key + ".json");
+        Path filePath = Paths.get(cachePath, sanitizeKey(key) + ".json");
         try {
             Files.deleteIfExists(filePath);
             log.info("Invalidated file cache for key: '{}'", key);
