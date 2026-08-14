@@ -8,7 +8,7 @@ import { TeamAutocomplete } from './TeamAutocomplete';
 import { RegionAutocomplete } from './RegionAutocomplete';
 import { StateAutocomplete } from './StateAutocomplete';
 import { CityAutocomplete } from './CityAutocomplete';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getLanguageById, getTeamById, getRegionById, getStateById, getCityById, autocompleteLanguages } from '../services/api';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -45,13 +45,20 @@ export const FiltersPanel = () => {
   const [stateInput, setStateInput] = useState('');
   const [cityInput, setCityInput] = useState('');
 
+  // Ref to always have the latest urlState available in the mount-only effect
+  const urlStateRef = useRef(urlState);
+  useEffect(() => {
+    urlStateRef.current = urlState;
+  });
+
   // Load initial state from URL
   useEffect(() => {
     const loadInitialState = async () => {
+      const currentUrlState = urlStateRef.current;
       try {
         // Load language or set default to Java
-        if (urlState.languageId) {
-          const language = await getLanguageById(urlState.languageId);
+        if (currentUrlState.languageId) {
+          const language = await getLanguageById(currentUrlState.languageId);
           setSelectedLanguage(language);
           setLanguageInput(language.displayName);
         } else {
@@ -62,43 +69,43 @@ export const FiltersPanel = () => {
             setSelectedLanguage(java);
             setLanguageInput(java.displayName);
             updateUrlState({
-              ...urlState,
+              ...currentUrlState,
               languageId: java.id
             });
           }
         }
 
         // Load team
-        if (urlState.teamId) {
-          const team = await getTeamById(urlState.teamId);
+        if (currentUrlState.teamId) {
+          const team = await getTeamById(currentUrlState.teamId);
           setSelectedTeam(team);
           setTeamInput(team.name);
         }
 
         // Load region
-        if (urlState.selectedRegionId) {
-          const region = await getRegionById(urlState.selectedRegionId);
+        if (currentUrlState.selectedRegionId) {
+          const region = await getRegionById(currentUrlState.selectedRegionId);
           setSelectedRegion(region);
           setRegionInput(region.displayName);
         }
 
         // Load state
-        if (urlState.stateId) {
-          const state = await getStateById(urlState.stateId);
+        if (currentUrlState.stateId) {
+          const state = await getStateById(currentUrlState.stateId);
           setSelectedState(state);
           setStateInput(state.name);
         }
 
         // Load city
-        if (urlState.selectedCityId) {
-          const city = await getCityById(urlState.selectedCityId);
+        if (currentUrlState.selectedCityId) {
+          const city = await getCityById(currentUrlState.selectedCityId);
           setSelectedCity(city);
           setCityInput(city.name);
         }
       } catch (error) {
         console.error('Error loading initial state:', error);
         // Only clear the problematic ID from URL state
-        const newState = { ...urlState };
+        const newState = { ...currentUrlState };
         if (error instanceof Error && error.message.includes('language')) {
           newState.languageId = null;
         }
@@ -123,18 +130,9 @@ export const FiltersPanel = () => {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      console.log('Key pressed:', {
-        key: event.key,
-        altKey: event.altKey,
-        metaKey: event.metaKey,
-        code: event.code,
-        keyCode: event.keyCode
-      });
-      
       // Check if it's Option+E on Mac (using event.code)
       if ((navigator.platform.includes('Mac') && event.altKey && event.code === 'KeyE') ||
           (!navigator.platform.includes('Mac') && event.altKey && event.key.toLowerCase() === 'e')) {
-        console.log('Export shortcut triggered!');
         event.preventDefault();
         setShowSizeSelection(true);
         setExportDialogOpen(true);
