@@ -19,10 +19,19 @@ spec:
       labels:
         app: frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
       containers:
         - name: frontend
           image: ghcr.io/flamingo-stack/major-league-github/frontend:${VERSION}
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: OG_TITLE
               value: "${OG_TITLE}"
