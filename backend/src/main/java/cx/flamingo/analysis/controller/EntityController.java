@@ -1,6 +1,5 @@
 package cx.flamingo.analysis.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,35 +11,33 @@ import cx.flamingo.analysis.model.Language;
 import cx.flamingo.analysis.model.Region;
 import cx.flamingo.analysis.model.SoccerTeam;
 import cx.flamingo.analysis.model.State;
+import cx.flamingo.analysis.service.CacheService;
 import cx.flamingo.analysis.service.CityService;
 import cx.flamingo.analysis.service.LanguageService;
 import cx.flamingo.analysis.service.RegionService;
 import cx.flamingo.analysis.service.SoccerTeamService;
 import cx.flamingo.analysis.service.StateService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/entities")
+@RequiredArgsConstructor
 public class EntityController {
 
-    @Autowired
-    private CityService cityService;
-
-    @Autowired
-    private RegionService regionService;
-
-    @Autowired
-    private StateService stateService;
-
-    @Autowired
-    private LanguageService languageService;
-
-    @Autowired
-    private SoccerTeamService soccerTeamService;
+    private final CacheService cacheService;
+    private final CityService cityService;
+    private final RegionService regionService;
+    private final StateService stateService;
+    private final LanguageService languageService;
+    private final SoccerTeamService soccerTeamService;
 
     @GetMapping("/cities/{id}")
     public ApiResponse<City> getCityById(@PathVariable String id) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Cache is still being populated");
+        }
         City city = cityService.getCityById(id);
         if (city == null) {
             log.warn("City not found with ID: {}", id);
@@ -51,6 +48,9 @@ public class EntityController {
 
     @GetMapping("/regions/{id}")
     public ApiResponse<Region> getRegionById(@PathVariable String id) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Cache is still being populated");
+        }
         Region region = regionService.getRegionById(id);
         if (region == null) {
             log.warn("Region not found with ID: {}", id);
@@ -61,6 +61,9 @@ public class EntityController {
 
     @GetMapping("/states/{id}")
     public ApiResponse<State> getStateById(@PathVariable String id) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Cache is still being populated");
+        }
         State state = stateService.getStateById(id);
         if (state == null) {
             log.warn("State not found with ID: {}", id);
@@ -71,6 +74,9 @@ public class EntityController {
 
     @GetMapping("/languages/{id}")
     public ApiResponse<Language> getLanguageById(@PathVariable String id) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Cache is still being populated");
+        }
         Language language = languageService.getLanguageById(id);
         if (language == null) {
             log.warn("Language not found with ID: {}", id);
@@ -81,6 +87,9 @@ public class EntityController {
 
     @GetMapping("/teams/{id}")
     public ApiResponse<SoccerTeam> getTeamById(@PathVariable String id) {
+        if (!cacheService.isCacheReady()) {
+            return ApiResponse.error("Cache is still being populated");
+        }
         SoccerTeam team = soccerTeamService.getTeamById(id);
         if (team == null) {
             log.warn("Team not found with ID: {}", id);
@@ -88,4 +97,4 @@ public class EntityController {
         }
         return ApiResponse.success(team, String.format("Found team: %s", team.getName()));
     }
-} 
+}
