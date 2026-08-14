@@ -16,6 +16,7 @@ import ForkRightIcon from '@mui/icons-material/ForkRight';
 import UpdateIcon from '@mui/icons-material/Update';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
+import CloseIcon from '@mui/icons-material/Close';
 import { GitHubIcon } from '@flamingo/ui-kit/components/icons';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -37,12 +38,18 @@ const getSocialIcon = (platform: string) => {
             return <LinkedInIcon fontSize="small" />;
         case 'twitter':
             return <TwitterIcon fontSize="small" />;
+        case 'x':
+            return <CloseIcon fontSize="small" />;
         case 'github':
             return <GitHubIcon width={16} height={16} />;
         case 'facebook':
             return <FacebookIcon fontSize="small" />;
         case 'instagram':
             return <InstagramIcon fontSize="small" />;
+        case 'mastodon':
+            return <LanguageIcon fontSize="small" />;
+        case 'bluesky':
+            return <LanguageIcon fontSize="small" />;
         case 'email':
             return <EmailIcon fontSize="small" />;
         case 'website':
@@ -50,6 +57,14 @@ const getSocialIcon = (platform: string) => {
         default:
             return null;
     }
+};
+
+const extractGitHubUsername = (url: string): string | undefined => {
+    if (!url) return undefined;
+    const trimmed = url.replace(/\/+$/, '');
+    const parts = trimmed.split('/');
+    const username = parts.pop();
+    return username || undefined;
 };
 
 export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isLoading, error }) => {
@@ -103,6 +118,9 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
         </Box>
     );
 
+    const hiringManagerGithubUrl = hiringManager?.socialLinks.find(link => link.platform === 'github')?.url;
+    const hiringManagerUsername = hiringManagerGithubUrl ? extractGitHubUsername(hiringManagerGithubUrl) : undefined;
+
     return (
         <Stack spacing={1.5}>
             {contributors.map((contributor, index) => (
@@ -147,7 +165,7 @@ export const MobileView: React.FC<ContributorsTableProps> = ({ contributors, isL
                                     <ContributorInfo 
                                         contributor={contributor} 
                                         index={index}
-                                        hiringManagerUsername={hiringManager?.socialLinks.find(link => link.platform === 'github')?.url.split('/').pop()}
+                                        hiringManagerUsername={hiringManagerUsername}
                                     />
                                 </Box>
                                 <Box sx={{ py: 0.5 }}>
