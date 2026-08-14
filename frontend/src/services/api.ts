@@ -4,7 +4,9 @@ import { HiringManagerProfile, JobOpening } from '../types/hiring';
 
 // Configure axios to use the backend URL from environment
 const BACKEND_API_URL = process.env.BACKEND_API_URL || '/';
-console.log('API Service: Using backend URL:', BACKEND_API_URL);
+if (process.env.NODE_ENV !== 'production') {
+  console.log('API Service: Using backend URL:', BACKEND_API_URL);
+}
 
 axios.defaults.baseURL = BACKEND_API_URL;
 
