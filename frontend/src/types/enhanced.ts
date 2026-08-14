@@ -7,12 +7,12 @@ export interface EnhancedCity extends Omit<City, 'state' | 'nearestTeam'> {
 }
 
 export interface EnhancedRegion extends Omit<Region, 'states'> {
-  states: Set<State>;
-  cities: Set<City>;
+  states: State[];
+  cities: City[];
 }
 
 export interface EnhancedState extends State {
   regionIds: string[];
-  regions: Set<Region>;
-  cities: Set<City>;
+  regions: Region[];
+  cities: City[];
 } 
