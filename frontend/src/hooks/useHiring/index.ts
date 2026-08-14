@@ -7,7 +7,7 @@ export const useHiring = () => {
     isLoading: isLoadingProfile,
     error: profileError
   } = useQuery({
-    queryKey: ['hiringManager'],
+    queryKey: ['hiringManager', 'fetchHiringManagerProfile'],
     queryFn: fetchHiringManagerProfile,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     retry: (failureCount, error) => {
@@ -25,7 +25,7 @@ export const useHiring = () => {
     isLoading: isLoadingJobs,
     error: jobsError
   } = useQuery({
-    queryKey: ['jobOpenings'],
+    queryKey: ['jobOpenings', 'fetchJobOpenings'],
     queryFn: fetchJobOpenings,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     retry: (failureCount, error) => {
