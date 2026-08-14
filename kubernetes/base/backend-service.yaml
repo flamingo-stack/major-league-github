@@ -19,10 +19,21 @@ spec:
       labels:
         app: ${SERVICE_NAME}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: ${SERVICE_NAME}
           image: ghcr.io/flamingo-stack/major-league-github/${SERVICE_NAME}:${VERSION}
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           envFrom:
             - configMapRef:
                 name: app-config
