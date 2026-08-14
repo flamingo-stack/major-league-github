@@ -9,7 +9,7 @@ data:
   JAVA_OPTS: "-Xmx${JAVA_MAX_HEAP} -Xms${JAVA_MIN_HEAP} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
   CACHE_IMPLEMENTATION: "redis"
   SPRING_DATA_REDIS_HOST: "${REDIS_HOST}"
-  SPRING_DATA_REDIS_PORT: "6379"
+  SPRING_DATA_REDIS_PORT: "${REDIS_PORT}"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -42,5 +42,5 @@ kind: ConfigMap
 metadata:
   name: frontend-config
 data:
-  NODE_ENV: "${NODE_ENV:-production}"
-  API_TIMEOUT: "${API_TIMEOUT:-30000}" 
+  NODE_ENV: "${NODE_ENV}"
+  API_TIMEOUT: "${API_TIMEOUT}"
