@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Optional;
 
@@ -136,7 +137,9 @@ public class DiskCacheService extends CacheServiceAbs {
                 return;
             }
 
-            Files.writeString(filePath, jsonStr);
+            Path tmpPath = filePath.resolveSibling(key + ".json.tmp");
+            Files.writeString(tmpPath, jsonStr);
+            Files.move(tmpPath, filePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             log.info("Cached value in file system for key: '{}'", key);
         } catch (IOException e) {
             log.error("Failed to write file cache for key '{}': {}", key, e.getMessage());
