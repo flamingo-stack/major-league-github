@@ -71,7 +71,7 @@ public abstract class CacheServiceAbs {
             }
             return isStale;
         } catch (Throwable e) {
-            log.error("Error checking cache entry age: {}", e.getMessage());
+            log.error("Error checking cache entry age", e);
             return true; // Consider it stale if we can't check
         }
     }
@@ -161,7 +161,7 @@ public abstract class CacheServiceAbs {
             put(cachePath, cacheKey, response);
             return Optional.of(response);
         } catch (Exception e) {
-            log.error("Error fetching data: {}", e.getMessage());
+            log.error("Error fetching data", e);
             return Optional.empty();
         }
     }
@@ -247,3 +247,4 @@ public abstract class CacheServiceAbs {
         this.cacheMode = cacheMode;
     }
 }
+
