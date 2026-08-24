@@ -1,5 +1,5 @@
 import { CssBaseline, ThemeProvider } from '@mui/material';
-import { useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import { getTheme } from './theme';
 import { Layout } from './components/Layout';
 import { FiltersPanel } from './components/FiltersPanel';
@@ -26,10 +26,6 @@ const MainApp = () => {
 
   const { urlState } = useUrlState();
 
-  useEffect(() => {
-    console.log('App: URL state changed:', urlState);
-  }, [urlState]);
-
   const { data: contributors = [], isLoading, error } = useQuery({
     queryKey: [
       'contributors', 
@@ -40,13 +36,6 @@ const MainApp = () => {
       urlState.teamId
     ],
     queryFn: ({ signal }) => {
-      console.log('Fetching contributors with params:', {
-        cityId: urlState.selectedCityId,
-        regionId: urlState.selectedRegionId,
-        stateId: urlState.stateId,
-        languageId: urlState.languageId,
-        teamId: urlState.teamId
-      });
       return getContributors({
         cityId: urlState.selectedCityId || undefined,
         regionId: urlState.selectedRegionId || undefined,
@@ -88,3 +77,4 @@ export const App = () => {
 };
 
 export default App;
+
