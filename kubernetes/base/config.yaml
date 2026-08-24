@@ -42,5 +42,5 @@ kind: ConfigMap
 metadata:
   name: frontend-config
 data:
-  NODE_ENV: "${NODE_ENV:-production}"
-  API_TIMEOUT: "${API_TIMEOUT:-30000}" 
+  NODE_ENV: "${NODE_ENV}"
+  API_TIMEOUT: "${API_TIMEOUT}" 
