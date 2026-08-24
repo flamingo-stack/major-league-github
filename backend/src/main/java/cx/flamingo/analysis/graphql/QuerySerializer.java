@@ -53,7 +53,7 @@ public class QuerySerializer {
         
         for (Map.Entry<String, Object> entry : args.entrySet()) {
             String value = entry.getValue() instanceof String 
-                ? entry.getValue().toString()  // Don't add extra quotes
+                ? "\"" + entry.getValue().toString() + "\""  // Add quotes for string values
                 : entry.getValue().toString();
             joiner.add(entry.getKey() + ": " + value);
         }
