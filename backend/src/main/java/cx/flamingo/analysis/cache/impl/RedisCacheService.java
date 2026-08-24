@@ -47,6 +47,9 @@ public class RedisCacheService extends CacheServiceAbs {
     protected Long getInsertTime(String cachePath, String key) {
         String redisKey = buildRedisKey(cachePath, key);
         Object json = valueOps.get(redisKey + EXPIRATION_SUFFIX);
+        if (json == null) {
+            return 0L;
+        }
         Expiration expiration = gson.fromJson(json.toString(), Expiration.class);
         if (expiration != null) {
             return expiration.getTimestamp();
