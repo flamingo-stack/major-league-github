@@ -42,7 +42,7 @@ spec:
             - name: SPRING_REDIS_HOST
               value: "${REDIS_HOST}"
             - name: SPRING_REDIS_PORT
-              value: "6379"
+              value: "${REDIS_PORT}"
             - name: JAVA_MIN_HEAP
               value: "${JAVA_MIN_HEAP}"
             - name: JAVA_MAX_HEAP
