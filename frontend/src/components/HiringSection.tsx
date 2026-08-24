@@ -5,6 +5,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import LanguageIcon from '@mui/icons-material/Language';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import WorkIcon from '@mui/icons-material/Work';
 import { Avatar, Box, Chip, Collapse, IconButton, Link, Paper, Skeleton, Typography, useTheme } from '@mui/material';
@@ -20,6 +21,31 @@ interface HiringSectionProps {
   error?: Error | null;
 }
 
+// NOTE: This mapping is duplicated in TableView.tsx. TODO: extract to a shared
+// util (e.g. `getSocialIcon` in a common components module) so both call sites
+// stay in sync. Kept in sync manually for now, including the 'website' case
+// that TableView.tsx handles.
+const getSocialIcon = (platform: string) => {
+  switch (platform.toLowerCase()) {
+    case 'linkedin':
+      return <LinkedInIcon fontSize="small" />;
+    case 'twitter':
+      return <TwitterIcon fontSize="small" />;
+    case 'github':
+      return <GitHubIcon width={16} height={16} />;
+    case 'facebook':
+      return <FacebookIcon fontSize="small" />;
+    case 'instagram':
+      return <InstagramIcon fontSize="small" />;
+    case 'email':
+      return <EmailIcon fontSize="small" />;
+    case 'website':
+      return <LanguageIcon fontSize="small" />;
+    default:
+      return null;
+  }
+};
+
 export const HiringSection: React.FC<HiringSectionProps> = ({
   hiringManager,
   jobOpenings,
@@ -28,25 +54,6 @@ export const HiringSection: React.FC<HiringSectionProps> = ({
 }) => {
   const theme = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const getSocialIcon = (platform: string) => {
-    switch (platform.toLowerCase()) {
-      case 'linkedin':
-        return <LinkedInIcon fontSize="small" />;
-      case 'twitter':
-        return <TwitterIcon fontSize="small" />;
-      case 'github':
-        return <GitHubIcon width={16} height={16} />;
-      case 'facebook':
-        return <FacebookIcon fontSize="small" />;
-      case 'instagram':
-        return <InstagramIcon fontSize="small" />;
-      case 'email':
-        return <EmailIcon fontSize="small" />;
-      default:
-        return null;
-    }
-  };
 
   return (
     <Box>
