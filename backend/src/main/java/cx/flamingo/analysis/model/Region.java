@@ -2,9 +2,15 @@ package cx.flamingo.analysis.model;
 
 import java.util.Set;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Region {
     String id;
     String name; // Internal name (e.g., "new-england")
@@ -16,7 +22,10 @@ public class Region {
     Set<State> states;
     Set<City> cities;
 
-    @Value
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class GeoCoordinates {
         double latitude;
         double longitude;
