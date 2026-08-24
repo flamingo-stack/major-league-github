@@ -95,10 +95,6 @@ public class GithubTokenRateManager {
      * endpoint to get remaining requests and reset time.
      */
     public synchronized void initializeRateLimits() {
-        if (alreadyInitialized) {
-            return;
-        }
-        alreadyInitialized = true;
         for (Map.Entry<String, Pair<GithubToken, WebClient>> entry : tokenMap.entrySet()) {
             String token = entry.getKey();
             try {
@@ -123,6 +119,7 @@ public class GithubTokenRateManager {
                         token.substring(0, 8), e.getMessage());
             }
         }
+        alreadyInitialized = true;
         printTokensStatus();
     }
 
