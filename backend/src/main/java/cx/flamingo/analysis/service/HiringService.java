@@ -1,8 +1,6 @@
 package cx.flamingo.analysis.service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -10,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.google.gson.reflect.TypeToken;
 
 import cx.flamingo.analysis.cache.CacheServiceAbs;
+import cx.flamingo.analysis.dto.ApiResponse;
 import cx.flamingo.analysis.model.Contributor;
 import cx.flamingo.analysis.model.HiringManagerProfile;
 import cx.flamingo.analysis.model.JobOpening;
@@ -34,8 +33,7 @@ public class HiringService {
     private static final String PROFILE_KEY = "manager_profile";
     private static final String JOBS_KEY = "job_openings";
 
-    public Map<String, Object> getHiringManagerProfile() {
-        Map<String, Object> response = new HashMap<>();
+    public ApiResponse<HiringManagerProfile> getHiringManagerProfile() {
         HiringManagerProfile profile = cacheService.get(CACHE_PATH, PROFILE_KEY, new TypeToken<HiringManagerProfile>() {
         }, refreshInterval)
                 .orElseGet(() -> {
@@ -58,10 +56,7 @@ public class HiringService {
                     return newProfile;
                 });
 
-        response.put("status", "success");
-        response.put("message", "Hiring manager profile retrieved successfully");
-        response.put("data", profile);
-        return response;
+        return ApiResponse.success(profile, "Hiring manager profile retrieved successfully");
     }
 
     public List<JobOpening> getJobOpenings() {
