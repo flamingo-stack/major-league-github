@@ -27,7 +27,7 @@ public class PreCacheService {
     CacheServiceAbs cacheService;
 
     // Always run the cache refresh cycle on startup
-    @Scheduled(initialDelay = 1000l, fixedDelay = 1000l)
+    @Scheduled(initialDelay = 1000l, fixedDelay = 3600000l)
     void runFullCacheCycle() {
         Instant startTime = Instant.now();
         log.info("Starting cache refresh cycle for all languages...");
@@ -53,3 +53,4 @@ public class PreCacheService {
                 totalDuration.getSeconds() % 60);
     }
 }
+
